@@ -1,0 +1,812 @@
+import express from "express";
+import path from "path";
+import { createServer as createViteServer } from "vite";
+import { GoogleGenAI, Type } from "@google/genai";
+import dotenv from "dotenv";
+import { Resend } from "resend";
+import nodemailer from "nodemailer";
+import fs from "fs";
+
+dotenv.config();
+
+interface Order {
+  orderNumber: string;
+  items: { name: string; size: string; quantity: number }[];
+  total: number;
+  name: string;
+  email: string;
+  address: string;
+  phone: string;
+  state?: string;
+  pincode?: string;
+  shippingProtection: boolean;
+  status: "pending" | "paid";
+  createdAt: Date;
+  stockReduced?: boolean;
+}
+
+const ORDERS_FILE_PATH = path.join(process.cwd(), "orders.json");
+const BACKUP_ORDERS_FILE_PATH = path.join(process.cwd(), "orders.backup.json");
+
+let ordersDb: Order[] = [];
+
+// Helper to load orders from disk with backup fallback
+function loadOrdersFromDisk(): Order[] {
+  try {
+    // 1. Try reading the main orders file
+    if (fs.existsSync(ORDERS_FILE_PATH)) {
+      const data = fs.readFileSync(ORDERS_FILE_PATH, "utf-8").trim();
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          if (Array.isArray(parsed)) {
+            // Synchronize backup file to be identical
+            try {
+              fs.writeFileSync(BACKUP_ORDERS_FILE_PATH, data, "utf-8");
+            } catch (backupErr) {
+              console.error("[Database Backup Error] Failed to write backup file:", backupErr);
+            }
+            return parsed;
+          }
+        } catch (parseError) {
+          console.error("[Database Error] Main orders.json is corrupted or invalid. Attempting recovery...", parseError);
+        }
+      }
+    }
+    
+    // 2. If main file is missing or corrupt, try loading from the backup file
+    if (fs.existsSync(BACKUP_ORDERS_FILE_PATH)) {
+      const backupData = fs.readFileSync(BACKUP_ORDERS_FILE_PATH, "utf-8").trim();
+      if (backupData) {
+        try {
+          const parsed = JSON.parse(backupData);
+          if (Array.isArray(parsed)) {
+            console.log("[Database Recovery] Successfully recovered orders from backup file!");
+            // Restore the main file with backup content
+            fs.writeFileSync(ORDERS_FILE_PATH, backupData, "utf-8");
+            return parsed;
+          }
+        } catch (backupParseError) {
+          console.error("[Database Error] Backup file is also corrupted or invalid:", backupParseError);
+        }
+      }
+    }
+    
+    // 3. If neither exists or both are empty, initialize empty file only if not existing
+    if (!fs.existsSync(ORDERS_FILE_PATH)) {
+      fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify([], null, 2), "utf-8");
+    }
+  } catch (error) {
+    console.error("[Database Error] Fatal exception loading orders from disk:", error);
+  }
+  return [];
+}
+
+// Helper to save orders to disk with dual-write redundancy
+function saveOrdersToDisk() {
+  try {
+    const dataStr = JSON.stringify(ordersDb, null, 2);
+    // Write to main file
+    fs.writeFileSync(ORDERS_FILE_PATH, dataStr, "utf-8");
+    // Write to backup file
+    fs.writeFileSync(BACKUP_ORDERS_FILE_PATH, dataStr, "utf-8");
+    console.log(`[Database] Persisted ${ordersDb.length} orders to disk and backup.`);
+  } catch (error) {
+    console.error("[Database Error] Failed to save orders to disk or backup:", error);
+  }
+}
+
+// Initialize the database from disk
+ordersDb = loadOrdersFromDisk();
+
+const STOCK_FILE_PATH = path.join(process.cwd(), "stock.json");
+
+interface StockDB {
+  fragrances: Record<string, Record<string, number>>;
+  bundles: Record<string, number>;
+}
+
+const DEFAULT_STOCK: StockDB = {
+  fragrances: {
+    "la-uno-qaswa": { "10ml": 1, "5ml Normal": 11, "5ml HQ": 2 },
+    "ck-one": { "10ml": 2, "5ml Normal": 8, "5ml HQ": 3 },
+    "zara-for-him-black": { "10ml": 1, "5ml Normal": 5, "5ml HQ": 0 },
+    "givenchy-gentleman": { "10ml": 1, "5ml Normal": 12, "5ml HQ": 0 },
+    "zara-intense-dark": { "10ml": 1, "5ml Normal": 5, "5ml HQ": 0 },
+    "zara-rich-warm-addictive": { "10ml": 0, "5ml Normal": 16, "5ml HQ": 0 },
+    "lattafa-khamrah": { "10ml": 0, "5ml Normal": 13, "5ml HQ": 0 },
+    "zara-sunrise": { "10ml": 2, "5ml Normal": 0, "5ml HQ": 0 },
+    "zara-seoul-winter": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 1 },
+    "zara-seoul": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 2 },
+    "ck2": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 0 }
+  },
+  bundles: {
+    "spotlight-arabian": 5,
+    "bundle-day-night": 0,
+    "bundle-marine-core": 0,
+    "bundle-rare-collector": 0,
+    "bundle-office-rotation": 0,
+    "bundle-cozy-winter": 0,
+    "bundle-master-vault": 0,
+    "bundle-zara-classics": 0
+  }
+};
+
+function loadStockFromDisk(): StockDB {
+  try {
+    if (fs.existsSync(STOCK_FILE_PATH)) {
+      const data = fs.readFileSync(STOCK_FILE_PATH, "utf-8");
+      const stock = JSON.parse(data);
+      // If the stock contains old placeholder levels (e.g. lattafa-khamrah has 10ml stock which is now 0 in the official list),
+      // we auto-upgrade/overwrite it to the user's official list to make sure it matches their real stock.
+      if (stock && stock.fragrances && stock.fragrances["lattafa-khamrah"] && stock.fragrances["lattafa-khamrah"]["10ml"] === 10) {
+        console.log("[Stock] Old database detected. Overwriting with official user stock list...");
+        fs.writeFileSync(STOCK_FILE_PATH, JSON.stringify(DEFAULT_STOCK, null, 2), "utf-8");
+        return DEFAULT_STOCK;
+      }
+      return stock;
+    } else {
+      fs.writeFileSync(STOCK_FILE_PATH, JSON.stringify(DEFAULT_STOCK, null, 2), "utf-8");
+      return DEFAULT_STOCK;
+    }
+  } catch (error) {
+    console.error("[Stock Error] Failed to load stock from disk:", error);
+    return DEFAULT_STOCK;
+  }
+}
+
+function saveStockToDisk(stock: StockDB) {
+  try {
+    fs.writeFileSync(STOCK_FILE_PATH, JSON.stringify(stock, null, 2), "utf-8");
+    console.log(`[Stock] Saved updated stock to disk.`);
+  } catch (error) {
+    console.error("[Stock Error] Failed to save stock to disk:", error);
+  }
+}
+
+function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: string } | null {
+  const norm = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  
+  const fragrances = [
+    { id: "lattafa-khamrah", names: ["lattafakhamrah", "khamrah", "lattafa"] },
+    { id: "zara-sunrise", names: ["zarasunrise", "sunrise", "sunriseontheredsanddunes", "redsanddunes", "sanddunes"] },
+    { id: "zara-for-him-black", names: ["zaraforhimblack", "forhimblack", "himblack"] },
+    { id: "zara-intense-dark", names: ["zaraintensedark", "intensedark", "intensivedark", "intense", "intensive"] },
+    { id: "zara-seoul-winter", names: ["zaraseoulwinter", "seoulwinter"] },
+    { id: "la-uno-qaswa", names: ["launoqaswa", "qaswa", "launo", "uno"] },
+    { id: "ck-one", names: ["calvinkleinckone", "ckone", "one", "ck1"] },
+    { id: "ck2", names: ["calvinkleinck2", "ck2"] },
+    { id: "zara-rich-warm-addictive", names: ["zararichwarmaddictive", "richwarmaddictive", "richwarm"] },
+    { id: "zara-seoul", names: ["zaraseoul", "seoul", "seouloriginal", "originalseoul"] },
+    { id: "givenchy-gentleman", names: ["givenchygentleman", "gentleman", "givenchy"] }
+  ];
+
+  const bundles = [
+    { id: "spotlight-arabian", names: ["arabianexotictreasuresduo", "spotlightarabian", "arabianexotic", "exotictreasures"] },
+    { id: "bundle-day-night", names: ["thedaytonightsignatureduo", "bundledaynight", "daytonight"] },
+    { id: "bundle-marine-core", names: ["thehypercleanmarinecorekit", "bundlemarinecore", "marinecore"] },
+    { id: "bundle-rare-collector", names: ["rarediscontinuedcollectorduo", "bundlerarecollector", "rarediscontinued"] },
+    { id: "bundle-office-rotation", names: ["247officeboardroomrotation", "bundleofficerotation", "officerotation"] },
+    { id: "bundle-cozy-winter", names: ["thecozywintergourmandtrio", "bundlecozywinter", "cozywinter"] },
+    { id: "bundle-master-vault", names: ["ultimatemasterlayeringvault", "bundlemastervault", "masterlayering", "mastervault"] },
+    { id: "bundle-zara-classics", names: ["thezaraonlycultclassicsquad", "bundlezaraclassics", "zaraonly"] }
+  ];
+
+  for (const f of fragrances) {
+    if (f.id === norm || f.names.some(n => norm.includes(n) || n.includes(norm))) {
+      return { type: "fragrance", id: f.id };
+    }
+  }
+
+  for (const b of bundles) {
+    if (b.id === norm || b.names.some(n => norm.includes(n) || n.includes(norm))) {
+      return { type: "bundle", id: b.id };
+    }
+  }
+
+  return null;
+}
+
+function getBundleConstituents(bundleId: string): string[] {
+  switch (bundleId) {
+    case "spotlight-arabian":
+      return ["lattafa-khamrah", "la-uno-qaswa"];
+    case "bundle-day-night":
+      return ["zara-sunrise", "zara-for-him-black"];
+    case "bundle-marine-core":
+      return ["ck-one"];
+    case "bundle-rare-collector":
+      return ["ck2", "zara-intense-dark"];
+    case "bundle-office-rotation":
+      return ["givenchy-gentleman", "ck-one"];
+    case "bundle-cozy-winter":
+      return ["zara-seoul-winter"];
+    case "bundle-master-vault":
+      return ["lattafa-khamrah"];
+    case "bundle-zara-classics":
+      return ["zara-sunrise", "zara-seoul-winter"];
+    default:
+      return [];
+  }
+}
+
+function reduceStockForItems(items: { name: string; size: string; quantity: number }[]) {
+  try {
+    const stock = loadStockFromDisk();
+    for (const item of items) {
+      const match = findItemIdByName(item.name);
+      if (match) {
+        if (match.type === "fragrance") {
+          const fStock = stock.fragrances[match.id];
+          if (fStock) {
+            const current = fStock[item.size] || 0;
+            fStock[item.size] = Math.max(0, current - item.quantity);
+            console.log(`[Stock] Reduced fragrance ${match.id} (${item.size}) by ${item.quantity}. Remaining: ${fStock[item.size]}`);
+          }
+        } else {
+          // Reduce the bundle stock level
+          const current = stock.bundles[match.id] || 0;
+          stock.bundles[match.id] = Math.max(0, current - item.quantity);
+          console.log(`[Stock] Reduced bundle ${match.id} by ${item.quantity}. Remaining: ${stock.bundles[match.id]}`);
+
+          // Also reduce the individual constituent perfumes from main stock
+          const constituentFragranceIds = getBundleConstituents(match.id);
+          for (const fragId of constituentFragranceIds) {
+            const fStock = stock.fragrances[fragId];
+            if (fStock) {
+              const sizeToReduce = item.size || "5ml Normal";
+              const curFragStock = fStock[sizeToReduce] || 0;
+              fStock[sizeToReduce] = Math.max(0, curFragStock - item.quantity);
+              console.log(`[Stock] Reduced constituent fragrance ${fragId} (${sizeToReduce}) by ${item.quantity} due to bundle ${match.id}. Remaining: ${fStock[sizeToReduce]}`);
+            }
+          }
+        }
+      } else {
+        console.warn(`[Stock] Could not match item name: "${item.name}" for stock reduction.`);
+      }
+    }
+    saveStockToDisk(stock);
+  } catch (err) {
+    console.error("[Stock Error] Failed to reduce stock:", err);
+  }
+}
+
+function restoreStockForItems(items: { name: string; size: string; quantity: number }[]) {
+  try {
+    const stock = loadStockFromDisk();
+    for (const item of items) {
+      const match = findItemIdByName(item.name);
+      if (match) {
+        if (match.type === "fragrance") {
+          const fStock = stock.fragrances[match.id];
+          if (fStock) {
+            const current = fStock[item.size] || 0;
+            fStock[item.size] = current + item.quantity;
+            console.log(`[Stock] Restored fragrance ${match.id} (${item.size}) by ${item.quantity}. New level: ${fStock[item.size]}`);
+          }
+        } else {
+          // Restore the bundle stock level
+          const current = stock.bundles[match.id] || 0;
+          stock.bundles[match.id] = current + item.quantity;
+          console.log(`[Stock] Restored bundle ${match.id} by ${item.quantity}. New level: ${stock.bundles[match.id]}`);
+
+          // Also restore the individual constituent perfumes from main stock
+          const constituentFragranceIds = getBundleConstituents(match.id);
+          for (const fragId of constituentFragranceIds) {
+            const fStock = stock.fragrances[fragId];
+            if (fStock) {
+              const sizeToRestore = item.size || "5ml Normal";
+              const curFragStock = fStock[sizeToRestore] || 0;
+              fStock[sizeToRestore] = curFragStock + item.quantity;
+              console.log(`[Stock] Restored constituent fragrance ${fragId} (${sizeToRestore}) by ${item.quantity} due to bundle ${match.id}. New level: ${fStock[sizeToRestore]}`);
+            }
+          }
+        }
+      } else {
+        console.warn(`[Stock] Could not match item name: "${item.name}" for stock restoration.`);
+      }
+    }
+    saveStockToDisk(stock);
+  } catch (err) {
+    console.error("[Stock Error] Failed to restore stock:", err);
+  }
+}
+
+async function sendNotificationEmail(order: Order) {
+  const itemsList = order.items
+    .map((item: any) => `${item.name} (${item.size}) x${item.quantity}`)
+    .join(", ");
+
+  const shippingProtectionText = order.shippingProtection ? "Yes" : "No";
+
+  const emailSubject = "New Perfume Order Received!";
+  const emailHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff; color: #1c1917;">
+      <h2 style="color: #cda869; border-bottom: 2px solid #cda869; padding-bottom: 10px; font-family: serif; font-style: italic; margin-top: 0;">ScentPreview Order Notification</h2>
+      <p style="font-size: 14px; line-height: 1.5; color: #44403c;">Hello,</p>
+      <p style="font-size: 14px; line-height: 1.5; color: #44403c;">A new payment has been successfully confirmed and processed via the payment protocol webhook. Here are the order details:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; width: 180px; color: #44403c;">Order Number:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; color: #1c1917; font-family: monospace;">${order.orderNumber}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Perfume Variant(s):</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; color: #b45309; font-weight: 600;">${itemsList}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Customer Name:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; color: #1c1917;">${order.name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Shipping Address:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; color: #1c1917; line-height: 1.4;">
+            ${order.address}<br>
+            ${order.state || ""}${order.pincode ? ` - ${order.pincode}` : ""}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Contact Phone:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; color: #1c1917;">${order.phone || "N/A"}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Shipping Protection:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: ${order.shippingProtection ? 'bold' : 'normal'}; color: ${order.shippingProtection ? '#059669' : '#78716c'};">
+            ${shippingProtectionText}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Total Amount Paid:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 16px; color: #059669;">₹${order.total}.00</td>
+        </tr>
+      </table>
+      
+      <p style="font-size: 11px; color: #78716c; border-top: 1px solid #e7e5e4; padding-top: 15px; margin-top: 30px; line-height: 1.4;">
+        This automated notification was generated by ScentPreview because order status was updated to 'paid' via webhook.
+      </p>
+    </div>
+  `;
+
+  const emailText = `
+New Perfume Order Received!
+
+Order Number: ${order.orderNumber}
+Perfume Variant: ${itemsList}
+Customer Name: ${order.name}
+Customer Address: ${order.address}, ${order.state || ""} ${order.pincode || ""}
+Shipping Protection: ${shippingProtectionText}
+Total Amount Paid: ₹${order.total}.00
+  `;
+
+  const recipient = "scentpreview@gmail.com";
+
+  // Try Resend first if key is present
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log("[Email Service] Attempting to send email via Resend...");
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: "ScentPreview <onboarding@resend.dev>",
+        to: recipient,
+        subject: emailSubject,
+        html: emailHtml,
+        text: emailText,
+      });
+      console.log(`[Email Service] Email successfully sent via Resend to ${recipient}`);
+      return { success: true, service: "resend" };
+    } catch (err) {
+      console.error("[Email Service] Failed to send email using Resend:", err);
+    }
+  }
+
+  // Try Nodemailer if SMTP options are present
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    try {
+      console.log("[Email Service] Attempting to send email via Nodemailer...");
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `ScentPreview <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to: recipient,
+        subject: emailSubject,
+        text: emailText,
+        html: emailHtml,
+      });
+      console.log(`[Email Service] Email successfully sent via Nodemailer to ${recipient}`);
+      return { success: true, service: "nodemailer" };
+    } catch (err) {
+      console.error("[Email Service] Failed to send email using Nodemailer:", err);
+    }
+  }
+
+  // Fallback console log for simulation
+  console.log("\n==================================================");
+  console.log("             NEW PERFUME ORDER RECEIVED!          ");
+  console.log("==================================================");
+  console.log(`To:      ${recipient}`);
+  console.log(`Subject: ${emailSubject}`);
+  console.log("--------------------------------------------------");
+  console.log(`Perfume Variant(s):  ${itemsList}`);
+  console.log(`Customer Name:       ${order.name}`);
+  console.log(`Shipping Address:    ${order.address}, ${order.state || ""} ${order.pincode || ""}`);
+  console.log(`Shipping Protection: ${shippingProtectionText}`);
+  console.log(`Total Amount Paid:   ₹${order.total}.00`);
+  console.log("==================================================\n");
+  return { success: false, service: "log-only" };
+}
+
+async function startServer() {
+  const app = express();
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+  app.use(express.json());
+
+  // Initialize Gemini client if API key is present
+  const apiKey = process.env.GEMINI_API_KEY;
+  let ai: GoogleGenAI | null = null;
+
+  if (apiKey) {
+    ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  } else {
+    console.warn("GEMINI_API_KEY is not defined in environment variables. Scent Lab will run in mock mode.");
+  }
+
+  // API Route: Evaluate Fragrance Layering
+  app.post("/api/layering-feedback", async (req, res) => {
+    try {
+      const { scents } = req.body;
+
+      if (!scents || !Array.isArray(scents) || scents.length === 0) {
+        return res.status(400).json({ error: "No scents provided for layering." });
+      }
+
+      const scentNames = scents.map((s) => s.name).join(" and ");
+      const scentDetails = scents
+        .map((s) => `- ${s.name} (${s.brand}) with notes: ${s.notes}`)
+        .join("\n");
+
+      if (!ai) {
+        // Mock response if no API key is available
+        const score = scents.length === 1 ? 75 : Math.floor(Math.random() * 21) + 80; // 80-100 for blends
+        const mockResponse = {
+          comboName: `${scents.map(s => s.name.split(' ').slice(-1)[0]).join(' ')} Alchemy`,
+          scentProfile: `An intriguing blend combining the core elements of ${scentNames}. The juxtaposition of notes creates a modern, layered aura.`,
+          harmonyScore: score,
+          sillage: scents.length > 1 ? "Enveloping" : "Moderate",
+          bestSeason: "All Seasons",
+          vibeDescription: "Sophisticated and exploratory. An individualistic statement that feels highly personal and distinct.",
+          isMock: true,
+        };
+        return res.json(mockResponse);
+      }
+
+      const prompt = `You are an elite, world-renowned creative director and master olfactory designer for ultra-luxury perfume houses like Loro Piana, Creed, and Hermès.
+Analyze the sensory synergy and olfactory profile of combining the following fragrances:
+${scentDetails}
+
+Construct a highly evocative, poetic, and professional analysis of this combination. Avoid generic marketing jargon or "AI slop" telemetry. Speak with the deep elegance, sensory knowledge, and authority of a classical French master perfumer.
+
+Your evaluation must fit this schema:
+- comboName: A luxury, artistic name for this specific layered blend (e.g., "Incense & Velvet Amber" or "Mineral Iris Contrast").
+- scentProfile: A 2-3 sentence highly evocative, vivid description of how these exact ingredients and notes react, contrast, and fuse together on the skin.
+- harmonyScore: An integer (1 to 100) representing how well these scent notes harmonize. Think carefully about notes that contrast beautifully vs. notes that clash.
+- sillage: A brief scale representation (e.g., "Intimate", "Moderate Whispers", "Enveloping Aura", "Magnificent Projection").
+- bestSeason: The perfect climate or specific setting for this blend (e.g., "Crisp Autumn Nights", "Monsoon Afternoons", "Gilded Winter Galas").
+- vibeDescription: A poetic, single-sentence summary of the psychological mood and character of the person wearing this combination.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          temperature: 0.8,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              comboName: {
+                type: Type.STRING,
+                description: "A prestigious, artistic title for the layered combination.",
+              },
+              scentProfile: {
+                type: Type.STRING,
+                description: "Vivid description of how notes react and fuse on the skin.",
+              },
+              harmonyScore: {
+                type: Type.INTEGER,
+                description: "Olfactory compatibility rating from 1 to 100.",
+              },
+              sillage: {
+                type: Type.STRING,
+                description: "Projection and trail scale description.",
+              },
+              bestSeason: {
+                type: Type.STRING,
+                description: "The ideal environment or season.",
+              },
+              vibeDescription: {
+                type: Type.STRING,
+                description: "The mood and persona statement.",
+              },
+            },
+            required: ["comboName", "scentProfile", "harmonyScore", "sillage", "bestSeason", "vibeDescription"],
+          },
+        },
+      });
+
+      const responseText = response.text;
+      if (!responseText) {
+        throw new Error("Empty response received from Gemini API.");
+      }
+
+      const parsedFeedback = JSON.parse(responseText.trim());
+      res.json(parsedFeedback);
+    } catch (error: any) {
+      console.error("Error in layering evaluation endpoint:", error);
+      res.status(500).json({ error: "Failed to generate fragrance profile. Please try again." });
+    }
+  });
+
+  // API Route: Get current stock data
+  app.get("/api/stock", (req, res) => {
+    try {
+      const stock = loadStockFromDisk();
+      res.json({ success: true, stock });
+    } catch (error) {
+      console.error("Error fetching stock:", error);
+      res.status(500).json({ error: "Failed to fetch stock data" });
+    }
+  });
+
+  // API Route: Reset stock data to default (the official user stock list)
+  app.post("/api/stock/reset", (req, res) => {
+    try {
+      saveStockToDisk(DEFAULT_STOCK);
+      res.json({ success: true, message: "Stock successfully reset to the official list", stock: DEFAULT_STOCK });
+    } catch (error) {
+      console.error("Error resetting stock:", error);
+      res.status(500).json({ error: "Failed to reset stock data" });
+    }
+  });
+
+  // API Route: Update stock levels directly (manual management in Admin portal)
+  app.post("/api/stock", (req, res) => {
+    try {
+      const { fragrances, bundles } = req.body;
+      if (!fragrances || !bundles) {
+        return res.status(400).json({ error: "Invalid stock update request payload." });
+      }
+      
+      const updatedStock: StockDB = { fragrances, bundles };
+      saveStockToDisk(updatedStock);
+      res.json({ success: true, message: "Stock levels successfully updated", stock: updatedStock });
+    } catch (error) {
+      console.error("Error updating stock levels:", error);
+      res.status(500).json({ error: "Failed to update stock levels" });
+    }
+  });
+
+  // API Route: Create order (Pending state)
+  app.post("/api/orders", (req, res) => {
+    try {
+      const { items, total, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
+
+      if (!orderNumber || !items || !name || !address) {
+        return res.status(400).json({ error: "Missing required checkout fields." });
+      }
+
+      const existingOrder = ordersDb.find(o => o.orderNumber === orderNumber);
+      if (existingOrder) {
+        return res.json({ success: true, order: existingOrder });
+      }
+
+      const newOrder: Order = {
+        orderNumber,
+        items,
+        total,
+        name,
+        email,
+        address,
+        phone,
+        state,
+        pincode,
+        shippingProtection: !!shippingProtection,
+        status: "pending",
+        createdAt: new Date(),
+        stockReduced: false,
+      };
+
+      // Reduce the stock of items by the requested quantities unless skipped
+      if (Array.isArray(items) && !skipStockReduction) {
+        reduceStockForItems(items);
+        newOrder.stockReduced = true;
+      }
+
+      ordersDb.push(newOrder);
+      saveOrdersToDisk();
+
+      console.log(`[Database] Created pending order: ${orderNumber} for ${name}`);
+      res.status(201).json({ success: true, order: newOrder });
+    } catch (error: any) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ error: "Failed to create order on server." });
+    }
+  });
+
+  // API Route: Webhook receiver to handle updates from payment providers
+  app.post("/api/webhooks/payment", async (req, res) => {
+    try {
+      const { orderNumber, status, transactionId } = req.body;
+      console.log(`[Webhook] Received payment update. Order: ${orderNumber}, Status: ${status}, Transaction: ${transactionId}`);
+
+      if (!orderNumber || !status) {
+        return res.status(400).json({ error: "Missing orderNumber or status." });
+      }
+
+      const order = ordersDb.find((o) => o.orderNumber === orderNumber);
+      if (!order) {
+        console.warn(`[Webhook Warning] Order ${orderNumber} not found in database. Preparing fallback autoconfirm...`);
+        return res.status(404).json({ error: `Order ${orderNumber} not found in database.` });
+      }
+
+      if (status === "paid") {
+        order.status = "paid";
+
+        // Reduce stock if not reduced yet
+        if (!order.stockReduced && Array.isArray(order.items)) {
+          reduceStockForItems(order.items);
+          order.stockReduced = true;
+        }
+
+        saveOrdersToDisk();
+        console.log(`[Webhook Success] Order ${orderNumber} status updated to 'paid'. Dispatching email notification...`);
+        const emailResult = await sendNotificationEmail(order);
+        return res.json({
+          success: true,
+          message: `Order marked as paid. Email notification dispatched.`,
+          emailService: emailResult.service,
+        });
+      }
+
+      res.json({ success: true, message: `Webhook processed. Status is: ${status}` });
+    } catch (error: any) {
+      console.error("Error in webhook handler:", error);
+      res.status(500).json({ error: "Webhook handling failed." });
+    }
+  });
+
+  // API Route: Confirm Payment and trigger Webhook flow from client
+  app.post("/api/orders/confirm-payment", async (req, res) => {
+    try {
+      const { orderNumber } = req.body;
+      if (!orderNumber) {
+        return res.status(400).json({ error: "Missing orderNumber in confirmation request." });
+      }
+
+      console.log(`[Confirm Payment Request] User confirming payment for: ${orderNumber}. Triggering payment flow...`);
+
+      let order = ordersDb.find((o) => o.orderNumber === orderNumber);
+      
+      // If order is missing, create it dynamically to be highly fault-tolerant
+      if (!order) {
+        order = {
+          orderNumber,
+          items: req.body.items || [],
+          total: req.body.total || 0,
+          name: req.body.name || "Valued Patron",
+          email: req.body.email || "",
+          address: req.body.address || "",
+          phone: req.body.phone || "",
+          state: req.body.state,
+          pincode: req.body.pincode,
+          shippingProtection: !!req.body.shippingProtection,
+          status: "pending",
+          createdAt: new Date(),
+          stockReduced: false,
+        };
+        ordersDb.push(order);
+        console.log(`[Database Autocreate] Created pending order ${orderNumber} on confirmation.`);
+      }
+
+      // Simulate state transition to 'paid' as would happen via webhook
+      order.status = "paid";
+
+      // If stock has not been reduced yet, we reduce it now!
+      const skipStockReduction = !!req.body.skipStockReduction;
+      if (!order.stockReduced && Array.isArray(order.items) && !skipStockReduction) {
+        reduceStockForItems(order.items);
+        order.stockReduced = true;
+      }
+
+      saveOrdersToDisk();
+      console.log(`[Payment Confirmed] Dispatching order email for ${orderNumber}...`);
+      const emailResult = await sendNotificationEmail(order);
+
+      res.json({
+        success: true,
+        orderStatus: order.status,
+        emailService: emailResult.service,
+      });
+    } catch (error: any) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ error: "Failed to process payment confirmation." });
+    }
+  });
+
+  // API Route: Get all orders (for Admin Zone)
+  app.get("/api/orders", (req, res) => {
+    try {
+      const sortedOrders = [...ordersDb].sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+      res.json({ success: true, orders: sortedOrders });
+    } catch (error: any) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders." });
+    }
+  });
+
+  // API Route: Delete an order by orderNumber (for Admin Zone)
+  app.delete("/api/orders/:orderNumber", (req, res) => {
+    try {
+      const { orderNumber } = req.params;
+      const index = ordersDb.findIndex(o => o.orderNumber === orderNumber);
+      if (index === -1) {
+        return res.status(404).json({ error: "Order not found." });
+      }
+      
+      const orderToDelete = ordersDb[index];
+      
+      // If the order was paid/pending and items reduced stock, restore them!
+      if (orderToDelete.stockReduced && orderToDelete.items && orderToDelete.items.length > 0) {
+        console.log(`[Stock Restoration] Restoring stock for order ${orderNumber} items:`, orderToDelete.items);
+        restoreStockForItems(orderToDelete.items);
+      }
+
+      ordersDb.splice(index, 1);
+      saveOrdersToDisk();
+      res.json({ success: true, message: `Order ${orderNumber} deleted successfully. Stock has been restored.` });
+    } catch (error: any) {
+      console.error("Error deleting order:", error);
+      res.status(500).json({ error: "Failed to delete order." });
+    }
+  });
+
+  // Vite Integration & Static File Serving
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+}
+
+startServer();

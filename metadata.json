@@ -1,0 +1,6 @@
+{
+  "name": "ScentPreview",
+  "description": "An immersive, interactive luxury decant engine and fragrance layering laboratory.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
