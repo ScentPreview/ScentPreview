@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Represents a customer or admin manual decant order",
+      "type": "object",
+      "properties": {
+        "orderNumber": {
+          "type": "string",
+          "description": "Unique order identifier"
+        },
+        "items": {
+          "type": "array",
+          "description": "List of decant items in the order"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total price in INR"
+        },
+        "name": {
+          "type": "string",
+          "description": "Customer name"
+        },
+        "email": {
+          "type": "string",
+          "description": "Customer email"
+        },
+        "address": {
+          "type": "string",
+          "description": "Shipping address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact number"
+        },
+        "state": {
+          "type": "string"
+        },
+        "pincode": {
+          "type": "string"
+        },
+        "shippingProtection": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "paid"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "stockReduced": {
+          "type": "boolean"
+        }
+      },
+      "required": ["orderNumber", "items", "total", "name", "address", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Global persistent orders collection"
+    }
+  }
+}

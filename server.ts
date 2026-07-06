@@ -20,7 +20,7 @@ interface Order {
   state?: string;
   pincode?: string;
   shippingProtection: boolean;
-  status: "pending" | "paid";
+  status: "pending" | "paid" | "deleted";
   createdAt: Date;
   stockReduced?: boolean;
 }
@@ -780,7 +780,9 @@ Your evaluation must fit this schema:
         restoreStockForItems(orderToDelete.items);
       }
 
-      ordersDb.splice(index, 1);
+      // Instead of splicing and completely deleting, we tombstone the order with status: "deleted"
+      // to synchronize the deletion across all distributed client browser backups.
+      orderToDelete.status = "deleted";
       saveOrdersToDisk();
       res.json({ success: true, message: `Order ${orderNumber} deleted successfully. Stock has been restored.` });
     } catch (error: any) {

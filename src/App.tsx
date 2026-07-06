@@ -692,7 +692,7 @@ export default function App() {
             mergedMap.set(o.orderNumber, o);
           }
         });
-        // 2. Server orders overwrite or add newer/correct status
+        // 2. Server orders overwrite or add newer/correct status (including 'deleted' tombstones)
         serverOrders.forEach(o => {
           if (o && o.orderNumber) {
             mergedMap.set(o.orderNumber, o);
@@ -708,12 +708,17 @@ export default function App() {
           return timeB - timeA;
         });
         
-        // Save back to local storage backup
+        // Save back to local storage backup (includes tombstones)
         localStorage.setItem("scent_admin_orders_backup", JSON.stringify(mergedOrders));
         
         // If there are merged orders that the server is missing (e.g. server restarted or redeployed),
         // we restore them to the server so they persist in orders.json!
-        const missingOnServer = mergedOrders.filter(mo => !serverOrders.some(so => so.orderNumber === mo.orderNumber));
+        // We CRITICALLY filter out orders with status "deleted" so tombstones are never restored.
+        const missingOnServer = mergedOrders.filter(mo => 
+          mo.status !== "deleted" && 
+          !serverOrders.some(so => so.orderNumber === mo.orderNumber)
+        );
+        
         if (missingOnServer.length > 0) {
           console.log("[Backup Sync] Restoring missing orders to server:", missingOnServer);
           // Restore them sequentially
@@ -754,10 +759,30 @@ export default function App() {
           }
         }
         
-        setAdminOrders(mergedOrders);
+        // Only set active (non-deleted) orders to state for the UI
+        const activeOrders = mergedOrders.filter(mo => mo.status !== "deleted");
+        setAdminOrders(activeOrders);
       }
     } catch (err) {
-      console.error("Failed to fetch admin orders:", err);
+      console.error("Failed to fetch admin orders, falling back to local backup:", err);
+      // Retrieve client-side local storage backup as offline fallback
+      const backupStr = localStorage.getItem("scent_admin_orders_backup");
+      let backupOrders: any[] = [];
+      try {
+        if (backupStr) backupOrders = JSON.parse(backupStr);
+      } catch (e) {
+        console.error("[Offline Fallback Error] Failed to parse local orders backup:", e);
+      }
+      if (Array.isArray(backupOrders)) {
+        // Filter out tombstones and sort by date descending
+        const activeBackupOrders = backupOrders.filter(o => o && o.status !== "deleted");
+        activeBackupOrders.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+        setAdminOrders(activeBackupOrders);
+      }
     } finally {
       setIsLoadingAdminOrders(false);
     }
@@ -821,60 +846,98 @@ export default function App() {
     };
 
     try {
-      // 1. Create the pending order
-      const createRes = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const createData = await createRes.json();
-      
-      if (!createData.success) {
-        throw new Error(createData.error || "Failed to create order on server");
+      let createSuccess = false;
+      let orderToBackup = {
+        ...payload,
+        status: "paid",
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        // 1. Try creating the pending order on the server
+        const createRes = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const createData = await createRes.json();
+        
+        if (createData.success) {
+          createSuccess = true;
+          if (createData.order) {
+            orderToBackup = createData.order;
+          }
+        }
+      } catch (netErr) {
+        console.warn("[Offline Mode] Server unreachable during order creation, saving to offline backup:", netErr);
       }
 
-      if (createData.order) {
-        addOrderToLocalStorageBackup(createData.order);
-      }
+      if (createSuccess) {
+        addOrderToLocalStorageBackup(orderToBackup);
 
-      // 2. Immediately trigger confirm-payment (which marks as paid and triggers notification dispatch)
-      const confirmRes = await fetch("/api/orders/confirm-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const confirmData = await confirmRes.json();
+        // 2. Immediately trigger confirm-payment (which marks as paid and triggers notification dispatch)
+        try {
+          const confirmRes = await fetch("/api/orders/confirm-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const confirmData = await confirmRes.json();
 
-      if (confirmData.success) {
+          if (confirmData.success) {
+            addOrderToLocalStorageBackup({
+              ...payload,
+              status: "paid",
+              createdAt: new Date().toISOString()
+            });
+
+            setAdminStatusMessage({ 
+              type: "success", 
+              text: `Successfully dispatched Order ${orderNum}! Status updated to 'paid' in database.` 
+            });
+          } else {
+            throw new Error("Failed to confirm payment");
+          }
+        } catch (confirmErr) {
+          console.error("[Offline Mode] Server unreachable during payment confirmation, marked as paid locally:", confirmErr);
+          addOrderToLocalStorageBackup({
+            ...payload,
+            status: "paid",
+            createdAt: new Date().toISOString()
+          });
+          setAdminStatusMessage({ 
+            type: "success", 
+            text: `Order ${orderNum} dispatched locally (Offline Mode). It will automatically sync to the server when connection returns!` 
+          });
+        }
+      } else {
+        // Entirely offline! Save directly to local storage backup as paid
         addOrderToLocalStorageBackup({
           ...payload,
           status: "paid",
           createdAt: new Date().toISOString()
         });
-
         setAdminStatusMessage({ 
           type: "success", 
-          text: `Successfully dispatched Order ${orderNum}! Status updated to 'paid' in database.` 
+          text: `Order ${orderNum} created locally in offline backup. It will automatically synchronize once connection is restored!` 
         });
-        
-        // Reset inputs
-        setAdminManualName("");
-        setAdminManualEmail("");
-        setAdminManualAddress("");
-        setAdminManualPhone("");
-        setAdminManualVariantName("");
-        setAdminManualVariantQty(1);
-        setAdminManualShippingProtection(false);
-        setAdminManualTotal(748);
-        setAdminManualDeliveryNA(false);
-        setAdminManualNoStockReduction(false);
-        
-        // Refresh orders list
-        fetchAdminOrders();
-        fetchStock();
-      } else {
-        throw new Error("Failed to confirm payment");
       }
+      
+      // Reset inputs
+      setAdminManualName("");
+      setAdminManualEmail("");
+      setAdminManualAddress("");
+      setAdminManualPhone("");
+      setAdminManualVariantName("");
+      setAdminManualVariantQty(1);
+      setAdminManualShippingProtection(false);
+      setAdminManualTotal(748);
+      setAdminManualDeliveryNA(false);
+      setAdminManualNoStockReduction(false);
+      
+      // Refresh orders list
+      fetchAdminOrders();
+      fetchStock();
     } catch (err: any) {
       console.error(err);
       setAdminStatusMessage({ type: "error", text: err.message || "Failed to process manual order entry." });
