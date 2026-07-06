@@ -59,7 +59,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-amber-600 to-amber-900",
     glassStyle: "shadow-amber-700/50",
-    image: "/src/assets/images/lattafa_khamrah_1782758838392.jpg"
+    image: "/assets/images/lattafa_khamrah_1782758838392.jpg"
   },
   {
     id: "zara-sunrise",
@@ -77,7 +77,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-orange-400 to-amber-600",
     glassStyle: "shadow-orange-400/40",
-    image: "/src/assets/images/zara_sunrise_1782758851145.jpg"
+    image: "/assets/images/zara_sunrise_1782758851145.jpg"
   },
   {
     id: "zara-for-him-black",
@@ -95,7 +95,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-violet-950 to-neutral-900",
     glassStyle: "shadow-purple-900/40",
-    image: "/src/assets/images/zara_for_him_black_1782758863865.jpg"
+    image: "/assets/images/zara_for_him_black_1782758863865.jpg"
   },
   {
     id: "zara-intense-dark",
@@ -113,7 +113,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-indigo-900 to-zinc-950",
     glassStyle: "shadow-indigo-950/55",
-    image: "/src/assets/images/zara_intense_dark_1782758877655.jpg"
+    image: "/assets/images/zara_intense_dark_1782758877655.jpg"
   },
   {
     id: "zara-seoul-winter",
@@ -131,7 +131,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-sky-300 to-blue-700",
     glassStyle: "shadow-sky-500/30",
-    image: "/src/assets/images/zara_seoul_winter_1782758896942.jpg"
+    image: "/assets/images/zara_seoul_winter_1782758896942.jpg"
   },
   {
     id: "la-uno-qaswa",
@@ -148,7 +148,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-stone-800 to-emerald-950",
     glassStyle: "shadow-stone-900/60",
-    image: "/src/assets/images/la_uno_qaswa_fixed_1782759717224.jpg"
+    image: "/assets/images/la_uno_qaswa_fixed_1782759717224.jpg"
   },
   {
     id: "ck-one",
@@ -165,7 +165,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-stone-200 to-stone-400",
     glassStyle: "shadow-stone-300/40",
-    image: "/src/assets/images/ck_one_perfume_1782759266424.jpg"
+    image: "/assets/images/ck_one_perfume_1782759266424.jpg"
   },
   {
     id: "ck2",
@@ -183,7 +183,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-sky-100 to-sky-300",
     glassStyle: "shadow-sky-200/30",
-    image: "/src/assets/images/ck2_perfume_1782759281216.jpg"
+    image: "/assets/images/ck2_perfume_1782759281216.jpg"
   },
   {
     id: "zara-rich-warm-addictive",
@@ -201,7 +201,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-amber-700 to-stone-900",
     glassStyle: "shadow-amber-800/45",
-    image: "/src/assets/images/zara_rich_warm_addictive_1782759293619.jpg"
+    image: "/assets/images/zara_rich_warm_addictive_1782759293619.jpg"
   },
   {
     id: "zara-seoul",
@@ -219,7 +219,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-blue-400 to-sky-600",
     glassStyle: "shadow-blue-400/30",
-    image: "/src/assets/images/zara_seoul_1782759305579.jpg"
+    image: "/assets/images/zara_seoul_1782759305579.jpg"
   },
   {
     id: "givenchy-gentleman",
@@ -237,7 +237,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-neutral-800 to-black",
     glassStyle: "shadow-neutral-900/50",
-    image: "/src/assets/images/givenchy_gentleman_1782759317891.jpg"
+    image: "/assets/images/givenchy_gentleman_1782759317891.jpg"
   }
 ];
 
@@ -249,7 +249,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     isOutOfStock: false,
     isSpotlight: true,
     fixedPrice: 499,
-    image: "/src/assets/images/bundle_spotlight_arabian_1782760520600.jpg"
+    image: "/assets/images/bundle_spotlight_arabian_1782760520600.jpg"
   },
   {
     id: "bundle-day-night",
@@ -261,7 +261,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 333,
       "5ml HQ": 520
     },
-    image: "/src/assets/images/bundle_day_night_1782760460955.jpg"
+    image: "/assets/images/bundle_day_night_1782760460955.jpg"
   },
   {
     id: "bundle-marine-core",
@@ -273,7 +273,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 386,
       "5ml HQ": 599
     },
-    image: "/src/assets/images/bundle_marine_core_1782760476971.jpg"
+    image: "/assets/images/bundle_marine_core_1782760476971.jpg"
   },
   {
     id: "bundle-rare-collector",
@@ -285,7 +285,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 531,
       "5ml HQ": 540
     },
-    image: "/src/assets/images/bundle_rare_collector_1782760489241.jpg"
+    image: "/assets/images/bundle_rare_collector_1782760489241.jpg"
   },
   {
     id: "bundle-office-rotation",
@@ -297,7 +297,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 373,
       "5ml HQ": 610
     },
-    image: "/src/assets/images/bundle_office_rotation_1782760503031.jpg"
+    image: "/assets/images/bundle_office_rotation_1782760503031.jpg"
   },
   {
     id: "bundle-cozy-winter",
@@ -309,7 +309,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 396,
       "5ml HQ": 530
     },
-    image: "/src/assets/images/bundle_cozy_winter_1782760533679.jpg"
+    image: "/assets/images/bundle_cozy_winter_1782760533679.jpg"
   },
   {
     id: "bundle-master-vault",
@@ -321,7 +321,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 444,
       "5ml HQ": 623
     },
-    image: "/src/assets/images/bundle_master_vault_1782760546991.jpg"
+    image: "/assets/images/bundle_master_vault_1782760546991.jpg"
   },
   {
     id: "bundle-zara-classics",
@@ -333,6 +333,6 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "5ml Normal": 494,
       "5ml HQ": 673
     },
-    image: "/src/assets/images/bundle_zara_classics_1782760558987.jpg"
+    image: "/assets/images/bundle_zara_classics_1782760558987.jpg"
   }
 ];
