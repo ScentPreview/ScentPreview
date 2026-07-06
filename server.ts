@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -748,8 +749,64 @@ Your evaluation must fit this schema:
     }
   });
 
-  // API Route: Get all orders (for Admin Zone)
-  app.get("/api/orders", (req, res) => {
+  // API Route: Admin Login (Generates JWT)
+  app.post("/api/login", (req, res) => {
+    try {
+      const { passcode } = req.body;
+      const expectedPasscode = process.env.ADMIN_PASSCODE;
+
+      if (!expectedPasscode) {
+        return res.status(500).json({ error: "Admin passcode is not configured on the server." });
+      }
+
+      if (passcode !== expectedPasscode) {
+        return res.status(401).json({ error: "Invalid passcode." });
+      }
+
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        return res.status(500).json({ error: "JWT secret is not configured on the server." });
+      }
+
+      // Generate token valid for 2 hours
+      const token = jwt.sign({ role: "admin" }, jwtSecret, { expiresIn: "2h" });
+      res.json({ success: true, token });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "An error occurred during login." });
+    }
+  });
+
+  // Middleware to authenticate admin requests via JWT
+  const authenticateAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Access denied. No token provided." });
+      }
+
+      const token = authHeader.split(" ")[1];
+      const jwtSecret = process.env.JWT_SECRET;
+
+      if (!jwtSecret) {
+        return res.status(500).json({ error: "JWT secret is not configured on the server." });
+      }
+
+      try {
+        const decoded = jwt.verify(token, jwtSecret);
+        (req as any).admin = decoded;
+        next();
+      } catch (err) {
+        return res.status(403).json({ error: "Access denied. Invalid or expired token." });
+      }
+    } catch (error) {
+      console.error("Auth middleware error:", error);
+      res.status(500).json({ error: "Internal server authentication error." });
+    }
+  };
+
+  // API Route: Get all orders (for Admin Zone) - Protected
+  app.get("/api/orders", authenticateAdmin, (req, res) => {
     try {
       const sortedOrders = [...ordersDb].sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -763,8 +820,8 @@ Your evaluation must fit this schema:
     }
   });
 
-  // API Route: Delete an order by orderNumber (for Admin Zone)
-  app.delete("/api/orders/:orderNumber", (req, res) => {
+  // API Route: Delete an order by orderNumber (for Admin Zone) - Protected
+  app.delete("/api/orders/:orderNumber", authenticateAdmin, (req, res) => {
     try {
       const { orderNumber } = req.params;
       const index = ordersDb.findIndex(o => o.orderNumber === orderNumber);
