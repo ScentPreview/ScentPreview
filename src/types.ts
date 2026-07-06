@@ -58,8 +58,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 376
     },
     color: "from-amber-600 to-amber-900",
-    glassStyle: "shadow-amber-700/50",
-    image: "/assets/images/lattafa_khamrah_1782758838392.jpg"
+    glassStyle: "shadow-amber-700/50"
   },
   {
     id: "zara-sunrise",
@@ -76,8 +75,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 356
     },
     color: "from-orange-400 to-amber-600",
-    glassStyle: "shadow-orange-400/40",
-    image: "/assets/images/zara_sunrise_1782758851145.jpg"
+    glassStyle: "shadow-orange-400/40"
   },
   {
     id: "zara-for-him-black",
@@ -94,8 +92,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 356
     },
     color: "from-violet-950 to-neutral-900",
-    glassStyle: "shadow-purple-900/40",
-    image: "/assets/images/zara_for_him_black_1782758863865.jpg"
+    glassStyle: "shadow-purple-900/40"
   },
   {
     id: "zara-intense-dark",
@@ -112,8 +109,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 330
     },
     color: "from-indigo-900 to-zinc-950",
-    glassStyle: "shadow-indigo-950/55",
-    image: "/assets/images/zara_intense_dark_1782758877655.jpg"
+    glassStyle: "shadow-indigo-950/55"
   },
   {
     id: "zara-seoul-winter",
@@ -130,8 +126,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 310
     },
     color: "from-sky-300 to-blue-700",
-    glassStyle: "shadow-sky-500/30",
-    image: "/assets/images/zara_seoul_winter_1782758896942.jpg"
+    glassStyle: "shadow-sky-500/30"
   },
   {
     id: "la-uno-qaswa",
@@ -147,8 +142,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 286
     },
     color: "from-stone-800 to-emerald-950",
-    glassStyle: "shadow-stone-900/60",
-    image: "/assets/images/la_uno_qaswa_fixed_1782759717224.jpg"
+    glassStyle: "shadow-stone-900/60"
   },
   {
     id: "ck-one",
@@ -164,8 +158,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 369
     },
     color: "from-stone-200 to-stone-400",
-    glassStyle: "shadow-stone-300/40",
-    image: "/assets/images/ck_one_perfume_1782759266424.jpg"
+    glassStyle: "shadow-stone-300/40"
   },
   {
     id: "ck2",
@@ -182,8 +175,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 486
     },
     color: "from-sky-100 to-sky-300",
-    glassStyle: "shadow-sky-200/30",
-    image: "/assets/images/ck2_perfume_1782759281216.jpg"
+    glassStyle: "shadow-sky-200/30"
   },
   {
     id: "zara-rich-warm-addictive",
@@ -200,8 +192,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 340
     },
     color: "from-amber-700 to-stone-900",
-    glassStyle: "shadow-amber-800/45",
-    image: "/assets/images/zara_rich_warm_addictive_1782759293619.jpg"
+    glassStyle: "shadow-amber-800/45"
   },
   {
     id: "zara-seoul",
@@ -218,8 +209,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 299
     },
     color: "from-blue-400 to-sky-600",
-    glassStyle: "shadow-blue-400/30",
-    image: "/assets/images/zara_seoul_1782759305579.jpg"
+    glassStyle: "shadow-blue-400/30"
   },
   {
     id: "givenchy-gentleman",
@@ -236,8 +226,7 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 786
     },
     color: "from-neutral-800 to-black",
-    glassStyle: "shadow-neutral-900/50",
-    image: "/assets/images/givenchy_gentleman_1782759317891.jpg"
+    glassStyle: "shadow-neutral-900/50"
   }
 ];
 
@@ -248,8 +237,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Lattafa Khamrah + La Uno Qaswa",
     isOutOfStock: false,
     isSpotlight: true,
-    fixedPrice: 499,
-    image: "/assets/images/bundle_spotlight_arabian_1782760520600.jpg"
+    fixedPrice: 499
   },
   {
     id: "bundle-day-night",
@@ -260,8 +248,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "10ml": 599,
       "5ml Normal": 333,
       "5ml HQ": 520
-    },
-    image: "/assets/images/bundle_day_night_1782760460955.jpg"
+    }
   },
   {
     id: "bundle-marine-core",
@@ -272,8 +259,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "10ml": 689,
       "5ml Normal": 386,
       "5ml HQ": 599
-    },
-    image: "/assets/images/bundle_marine_core_1782760476971.jpg"
+    }
   },
   {
     id: "bundle-rare-collector",
@@ -284,8 +270,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "10ml": 620,
       "5ml Normal": 531,
       "5ml HQ": 540
-    },
-    image: "/assets/images/bundle_rare_collector_1782760489241.jpg"
+    }
   },
   {
     id: "bundle-office-rotation",
@@ -296,8 +281,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "10ml": 720,
       "5ml Normal": 373,
       "5ml HQ": 610
-    },
-    image: "/assets/images/bundle_office_rotation_1782760503031.jpg"
+    }
   },
   {
     id: "bundle-cozy-winter",
@@ -308,8 +292,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "10ml": 586,
       "5ml Normal": 396,
       "5ml HQ": 530
-    },
-    image: "/assets/images/bundle_cozy_winter_1782760533679.jpg"
+    }
   },
   {
     id: "bundle-master-vault",
@@ -320,8 +303,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
       "10ml": 665,
       "5ml Normal": 444,
       "5ml HQ": 623
-    },
-    image: "/assets/images/bundle_master_vault_1782760546991.jpg"
+    }
   },
   {
     id: "bundle-zara-classics",
@@ -330,9 +312,8 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     isOutOfStock: false,
     prices: {
       "10ml": 765,
-      "5ml Normal": 494,
+      "5ml Normal": 444,
       "5ml HQ": 673
-    },
-    image: "/assets/images/bundle_zara_classics_1782760558987.jpg"
+    }
   }
 ];

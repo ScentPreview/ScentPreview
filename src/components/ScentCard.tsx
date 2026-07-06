@@ -153,30 +153,6 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
         </div>
       </div>
 
-      {/* Product Image */}
-      {fragrance.image && (
-        <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-4 border border-white/90 bg-stone-100/60 shadow-inner">
-          <img
-            src={fragrance.image}
-            alt={fragrance.name}
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-          />
-          {allSizesOutOfStock ? (
-            <div className="absolute top-2 left-2 bg-stone-800 text-white text-[8px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-md shadow-md z-10 font-bold border border-stone-700">
-              Sold Out
-            </div>
-          ) : currentStock !== undefined && currentStock > 0 && currentStock <= 3 ? (
-            <div className="absolute top-2 left-2 bg-red-600 text-white text-[8px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-md shadow-md z-10 font-bold border border-red-500/30 animate-pulse">
-              Low Stock ({currentStock})
-            </div>
-          ) : null}
-          <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-[3px] py-1 px-2 text-center text-[8.5px] font-sans text-stone-200 rounded-lg pointer-events-none border border-white/10">
-            Images are AI and not the actual bottles
-          </div>
-        </div>
-      )}
-
       {/* Top Details & Badges */}
       <div>
         <div className="flex items-center justify-between gap-2 mb-2.5">
