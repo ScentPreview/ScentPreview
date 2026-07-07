@@ -253,10 +253,88 @@ export default function App() {
     }
   };
 
+  const syncAndRecoverPendingOrder = async () => {
+    try {
+      const storedDetails = localStorage.getItem("scent_paymentDetails");
+      if (!storedDetails) return;
+      
+      const parsedDetails = JSON.parse(storedDetails);
+      if (!parsedDetails || !parsedDetails.orderNumber) return;
+      
+      console.log("[Redirection Auto-Sync] Found pending order in local storage:", parsedDetails.orderNumber);
+      
+      // Post to ensure it is registered on the server as "pending"
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsedDetails)
+      });
+      const data = await response.json();
+      
+      if (data.success && data.order) {
+        addOrderToLocalStorageBackup(data.order);
+        console.log("[Redirection Auto-Sync] Order successfully verified on backend.");
+      }
+      
+      // If the user already confirmed payment in this session but browser was refreshed/closed,
+      // let's make sure the server has confirmed it as paid.
+      const isConfirmedLocally = localStorage.getItem("scent_isPaymentConfirmed") === "true";
+      if (isConfirmedLocally) {
+        console.log("[Redirection Auto-Sync] Order was paid locally. Ensuring server registration...");
+        const res = await fetch("/api/orders/confirm-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsedDetails)
+        });
+        const confirmData = await res.json();
+        if (confirmData.success) {
+          addOrderToLocalStorageBackup({
+            ...parsedDetails,
+            status: "paid",
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+      
+      fetchStock();
+    } catch (err) {
+      console.error("[Redirection Auto-Sync] Error during background synchronization:", err);
+    }
+  };
+
   useEffect(() => {
     fetchStock();
-    const interval = setInterval(fetchStock, 15000);
-    return () => clearInterval(interval);
+    syncAndRecoverPendingOrder();
+    
+    // Auto sync on visibility change (e.g. returning from PhonePe/GPay app)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[System Focus] App returned to foreground. Performing synchronization...");
+        fetchStock();
+        syncAndRecoverPendingOrder();
+      }
+    };
+
+    // Auto sync on window focus
+    const handleWindowFocus = () => {
+      console.log("[System Focus] Window gained focus. Syncing...");
+      fetchStock();
+      syncAndRecoverPendingOrder();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
+    
+    const interval = setInterval(() => {
+      fetchStock();
+      syncAndRecoverPendingOrder();
+    }, 15000);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   // State Management
@@ -1595,15 +1673,67 @@ export default function App() {
                     Instant Mobile App Launcher
                   </span>
 
-                  {/* Generic UPI Chooser */}
-                  <a 
-                    href={`upi://pay?pa=chingtham@okhdfcbank&pn=Chingtham&am=${paymentDetails.total}&cu=INR&tn=ScentPreview%20Order`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 text-xs font-semibold bg-amber-gold hover:bg-amber-500 text-stone-950 py-2.5 px-4 rounded transition-all transform active:scale-[0.98] cursor-pointer text-center font-sans shadow-md"
-                  >
-                    ⚡ Pay via Any UPI App (GPay/PhonePe/Paytm)
-                  </a>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Generic UPI Chooser */}
+                    <a 
+                      href={`upi://pay?pa=chingtham@okhdfcbank&pn=Chingtham&am=${paymentDetails.total}&cu=INR&tn=ScentPreview%20Order`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 text-xs font-semibold bg-amber-gold hover:bg-amber-500 text-stone-950 py-2.5 px-4 rounded transition-all transform active:scale-[0.98] cursor-pointer text-center font-sans shadow-md"
+                    >
+                      ⚡ Pay via Any UPI App (GPay/PhonePe/Paytm)
+                    </a>
+
+                    {/* WhatsApp Pay & Confirm with background fulfillment */}
+                    <button
+                      type="button"
+                      disabled={isConfirmingPayment}
+                      onClick={async () => {
+                        setIsConfirmingPayment(true);
+                        const orderNum = paymentDetails.orderNumber;
+                        console.log(`[WhatsApp Redirect] Starting background fulfillment for order: ${orderNum}`);
+                        
+                        try {
+                          // 1. Instantly confirm and fulfill the order on the backend in the background
+                          const res = await fetch("/api/orders/confirm-payment", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(paymentDetails),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            addOrderToLocalStorageBackup({
+                              ...paymentDetails,
+                              status: "paid",
+                              createdAt: new Date().toISOString()
+                            });
+                            localStorage.setItem("scent_isPaymentConfirmed", "true");
+                          }
+                        } catch (err) {
+                          console.error("[WhatsApp Redirect] Failed to auto-confirm order in the background:", err);
+                        } finally {
+                          setIsConfirmingPayment(false);
+                          setIsPaymentConfirmed(true);
+                          fetchStock();
+                        }
+
+                        // 2. Open WhatsApp in a new tab with pre-filled order details
+                        const itemsSummary = paymentDetails.items
+                          .map((item: any) => `- ${item.name} (${item.size}) x${item.quantity}`)
+                          .join("\n");
+                        const message = `Hello ScentPreview Support!\n\nI would like to complete payment for my order.\n\n*Order Number:* ${orderNum}\n*Customer:* ${paymentDetails.name}\n*Phone:* ${paymentDetails.phone}\n*Address:* ${paymentDetails.address}, ${paymentDetails.state || ""} - ${paymentDetails.pincode || ""}\n\n*Items Ordered*:\n${itemsSummary}\n\n*Total Amount:* ₹${paymentDetails.total}.00\n\nPlease verify my payment and begin extraction. Thank you!`;
+                        
+                        const whatsappUrl = `https://wa.me/919366110996?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappUrl, "_blank");
+                      }}
+                      className="inline-flex items-center justify-center gap-2 text-xs font-semibold bg-stone-950 border border-stone-800 hover:border-emerald-850/60 hover:bg-stone-900/40 text-emerald-400 py-2.5 px-4 rounded transition-all transform active:scale-[0.98] cursor-pointer text-center font-sans shadow-md"
+                    >
+                      <svg className="w-4 h-4 fill-emerald-500 shrink-0" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.334 5.395 0 11.95 0a11.815 11.815 0 018.413 3.488 11.82 11.82 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L0 24zm6.59-4.814c1.727.94 3.42 1.41 5.32 1.41h.005c5.442 0 9.87-4.43 9.873-9.873a9.814 9.814 0 00-2.887-6.974 9.81 9.81 0 00-6.978-2.887c-5.443 0-9.873 4.43-9.876 9.874a9.8 9.8 0 001.487 5.147l-.234-.374-3.64.957.974-3.56-.216-.362a9.81 9.81 0 01-1.378-5.02c.003-4.943 4.02-8.96 8.966-8.962a8.92 8.92 0 016.34 2.626c1.693 1.693 2.623 3.945 2.62 6.34a8.966 8.966 0 01-8.966 8.967h-.005c-1.884 0-3.61-.482-5.18-1.39l-.361-.214zm11.233-5.938c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                      </svg>
+                      Pay via WhatsApp
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-[11px] text-stone-400 font-sans italic leading-normal mb-1">
@@ -1769,7 +1899,30 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  // Ensure payment registration and confirmation on server upon clicking Continue
+                  if (paymentDetails) {
+                    try {
+                      console.log("[Continue Action] User clicked Continue. Sending final payment confirmation...");
+                      const res = await fetch("/api/orders/confirm-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(paymentDetails),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        addOrderToLocalStorageBackup({
+                          ...paymentDetails,
+                          status: "paid",
+                          createdAt: new Date().toISOString()
+                        });
+                      }
+                    } catch (err) {
+                      console.error("[Continue Action] Failed to auto-confirm payment:", err);
+                    }
+                  }
+
+                  // Clear all checkout & payment states
                   setShowPaymentPage(false);
                   setIsPaymentConfirmed(false);
                   setCheckoutName("");
@@ -1781,10 +1934,16 @@ export default function App() {
                   setCheckoutPincode("");
                   setIsCheckoutOpen(false);
                   setBuyQuantity(1);
+                  setPaymentDetails(null);
+                  
+                  // Clear active order local storage variables
+                  localStorage.removeItem("scent_paymentDetails");
+                  localStorage.removeItem("scent_showPaymentPage");
+                  localStorage.removeItem("scent_isPaymentConfirmed");
                 }}
                 className="w-full bg-white text-stone-950 hover:bg-stone-200 py-3.5 rounded-sm text-xs font-mono font-bold tracking-widest uppercase transition-colors cursor-pointer"
               >
-                Return to Lab Catalog
+                Continue
               </button>
             </div>
           )}

@@ -134,34 +134,50 @@ async function fetchAllOrdersFromFirestore(): Promise<Order[]> {
       orders.push(data as Order);
     });
     
-    // Sort orders by createdAt descending
-    orders.sort((a, b) => {
+    // Merge Firestore orders with any local orders on disk to ensure absolute persistence
+    const localOrders = loadOrdersFromDisk();
+    const mergedMap = new Map();
+    
+    // 1. Add local orders first
+    localOrders.forEach(o => {
+      if (o && o.orderNumber) {
+        mergedMap.set(o.orderNumber, o);
+      }
+    });
+    
+    // 2. Overwrite/add with Firestore orders (Firestore is the source of truth)
+    orders.forEach(o => {
+      if (o && o.orderNumber) {
+        mergedMap.set(o.orderNumber, o);
+      }
+    });
+    
+    const finalOrders = Array.from(mergedMap.values()) as Order[];
+
+    // Sort final orders by createdAt descending
+    finalOrders.sort((a, b) => {
       const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return timeB - timeA;
     });
 
     // If Firestore is empty, seed it with the current local orders
-    if (orders.length === 0) {
-      const localOrders = loadOrdersFromDisk();
-      if (localOrders.length > 0) {
-        console.log(`[Firebase Seeding] Seeding ${localOrders.length} local orders to Firestore...`);
-        for (const order of localOrders) {
-          await saveOrderToFirestore(order);
-        }
-        return localOrders;
+    if (orders.length === 0 && finalOrders.length > 0) {
+      console.log(`[Firebase Seeding] Seeding ${finalOrders.length} local orders to Firestore...`);
+      for (const order of finalOrders) {
+        await saveOrderToFirestore(order);
       }
     }
 
     // Cache local files for extra safety and speed
     try {
-      fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify(orders, null, 2), "utf-8");
-      fs.writeFileSync(BACKUP_ORDERS_FILE_PATH, JSON.stringify(orders, null, 2), "utf-8");
+      fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify(finalOrders, null, 2), "utf-8");
+      fs.writeFileSync(BACKUP_ORDERS_FILE_PATH, JSON.stringify(finalOrders, null, 2), "utf-8");
     } catch (fsErr) {
       console.error("[Database Backup Error] Failed to write fallback file:", fsErr);
     }
 
-    return orders;
+    return finalOrders;
   } catch (error) {
     console.error("[Firebase Error] Failed to fetch orders from Firestore. Falling back to disk:", error);
     return loadOrdersFromDisk();
@@ -757,6 +773,23 @@ Your evaluation must fit this schema:
 
       // Check if order already exists in cache or reload from Firestore
       let existingOrder = ordersDb.find(o => o.orderNumber === orderNumber);
+      if (!existingOrder && firestoreDb) {
+        try {
+          const docSnap = await getDoc(doc(firestoreDb, "orders", orderNumber));
+          if (docSnap.exists()) {
+            existingOrder = docSnap.data() as Order;
+            if (existingOrder && existingOrder.createdAt) {
+              existingOrder.createdAt = new Date(existingOrder.createdAt);
+            }
+            if (existingOrder) {
+              ordersDb.push(existingOrder);
+            }
+          }
+        } catch (dbErr) {
+          console.warn(`[Database Lookup Warning] Failed to fetch order ${orderNumber} during creation pre-check:`, dbErr);
+        }
+      }
+
       if (existingOrder) {
         return res.json({ success: true, order: existingOrder });
       }
