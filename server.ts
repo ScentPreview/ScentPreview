@@ -7,6 +7,8 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import fs from "fs";
 import jwt from "jsonwebtoken";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
 dotenv.config();
 
@@ -99,6 +101,136 @@ function saveOrdersToDisk() {
 
 // Initialize the database from disk
 ordersDb = loadOrdersFromDisk();
+
+// Initialize Client Firestore
+let firestoreDb: any = null;
+try {
+  const firebaseConfig = {
+    projectId: "gen-lang-client-0828448722",
+    appId: "1:299548177856:web:06c09064fe94d9d8f20425",
+    apiKey: "AIzaSyCpCSp5q0ji7gVPpjOgYKbK3d5c2tw5I88",
+    authDomain: "gen-lang-client-0828448722.firebaseapp.com"
+  };
+  const app = initializeApp(firebaseConfig);
+  firestoreDb = getFirestore(app, "ai-studio-scentpreview-cdb09123-f70a-4cac-ade2-943e5e95115c");
+  console.log("[Firebase] Successfully initialized Client Firestore with Database ID: ai-studio-scentpreview-cdb09123-f70a-4cac-ade2-943e5e95115c");
+} catch (error) {
+  console.error("[Firebase Error] Failed to initialize Client Firestore:", error);
+}
+
+// Helper to fetch all orders from Firestore (migrating local orders if Firestore is empty)
+async function fetchAllOrdersFromFirestore(): Promise<Order[]> {
+  if (!firestoreDb) {
+    return loadOrdersFromDisk();
+  }
+  try {
+    const snapshot = await getDocs(collection(firestoreDb, "orders"));
+    const orders: Order[] = [];
+    snapshot.forEach((d: any) => {
+      const data = d.data();
+      if (data.createdAt) {
+        data.createdAt = new Date(data.createdAt);
+      }
+      orders.push(data as Order);
+    });
+    
+    // Sort orders by createdAt descending
+    orders.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    // If Firestore is empty, seed it with the current local orders
+    if (orders.length === 0) {
+      const localOrders = loadOrdersFromDisk();
+      if (localOrders.length > 0) {
+        console.log(`[Firebase Seeding] Seeding ${localOrders.length} local orders to Firestore...`);
+        for (const order of localOrders) {
+          await saveOrderToFirestore(order);
+        }
+        return localOrders;
+      }
+    }
+
+    // Cache local files for extra safety and speed
+    try {
+      fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify(orders, null, 2), "utf-8");
+      fs.writeFileSync(BACKUP_ORDERS_FILE_PATH, JSON.stringify(orders, null, 2), "utf-8");
+    } catch (fsErr) {
+      console.error("[Database Backup Error] Failed to write fallback file:", fsErr);
+    }
+
+    return orders;
+  } catch (error) {
+    console.error("[Firebase Error] Failed to fetch orders from Firestore. Falling back to disk:", error);
+    return loadOrdersFromDisk();
+  }
+}
+
+// Helper to save a single order to Firestore
+async function saveOrderToFirestore(order: Order) {
+  if (!firestoreDb) {
+    return;
+  }
+  try {
+    const dataToSave = {
+      ...order,
+      createdAt: order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt
+    };
+    await setDoc(doc(firestoreDb, "orders", order.orderNumber), dataToSave);
+    console.log(`[Firebase] Successfully saved order ${order.orderNumber} to Firestore.`);
+  } catch (error) {
+    console.error(`[Firebase Error] Failed to save order ${order.orderNumber} to Firestore:`, error);
+  }
+}
+
+// Helper to load stock levels from Firestore (with automatic seeding and local backup caching)
+async function loadStockFromFirestore(): Promise<StockDB> {
+  if (!firestoreDb) {
+    return loadStockFromDisk();
+  }
+  try {
+    const docSnap = await getDoc(doc(firestoreDb, "stock", "current"));
+    if (docSnap.exists()) {
+      const stock = docSnap.data() as StockDB;
+      if (stock && stock.fragrances && stock.fragrances["lattafa-khamrah"] && stock.fragrances["lattafa-khamrah"]["10ml"] === 10) {
+        console.log("[Stock] Old Firestore database detected. Overwriting with official user stock list...");
+        await saveStockToFirestore(DEFAULT_STOCK);
+        return DEFAULT_STOCK;
+      }
+      
+      // Cache to disk
+      try {
+        fs.writeFileSync(STOCK_FILE_PATH, JSON.stringify(stock, null, 2), "utf-8");
+      } catch (err) {}
+      
+      return stock;
+    } else {
+      console.log("[Firebase] Seeding Stock collection in Firestore from local backup...");
+      const diskStock = loadStockFromDisk();
+      await saveStockToFirestore(diskStock);
+      return diskStock;
+    }
+  } catch (error) {
+    console.error("[Firebase Error] Failed to load stock from Firestore. Falling back to disk:", error);
+    return loadStockFromDisk();
+  }
+}
+
+// Helper to save stock levels to Firestore
+async function saveStockToFirestore(stock: StockDB) {
+  saveStockToDisk(stock);
+  if (!firestoreDb) {
+    return;
+  }
+  try {
+    await setDoc(doc(firestoreDb, "stock", "current"), stock);
+    console.log("[Firebase] Successfully saved stock levels to Firestore.");
+  } catch (error) {
+    console.error("[Firebase Error] Failed to save stock to Firestore:", error);
+  }
+}
 
 const STOCK_FILE_PATH = path.join(process.cwd(), "stock.json");
 
@@ -231,9 +363,9 @@ function getBundleConstituents(bundleId: string): string[] {
   }
 }
 
-function reduceStockForItems(items: { name: string; size: string; quantity: number }[]) {
+async function reduceStockForItems(items: { name: string; size: string; quantity: number }[]) {
   try {
-    const stock = loadStockFromDisk();
+    const stock = await loadStockFromFirestore();
     for (const item of items) {
       const match = findItemIdByName(item.name);
       if (match) {
@@ -266,15 +398,15 @@ function reduceStockForItems(items: { name: string; size: string; quantity: numb
         console.warn(`[Stock] Could not match item name: "${item.name}" for stock reduction.`);
       }
     }
-    saveStockToDisk(stock);
+    await saveStockToFirestore(stock);
   } catch (err) {
     console.error("[Stock Error] Failed to reduce stock:", err);
   }
 }
 
-function restoreStockForItems(items: { name: string; size: string; quantity: number }[]) {
+async function restoreStockForItems(items: { name: string; size: string; quantity: number }[]) {
   try {
-    const stock = loadStockFromDisk();
+    const stock = await loadStockFromFirestore();
     for (const item of items) {
       const match = findItemIdByName(item.name);
       if (match) {
@@ -307,7 +439,7 @@ function restoreStockForItems(items: { name: string; size: string; quantity: num
         console.warn(`[Stock] Could not match item name: "${item.name}" for stock restoration.`);
       }
     }
-    saveStockToDisk(stock);
+    await saveStockToFirestore(stock);
   } catch (err) {
     console.error("[Stock Error] Failed to restore stock:", err);
   }
@@ -451,6 +583,18 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Load initial orders and stock from Firestore on startup
+  try {
+    console.log("[Startup] Initializing cache from Firestore...");
+    ordersDb = await fetchAllOrdersFromFirestore();
+    console.log(`[Startup] Loaded ${ordersDb.length} orders from database.`);
+    const currentStock = await loadStockFromFirestore();
+    console.log("[Startup] Successfully cached current stock level");
+  } catch (startupErr) {
+    console.error("[Startup Error] Failed to prime cache from Firestore:", startupErr);
+    ordersDb = loadOrdersFromDisk();
+  }
+
   // Initialize Gemini client if API key is present
   const apiKey = process.env.GEMINI_API_KEY;
   let ai: GoogleGenAI | null = null;
@@ -564,9 +708,9 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Get current stock data
-  app.get("/api/stock", (req, res) => {
+  app.get("/api/stock", async (req, res) => {
     try {
-      const stock = loadStockFromDisk();
+      const stock = await loadStockFromFirestore();
       res.json({ success: true, stock });
     } catch (error) {
       console.error("Error fetching stock:", error);
@@ -575,9 +719,9 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Reset stock data to default (the official user stock list)
-  app.post("/api/stock/reset", (req, res) => {
+  app.post("/api/stock/reset", async (req, res) => {
     try {
-      saveStockToDisk(DEFAULT_STOCK);
+      await saveStockToFirestore(DEFAULT_STOCK);
       res.json({ success: true, message: "Stock successfully reset to the official list", stock: DEFAULT_STOCK });
     } catch (error) {
       console.error("Error resetting stock:", error);
@@ -586,7 +730,7 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Update stock levels directly (manual management in Admin portal)
-  app.post("/api/stock", (req, res) => {
+  app.post("/api/stock", async (req, res) => {
     try {
       const { fragrances, bundles } = req.body;
       if (!fragrances || !bundles) {
@@ -594,7 +738,7 @@ Your evaluation must fit this schema:
       }
       
       const updatedStock: StockDB = { fragrances, bundles };
-      saveStockToDisk(updatedStock);
+      await saveStockToFirestore(updatedStock);
       res.json({ success: true, message: "Stock levels successfully updated", stock: updatedStock });
     } catch (error) {
       console.error("Error updating stock levels:", error);
@@ -603,7 +747,7 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Create order (Pending state)
-  app.post("/api/orders", (req, res) => {
+  app.post("/api/orders", async (req, res) => {
     try {
       const { items, total, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
 
@@ -611,7 +755,8 @@ Your evaluation must fit this schema:
         return res.status(400).json({ error: "Missing required checkout fields." });
       }
 
-      const existingOrder = ordersDb.find(o => o.orderNumber === orderNumber);
+      // Check if order already exists in cache or reload from Firestore
+      let existingOrder = ordersDb.find(o => o.orderNumber === orderNumber);
       if (existingOrder) {
         return res.json({ success: true, order: existingOrder });
       }
@@ -634,12 +779,13 @@ Your evaluation must fit this schema:
 
       // Reduce the stock of items by the requested quantities unless skipped
       if (Array.isArray(items) && !skipStockReduction) {
-        reduceStockForItems(items);
+        await reduceStockForItems(items);
         newOrder.stockReduced = true;
       }
 
       ordersDb.push(newOrder);
       saveOrdersToDisk();
+      await saveOrderToFirestore(newOrder);
 
       console.log(`[Database] Created pending order: ${orderNumber} for ${name}`);
       res.status(201).json({ success: true, order: newOrder });
@@ -659,7 +805,19 @@ Your evaluation must fit this schema:
         return res.status(400).json({ error: "Missing orderNumber or status." });
       }
 
-      const order = ordersDb.find((o) => o.orderNumber === orderNumber);
+      let order = ordersDb.find((o) => o.orderNumber === orderNumber);
+      if (!order && firestoreDb) {
+        // Query Firestore first if cache is cold
+        const docSnap = await getDoc(doc(firestoreDb, "orders", orderNumber));
+        if (docSnap.exists()) {
+          order = docSnap.data() as Order;
+          if (order.createdAt) {
+            order.createdAt = new Date(order.createdAt);
+          }
+          ordersDb.push(order);
+        }
+      }
+
       if (!order) {
         console.warn(`[Webhook Warning] Order ${orderNumber} not found in database. Preparing fallback autoconfirm...`);
         return res.status(404).json({ error: `Order ${orderNumber} not found in database.` });
@@ -670,12 +828,13 @@ Your evaluation must fit this schema:
 
         // Reduce stock if not reduced yet
         if (!order.stockReduced && Array.isArray(order.items)) {
-          reduceStockForItems(order.items);
+          await reduceStockForItems(order.items);
           order.stockReduced = true;
         }
 
         saveOrdersToDisk();
-        console.log(`[Webhook Success] Order ${orderNumber} status updated to 'paid'. Dispatching email notification...`);
+        await saveOrderToFirestore(order);
+        console.log(`[Webhook Success] Order ${orderNumber} status updated to 'paid' in Firestore. Dispatching email...`);
         const emailResult = await sendNotificationEmail(order);
         return res.json({
           success: true,
@@ -702,8 +861,19 @@ Your evaluation must fit this schema:
       console.log(`[Confirm Payment Request] User confirming payment for: ${orderNumber}. Triggering payment flow...`);
 
       let order = ordersDb.find((o) => o.orderNumber === orderNumber);
+      if (!order && firestoreDb) {
+        // Try getting from Firestore first
+        const docSnap = await getDoc(doc(firestoreDb, "orders", orderNumber));
+        if (docSnap.exists()) {
+          order = docSnap.data() as Order;
+          if (order.createdAt) {
+            order.createdAt = new Date(order.createdAt);
+          }
+          ordersDb.push(order);
+        }
+      }
       
-      // If order is missing, create it dynamically to be highly fault-tolerant
+      // If order is still missing, create it dynamically to be highly fault-tolerant
       if (!order) {
         order = {
           orderNumber,
@@ -730,11 +900,12 @@ Your evaluation must fit this schema:
       // If stock has not been reduced yet, we reduce it now!
       const skipStockReduction = !!req.body.skipStockReduction;
       if (!order.stockReduced && Array.isArray(order.items) && !skipStockReduction) {
-        reduceStockForItems(order.items);
+        await reduceStockForItems(order.items);
         order.stockReduced = true;
       }
 
       saveOrdersToDisk();
+      await saveOrderToFirestore(order);
       console.log(`[Payment Confirmed] Dispatching order email for ${orderNumber}...`);
       const emailResult = await sendNotificationEmail(order);
 
@@ -806,14 +977,11 @@ Your evaluation must fit this schema:
   };
 
   // API Route: Get all orders (for Admin Zone) - Protected
-  app.get("/api/orders", authenticateAdmin, (req, res) => {
+  app.get("/api/orders", authenticateAdmin, async (req, res) => {
     try {
-      const sortedOrders = [...ordersDb].sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
-      });
-      res.json({ success: true, orders: sortedOrders });
+      const orders = await fetchAllOrdersFromFirestore();
+      ordersDb = orders; // Sync local in-memory cache
+      res.json({ success: true, orders });
     } catch (error: any) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ error: "Failed to fetch orders." });
@@ -821,26 +989,38 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Delete an order by orderNumber (for Admin Zone) - Protected
-  app.delete("/api/orders/:orderNumber", authenticateAdmin, (req, res) => {
+  app.delete("/api/orders/:orderNumber", authenticateAdmin, async (req, res) => {
     try {
       const { orderNumber } = req.params;
-      const index = ordersDb.findIndex(o => o.orderNumber === orderNumber);
-      if (index === -1) {
+      
+      // Look up in cache or reload from Firestore
+      let orderToDelete = ordersDb.find(o => o.orderNumber === orderNumber);
+      if (!orderToDelete && firestoreDb) {
+        const docSnap = await getDoc(doc(firestoreDb, "orders", orderNumber));
+        if (docSnap.exists()) {
+          orderToDelete = docSnap.data() as Order;
+          if (orderToDelete.createdAt) {
+            orderToDelete.createdAt = new Date(orderToDelete.createdAt);
+          }
+          ordersDb.push(orderToDelete);
+        }
+      }
+
+      if (!orderToDelete) {
         return res.status(404).json({ error: "Order not found." });
       }
-      
-      const orderToDelete = ordersDb[index];
       
       // If the order was paid/pending and items reduced stock, restore them!
       if (orderToDelete.stockReduced && orderToDelete.items && orderToDelete.items.length > 0) {
         console.log(`[Stock Restoration] Restoring stock for order ${orderNumber} items:`, orderToDelete.items);
-        restoreStockForItems(orderToDelete.items);
+        await restoreStockForItems(orderToDelete.items);
       }
 
       // Instead of splicing and completely deleting, we tombstone the order with status: "deleted"
       // to synchronize the deletion across all distributed client browser backups.
       orderToDelete.status = "deleted";
       saveOrdersToDisk();
+      await saveOrderToFirestore(orderToDelete);
       res.json({ success: true, message: `Order ${orderNumber} deleted successfully. Stock has been restored.` });
     } catch (error: any) {
       console.error("Error deleting order:", error);
