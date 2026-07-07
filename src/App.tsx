@@ -29,7 +29,13 @@ import {
   List,
   ShieldAlert,
   Trash2,
-  Sparkles
+  Sparkles,
+  Search,
+  Calendar,
+  MapPin,
+  User,
+  Phone,
+  ExternalLink
 } from "lucide-react";
 
 type BundleSizeType = "10ml" | "5ml Normal" | "5ml HQ";
@@ -748,98 +754,33 @@ export default function App() {
     if (!isAdminAuthenticated) return;
     setIsLoadingAdminOrders(true);
     try {
-      const response = await fetch("/api/orders");
+      const token = localStorage.getItem("scent_admin_token") || "";
+      const response = await fetch("/api/orders", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       if (data.success) {
         const serverOrders = data.orders || [];
         
-        // Retrieve client-side local storage backup
-        const backupStr = localStorage.getItem("scent_admin_orders_backup");
-        let backupOrders: any[] = [];
-        try {
-          if (backupStr) backupOrders = JSON.parse(backupStr);
-        } catch (e) {
-          console.error("[Backup Sync] Failed to parse local orders backup:", e);
-        }
-        
-        // Merge server orders and backup orders (using orderNumber as unique key)
-        const mergedMap = new Map();
-        // 1. Load backup orders first
-        backupOrders.forEach(o => {
-          if (o && o.orderNumber) {
-            mergedMap.set(o.orderNumber, o);
-          }
-        });
-        // 2. Server orders overwrite or add newer/correct status (including 'deleted' tombstones)
-        serverOrders.forEach(o => {
-          if (o && o.orderNumber) {
-            mergedMap.set(o.orderNumber, o);
-          }
-        });
-        
-        const mergedOrders = Array.from(mergedMap.values());
-        
-        // Sort merged orders by date descending
-        mergedOrders.sort((a, b) => {
+        // Sort server orders by date descending
+        serverOrders.sort((a: any, b: any) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return timeB - timeA;
         });
         
-        // Save back to local storage backup (includes tombstones)
-        localStorage.setItem("scent_admin_orders_backup", JSON.stringify(mergedOrders));
-        
-        // If there are merged orders that the server is missing (e.g. server restarted or redeployed),
-        // we restore them to the server so they persist in orders.json!
-        // We CRITICALLY filter out orders with status "deleted" so tombstones are never restored.
-        const missingOnServer = mergedOrders.filter(mo => 
-          mo.status !== "deleted" && 
-          !serverOrders.some(so => so.orderNumber === mo.orderNumber)
-        );
-        
-        if (missingOnServer.length > 0) {
-          console.log("[Backup Sync] Restoring missing orders to server:", missingOnServer);
-          // Restore them sequentially
-          for (const order of missingOnServer) {
-            try {
-              // Re-create order on server
-              await fetch("/api/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  ...order,
-                  skipStockReduction: true // Do not reduce stock again since this is a recovery
-                })
-              });
-              
-              // If the order was already paid, ensure status is paid
-              if (order.status === "paid") {
-                await fetch("/api/orders/confirm-payment", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    orderNumber: order.orderNumber,
-                    items: order.items,
-                    total: order.total,
-                    name: order.name,
-                    email: order.email,
-                    address: order.address,
-                    phone: order.phone,
-                    state: order.state,
-                    pincode: order.pincode,
-                    shippingProtection: order.shippingProtection
-                  })
-                });
-              }
-            } catch (restoreErr) {
-              console.error("[Backup Sync] Failed to restore order to server:", restoreErr);
-            }
-          }
-        }
-        
         // Only set active (non-deleted) orders to state for the UI
-        const activeOrders = mergedOrders.filter(mo => mo.status !== "deleted");
+        const activeOrders = serverOrders.filter((mo: any) => mo.status !== "deleted");
         setAdminOrders(activeOrders);
+        
+        // Cache the active orders in local storage as an offline fallback
+        localStorage.setItem("scent_admin_orders_backup", JSON.stringify(serverOrders));
+      } else {
+        // If unauthorized or failed on the backend, clear authentication to prompt login
+        setIsAdminAuthenticated(false);
+        localStorage.removeItem("scent_admin_token");
       }
     } catch (err) {
       console.error("Failed to fetch admin orders, falling back to local backup:", err);
@@ -1024,8 +965,12 @@ export default function App() {
 
   const handleDeleteOrder = async (orderNumber: string) => {
     try {
+      const token = localStorage.getItem("scent_admin_token") || "";
       const response = await fetch(`/api/orders/${orderNumber}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
       const data = await response.json();
       if (data.success) {
@@ -1097,6 +1042,7 @@ export default function App() {
     setIsAdminAuthenticated(false);
     setAdminPasscodeInput("");
     setAdminOrders([]);
+    localStorage.removeItem("scent_admin_token");
   };
 
   useEffect(() => {
@@ -4136,14 +4082,25 @@ export default function App() {
 
                   {!isAdminLocked ? (
                     <form
-                      onSubmit={(e) => {
+                      onSubmit={async (e) => {
                         e.preventDefault();
                         const sanitizedInput = adminPasscodeInput.trim().toUpperCase();
-                        if (sanitizedInput === "SCENTSELLING") {
-                          setIsAdminAuthenticated(true);
-                          setAdminPasscodeError(null);
-                          setAdminAttempts(0);
-                        } else {
+                        try {
+                          const res = await fetch("/api/login", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ passcode: sanitizedInput })
+                          });
+                          const data = await res.json();
+                          if (res.ok && data.success && data.token) {
+                            localStorage.setItem("scent_admin_token", data.token);
+                            setIsAdminAuthenticated(true);
+                            setAdminPasscodeError(null);
+                            setAdminAttempts(0);
+                          } else {
+                            throw new Error(data.error || "Invalid passcode");
+                          }
+                        } catch (err: any) {
                           const nextAttempts = adminAttempts + 1;
                           setAdminAttempts(nextAttempts);
                           if (nextAttempts >= 3) {
