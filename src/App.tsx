@@ -978,9 +978,63 @@ export default function App() {
 
   const [isSavingStock, setIsSavingStock] = useState<boolean>(false);
   const stockDebounceRef = useRef<any>(null);
+  const isStockDirtyRef = useRef<boolean>(false);
+  const latestStockRef = useRef<any>(null);
+
+  const saveStockImmediately = async () => {
+    if (!isStockDirtyRef.current || !latestStockRef.current) return;
+    
+    if (stockDebounceRef.current) {
+      clearTimeout(stockDebounceRef.current);
+      stockDebounceRef.current = null;
+    }
+
+    setIsSavingStock(true);
+    try {
+      const res = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(latestStockRef.current)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStock(data.stock);
+        isStockDirtyRef.current = false;
+        setAdminStatusMessage({
+          type: "success",
+          text: "All direct data levels saved successfully!"
+        });
+        console.log("[Auto-Save] Stock saved immediately upon session close.");
+      }
+    } catch (err) {
+      console.error("[Auto-Save] Failed to save stock immediately upon session close:", err);
+    } finally {
+      setIsSavingStock(false);
+    }
+  };
+
+  const handleCloseAndSaveAdminSession = async () => {
+    await saveStockImmediately();
+    setIsAdminOpen(false);
+    setIsAdminAuthenticated(false);
+    setAdminPasscodeInput("");
+    setAdminOrders([]);
+  };
 
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isStockDirtyRef.current && latestStockRef.current) {
+        fetch("/api/stock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(latestStockRef.current),
+          keepalive: true
+        });
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       if (stockDebounceRef.current) {
         clearTimeout(stockDebounceRef.current);
       }
@@ -1000,6 +1054,9 @@ export default function App() {
       updatedStock.bundles[itemId] = value;
     }
     setStock(updatedStock);
+
+    isStockDirtyRef.current = true;
+    latestStockRef.current = updatedStock;
 
     if (stockDebounceRef.current) {
       clearTimeout(stockDebounceRef.current);
@@ -1021,6 +1078,7 @@ export default function App() {
         const data = await res.json();
         if (data.success) {
           setStock(data.stock);
+          isStockDirtyRef.current = false;
           setAdminStatusMessage({
             type: "success",
             text: "All stock levels auto-saved successfully!"
@@ -1056,6 +1114,7 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setStock(data.stock);
+        isStockDirtyRef.current = false;
         setAdminStatusMessage({
           type: "success",
           text: "Stock levels successfully saved and synchronized."
@@ -3880,11 +3939,7 @@ export default function App() {
                   {isAdminAuthenticated && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsAdminAuthenticated(false);
-                        setAdminPasscodeInput("");
-                        setAdminOrders([]);
-                      }}
+                      onClick={handleCloseAndSaveAdminSession}
                       className="px-3 py-1.5 rounded-sm border border-stone-800 hover:border-amber-gold/30 hover:bg-stone-850 text-stone-450 hover:text-amber-gold text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                       <Lock className="w-3 h-3" />
@@ -3892,7 +3947,7 @@ export default function App() {
                     </button>
                   )}
                   <button
-                    onClick={() => setIsAdminOpen(false)}
+                    onClick={handleCloseAndSaveAdminSession}
                     className="p-1.5 rounded-full border border-stone-800 hover:bg-stone-850 text-stone-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
