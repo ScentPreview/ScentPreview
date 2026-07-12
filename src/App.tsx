@@ -1497,7 +1497,7 @@ export default function App() {
       size: item.size,
       quantity: item.quantity
     }));
-    const total = cartTotal + 116 + (isShippingProtectionEnabled ? 300 : 0);
+    const total = cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0);
 
     const payload = {
       items,
@@ -2687,15 +2687,15 @@ export default function App() {
                                     onChange={(e) => setIsShippingProtectionEnabled(e.target.checked)}
                                     className="w-3.5 h-3.5 rounded-sm border-stone-700 bg-stone-900 text-amber-gold focus:ring-amber-gold cursor-pointer accent-amber-gold"
                                   />
-                                  <span className="text-stone-300">Shipping Protection (₹300)</span>
+                                  <span className="text-stone-300">Shipping Protection (₹150)</span>
                                 </label>
                                 <span className={isShippingProtectionEnabled ? "text-white" : "text-stone-600 line-through"}>
-                                  ₹300.00
+                                  ₹150.00
                                 </span>
                               </div>
                               <div className="flex justify-between text-sm font-mono text-white font-semibold pt-2">
                                 <span>Total Due:</span>
-                                <span className="text-amber-gold">₹{checkoutTotal + (isShippingProtectionEnabled ? 300 : 0)}.00</span>
+                                <span className="text-amber-gold">₹{checkoutTotal + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
                               </div>
                             </div>
 
@@ -3333,7 +3333,7 @@ export default function App() {
                         <div className="bg-stone-50/85 border border-stone-100 p-4 rounded-xl mb-4">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] font-mono text-stone-400 uppercase font-bold">Total Allocation Billed</span>
-                            <span className="font-mono text-xs font-bold text-stone-950">₹{cartTotal + 116 + (isShippingProtectionEnabled ? 300 : 0)}.00</span>
+                            <span className="font-mono text-xs font-bold text-stone-950">₹{cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
                           </div>
                           <p className="text-[9px] text-stone-400 font-mono">
                             Includes Priority packaging, Delivery Fee (₹116.00) {isShippingProtectionEnabled ? "+ Protection" : ""}
@@ -3652,15 +3652,15 @@ export default function App() {
                                   onChange={(e) => setIsShippingProtectionEnabled(e.target.checked)}
                                   className="w-3.5 h-3.5 rounded-md border-stone-300 text-stone-950 focus:ring-stone-500 cursor-pointer accent-stone-900"
                                 />
-                                <span className="text-stone-700 font-medium">Shipping Protection (₹300.00)</span>
+                                <span className="text-stone-700 font-medium">Shipping Protection (₹150.00)</span>
                               </label>
                               <span className={isShippingProtectionEnabled ? "text-stone-900 font-semibold" : "text-stone-300 line-through"}>
-                                ₹300.00
+                                ₹150.00
                               </span>
                             </div>
                             <div className="flex justify-between text-sm font-mono text-stone-950 font-bold pt-2">
                               <span>Total Billed:</span>
-                              <span className="text-stone-900">₹{cartTotal + 116 + (isShippingProtectionEnabled ? 300 : 0)}.00</span>
+                              <span className="text-stone-900">₹{cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
                             </div>
                           </div>
 
@@ -3775,15 +3775,15 @@ export default function App() {
                           onChange={(e) => setIsShippingProtectionEnabled(e.target.checked)}
                           className="w-3.5 h-3.5 rounded-sm border-stone-300 text-stone-950 focus:ring-stone-500 cursor-pointer accent-stone-900"
                         />
-                        <span className="text-stone-700">Shipping Protection (₹300.00)</span>
+                        <span className="text-stone-700">Shipping Protection (₹150.00)</span>
                       </label>
                       <span className={isShippingProtectionEnabled ? "text-stone-900 font-semibold" : "text-stone-300 line-through"}>
-                        ₹300.00
+                        ₹150.00
                       </span>
                     </div>
                     <div className="flex justify-between text-xs font-mono text-stone-900 font-bold pt-2">
                       <span>Total Billed:</span>
-                      <span>₹{cartTotal + 116 + (isShippingProtectionEnabled ? 300 : 0)}.00</span>
+                      <span>₹{cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
                     </div>
                   </div>
                   <p className="text-[8px] text-stone-400 font-sans leading-relaxed">
