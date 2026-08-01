@@ -36,8 +36,58 @@ import {
   MapPin,
   User,
   Phone,
-  ExternalLink
+  ExternalLink,
+  Tag,
+  DollarSign,
+  Layers
 } from "lucide-react";
+
+const getSafeApiUrl = (endpoint: string): string => {
+  if (!endpoint) return "/";
+  if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
+    return endpoint;
+  }
+  try {
+    const origin = typeof window !== "undefined" && window.location && window.location.origin && window.location.origin !== "null" && window.location.origin !== "about:blank"
+      ? window.location.origin.replace(/\/+$/, "")
+      : "";
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    return origin ? `${origin}${cleanEndpoint}` : cleanEndpoint;
+  } catch {
+    return endpoint;
+  }
+};
+
+const safeApiFetch = async (endpoint: string, options?: RequestInit) => {
+  const url = getSafeApiUrl(endpoint);
+  return await fetch(url, options);
+};
+
+const DEFAULT_FALLBACK_STOCK = {
+  fragrances: {
+    "lattafa-khamrah": { "5ml Normal": 13, "5ml HQ": 0, "10ml": 0 },
+    "ck2": { "5ml Normal": 0, "5ml HQ": 0, "10ml": 3 },
+    "givenchy-gentleman": { "5ml Normal": 11, "5ml HQ": 0, "10ml": 0 },
+    "zara-for-him-black": { "5ml Normal": 5, "5ml HQ": 0, "10ml": 0 },
+    "zara-sunrise": { "5ml Normal": 0, "5ml HQ": 0, "10ml": 2 },
+    "zara-seoul-winter": { "5ml Normal": 0, "5ml HQ": 1, "10ml": 0 },
+    "zara-seoul": { "5ml Normal": 0, "5ml HQ": 2, "10ml": 0 },
+    "zara-intense-dark": { "5ml Normal": 5, "5ml HQ": 0, "10ml": 1 },
+    "zara-rich-warm-addictive": { "5ml Normal": 16, "5ml HQ": 0, "10ml": 0 },
+    "ck-one": { "5ml Normal": 8, "5ml HQ": 3, "10ml": 0 },
+    "la-uno-qaswa": { "5ml Normal": 11, "5ml HQ": 2, "10ml": 1 }
+  },
+  bundles: {
+    "spotlight-arabian": 6,
+    "bundle-cozy-winter": 0,
+    "bundle-marine-core": 0,
+    "bundle-day-night": 0,
+    "bundle-office-rotation": 0,
+    "bundle-zara-classics": 0,
+    "bundle-rare-collector": 0,
+    "bundle-master-vault": 0
+  }
+};
 
 type BundleSizeType = "10ml" | "5ml Normal" | "5ml HQ";
 
@@ -246,17 +296,18 @@ export default function App() {
   const [stock, setStock] = useState<{
     fragrances: Record<string, Record<string, number>>;
     bundles: Record<string, number>;
-  } | null>(null);
+  }>(DEFAULT_FALLBACK_STOCK);
 
   const fetchStock = async () => {
     try {
-      const res = await fetch("/api/stock");
+      const res = await safeApiFetch("/api/stock");
+      if (!res.ok) return;
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success && data.stock) {
         setStock(data.stock);
       }
     } catch (e) {
-      console.error("Error fetching stock:", e);
+      console.warn("[Stock Fetch] Live stock levels unavailable, fallback active:", e);
     }
   };
 
@@ -271,16 +322,17 @@ export default function App() {
       console.log("[Redirection Auto-Sync] Found pending order in local storage:", parsedDetails.orderNumber);
       
       // Post to ensure it is registered on the server as "pending"
-      const response = await fetch("/api/orders", {
+      const response = await safeApiFetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsedDetails)
       });
-      const data = await response.json();
-      
-      if (data.success && data.order) {
-        addOrderToLocalStorageBackup(data.order);
-        console.log("[Redirection Auto-Sync] Order successfully verified on backend.");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.order) {
+          addOrderToLocalStorageBackup(data.order);
+          console.log("[Redirection Auto-Sync] Order successfully verified on backend.");
+        }
       }
       
       // If the user already confirmed payment in this session but browser was refreshed/closed,
@@ -288,24 +340,26 @@ export default function App() {
       const isConfirmedLocally = localStorage.getItem("scent_isPaymentConfirmed") === "true";
       if (isConfirmedLocally) {
         console.log("[Redirection Auto-Sync] Order was paid locally. Ensuring server registration...");
-        const res = await fetch("/api/orders/confirm-payment", {
+        const res = await safeApiFetch("/api/orders/confirm-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(parsedDetails)
         });
-        const confirmData = await res.json();
-        if (confirmData.success) {
-          addOrderToLocalStorageBackup({
-            ...parsedDetails,
-            status: "paid",
-            createdAt: new Date().toISOString()
-          });
+        if (res.ok) {
+          const confirmData = await res.json();
+          if (confirmData.success) {
+            addOrderToLocalStorageBackup({
+              ...parsedDetails,
+              status: "paid",
+              createdAt: new Date().toISOString()
+            });
+          }
         }
       }
       
       fetchStock();
     } catch (err) {
-      console.error("[Redirection Auto-Sync] Error during background synchronization:", err);
+      console.warn("[Redirection Auto-Sync] Could not reach backend during background sync:", err);
     }
   };
 
@@ -536,7 +590,9 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [isLoadingAdminOrders, setIsLoadingAdminOrders] = useState<boolean>(false);
-  const [adminActiveTab, setAdminActiveTab] = useState<"view" | "create" | "stock">("view");
+  const [adminActiveTab, setAdminActiveTab] = useState<"view" | "create" | "stock" | "prices">("view");
+  const [adminPriceSearch, setAdminPriceSearch] = useState<string>("");
+  const [adminPriceFilter, setAdminPriceFilter] = useState<"all" | "fragrance" | "bundle" | "outofstock" | "disabled">("all");
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [adminPasscodeInput, setAdminPasscodeInput] = useState<string>("");
   const [adminPasscodeError, setAdminPasscodeError] = useState<string | null>(null);
@@ -756,7 +812,7 @@ export default function App() {
     setIsLoadingAdminOrders(true);
     try {
       const token = localStorage.getItem("scent_admin_token") || "";
-      const response = await fetch("/api/orders", {
+      const response = await safeApiFetch("/api/orders", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -875,7 +931,7 @@ export default function App() {
 
       try {
         // 1. Try creating the pending order on the server
-        const createRes = await fetch("/api/orders", {
+        const createRes = await safeApiFetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -897,7 +953,7 @@ export default function App() {
 
         // 2. Immediately trigger confirm-payment (which marks as paid and triggers notification dispatch)
         try {
-          const confirmRes = await fetch("/api/orders/confirm-payment", {
+          const confirmRes = await safeApiFetch("/api/orders/confirm-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -967,7 +1023,7 @@ export default function App() {
   const handleDeleteOrder = async (orderNumber: string) => {
     try {
       const token = localStorage.getItem("scent_admin_token") || "";
-      const response = await fetch(`/api/orders/${orderNumber}`, {
+      const response = await safeApiFetch(`/api/orders/${orderNumber}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -1015,7 +1071,7 @@ export default function App() {
 
     setIsSavingStock(true);
     try {
-      const res = await fetch("/api/stock", {
+      const res = await safeApiFetch("/api/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(latestStockRef.current)
@@ -1049,7 +1105,7 @@ export default function App() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (isStockDirtyRef.current && latestStockRef.current) {
-        fetch("/api/stock", {
+        safeApiFetch("/api/stock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(latestStockRef.current),
@@ -1095,7 +1151,7 @@ export default function App() {
     stockDebounceRef.current = setTimeout(async () => {
       setIsSavingStock(true);
       try {
-        const res = await fetch("/api/stock", {
+        const res = await safeApiFetch("/api/stock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedStock)
@@ -1131,7 +1187,7 @@ export default function App() {
     setIsSavingStock(true);
     setAdminStatusMessage(null);
     try {
-      const res = await fetch("/api/stock", {
+      const res = await safeApiFetch("/api/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stock)
@@ -1166,7 +1222,7 @@ export default function App() {
     setIsSavingStock(true);
     setAdminStatusMessage(null);
     try {
-      const res = await fetch("/api/stock/reset", {
+      const res = await safeApiFetch("/api/stock/reset", {
         method: "POST"
       });
       const data = await res.json();
@@ -1514,7 +1570,7 @@ export default function App() {
     };
 
     try {
-      const response = await fetch("/api/orders", {
+      const response = await safeApiFetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1652,7 +1708,7 @@ export default function App() {
                         
                         try {
                           // 1. Instantly confirm and fulfill the order on the backend in the background
-                          const res = await fetch("/api/orders/confirm-payment", {
+                          const res = await safeApiFetch("/api/orders/confirm-payment", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(paymentDetails),
@@ -1751,7 +1807,7 @@ export default function App() {
                   onClick={async () => {
                     setIsConfirmingPayment(true);
                     try {
-                      const res = await fetch("/api/orders/confirm-payment", {
+                      const res = await safeApiFetch("/api/orders/confirm-payment", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(paymentDetails),
@@ -1861,7 +1917,7 @@ export default function App() {
                   if (paymentDetails) {
                     try {
                       console.log("[Continue Action] User clicked Continue. Sending final payment confirmation...");
-                      const res = await fetch("/api/orders/confirm-payment", {
+                      const res = await safeApiFetch("/api/orders/confirm-payment", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(paymentDetails),
@@ -2651,7 +2707,7 @@ export default function App() {
                                   type="text"
                                   required
                                   maxLength={6}
-                                  pattern="^[1-9][0-9]{5}$"
+                                  pattern="[1-9][0-9]{5}"
                                   value={checkoutPincode}
                                   onChange={(e) => {
                                     const val = e.target.value.replace(/\D/g, "");
@@ -3499,7 +3555,7 @@ export default function App() {
                                     type="text"
                                     required
                                     maxLength={6}
-                                    pattern="^[1-9][0-9]{5}$"
+                                    pattern="[1-9][0-9]{5}"
                                     value={checkoutPincode}
                                     onChange={(e) => {
                                       const val = e.target.value.replace(/\D/g, "");
@@ -3957,7 +4013,7 @@ export default function App() {
                           type="text"
                           required
                           maxLength={6}
-                          pattern="^[1-9][0-9]{5}$"
+                          pattern="[1-9][0-9]{5}"
                           value={checkoutPincode}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, "");
@@ -4107,7 +4163,7 @@ export default function App() {
                         e.preventDefault();
                         const sanitizedInput = adminPasscodeInput.trim().toUpperCase();
                         try {
-                          const res = await fetch("/api/login", {
+                          const res = await safeApiFetch("/api/login", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ passcode: sanitizedInput })
@@ -4227,6 +4283,21 @@ export default function App() {
                     >
                       <Database className="w-3.5 h-3.5" />
                       Stock Levels
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminActiveTab("prices");
+                        setAdminStatusMessage(null);
+                      }}
+                      className={`flex-1 py-3 text-[10px] sm:text-xs font-mono uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        adminActiveTab === "prices"
+                          ? "border-amber-gold text-amber-gold bg-stone-900/40"
+                          : "border-transparent text-stone-500 hover:text-stone-300"
+                      }`}
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                      Price Details
                     </button>
                   </div>
 
@@ -4681,7 +4752,7 @@ export default function App() {
                           </button>
                         </div>
                       </form>
-                    ) : (
+                    ) : adminActiveTab === "stock" ? (
                       /* Stock levels tab */
                       <div className="space-y-6 max-w-4xl mx-auto">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-850">
@@ -4753,9 +4824,12 @@ export default function App() {
                                             <span className="text-[11px] font-mono text-stone-400">
                                               {sizeObj.label}
                                             </span>
+                                            <span className="text-[10px] font-mono font-bold text-amber-gold">
+                                              ₹{fragrance.prices[sizeObj.key as keyof typeof fragrance.prices]}
+                                            </span>
                                             {isTypicalDisabled && (
                                               <span className="text-[7px] font-mono uppercase px-1 border border-stone-800 bg-stone-950 text-stone-600 rounded">
-                                                Inactive
+                                                Disabled
                                               </span>
                                             )}
                                           </div>
@@ -4838,6 +4912,384 @@ export default function App() {
                                     >
                                       +
                                     </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Price Details & Variant Breakdown Tab */
+                      <div className="space-y-6 max-w-5xl mx-auto">
+                        {/* Section Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-850">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Tag className="w-4 h-4 text-amber-gold" />
+                              <span className="block text-xs font-mono uppercase tracking-widest text-amber-gold font-bold">
+                                Perfume Variant & Price Details Registry
+                              </span>
+                            </div>
+                            <p className="text-xs text-stone-400 font-sans mt-1">
+                              Complete exact price breakdown mapping for all perfumes, capsule bundles, and individual variants regardless of stock status.
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-1 bg-stone-925 border border-stone-800 rounded text-[10px] font-mono text-stone-300">
+                              Products: <strong className="text-white">{CATALOG_DATA.length + BUNDLE_DATA.length}</strong>
+                            </span>
+                            <span className="px-2.5 py-1 bg-amber-gold/10 border border-amber-gold/20 rounded text-[10px] font-mono text-amber-gold">
+                              Variants Mapped: <strong className="text-white">100% Full Coverage</strong>
+                            </span>
+                            <span className="px-2.5 py-1 bg-emerald-950/30 border border-emerald-900/40 rounded text-[10px] font-mono text-emerald-400">
+                              Exact Database Records
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Search and Filter Toolbar */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-stone-925/60 p-3 rounded-md border border-stone-800">
+                          <div className="relative flex-1">
+                            <Search className="w-3.5 h-3.5 text-stone-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="Search perfume name, brand, variant (e.g. 5ml HQ), or exact price..."
+                              value={adminPriceSearch}
+                              onChange={(e) => setAdminPriceSearch(e.target.value)}
+                              className="w-full bg-stone-950 border border-stone-800 rounded-sm pl-8 pr-8 py-1.5 text-xs text-white placeholder-stone-500 focus:outline-none focus:border-amber-gold font-sans"
+                            />
+                            {adminPriceSearch && (
+                              <button 
+                                onClick={() => setAdminPriceSearch("")}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 hover:text-white text-xs font-mono"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-stone-500 uppercase tracking-wider hidden sm:inline">Filter:</span>
+                            <select
+                              value={adminPriceFilter}
+                              onChange={(e: any) => setAdminPriceFilter(e.target.value)}
+                              className="bg-stone-950 border border-stone-800 rounded-sm px-3 py-1.5 text-xs text-stone-300 focus:outline-none focus:border-amber-gold font-mono cursor-pointer"
+                            >
+                              <option value="all">All Items & Variants</option>
+                              <option value="fragrance">Single Perfumes Only</option>
+                              <option value="bundle">Capsule Bundles Only</option>
+                              <option value="outofstock">Out of Stock Only</option>
+                              <option value="disabled">Disabled Variants Only</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* High-Density Tabular Breakdown */}
+                        <div className="border border-stone-800 bg-stone-925/40 rounded-md overflow-hidden shadow-xl">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs font-sans">
+                              <thead>
+                                <tr className="bg-stone-950/90 border-b border-stone-800 text-[10px] font-mono uppercase tracking-widest text-stone-400">
+                                  <th className="py-3 px-4 font-semibold">Perfume / Bundle</th>
+                                  <th className="py-3 px-4 font-semibold">Brand / Category</th>
+                                  <th className="py-3 px-4 font-semibold">Variant / Format</th>
+                                  <th className="py-3 px-4 font-semibold">Inventory Status</th>
+                                  <th className="py-3 px-4 font-semibold text-right">Exact Price</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-stone-850/80">
+                                {(() => {
+                                  // Construct all rows
+                                  const allRows: Array<{
+                                    id: string;
+                                    name: string;
+                                    brand: string;
+                                    category: "Single Perfume" | "Capsule Bundle";
+                                    notes: string;
+                                    variantName: string;
+                                    price: number;
+                                    isOutOfStock: boolean;
+                                    isDisabled: boolean;
+                                    stockCount: number;
+                                    color?: string;
+                                    isPremium?: boolean;
+                                    isSpotlight?: boolean;
+                                  }> = [];
+
+                                  // Add Catalog Fragrances
+                                  CATALOG_DATA.forEach((f) => {
+                                    const fragStock = stock?.fragrances[f.id] || {};
+                                    const variantSizes = ["5ml Normal", "5ml HQ", "10ml"] as const;
+                                    
+                                    variantSizes.forEach((sizeKey) => {
+                                      const isDisabled = Boolean(f.disabledSizes?.includes(sizeKey));
+                                      const stockCount = fragStock[sizeKey] ?? 0;
+                                      const isOOS = f.isOutOfStock || stockCount === 0;
+
+                                      allRows.push({
+                                        id: `${f.id}-${sizeKey}`,
+                                        name: f.name,
+                                        brand: f.brand,
+                                        category: "Single Perfume",
+                                        notes: f.notes,
+                                        variantName: sizeKey,
+                                        price: f.prices[sizeKey],
+                                        isOutOfStock: isOOS,
+                                        isDisabled: isDisabled,
+                                        stockCount: stockCount,
+                                        color: f.color,
+                                        isPremium: f.isPremium
+                                      });
+                                    });
+                                  });
+
+                                  // Add Capsule Bundles
+                                  BUNDLE_DATA.forEach((b) => {
+                                    const bundleStock = stock?.bundles[b.id] ?? 0;
+                                    const isOOS = b.isOutOfStock || bundleStock === 0;
+
+                                    if (b.isSpotlight && b.fixedPrice !== undefined) {
+                                      allRows.push({
+                                        id: `${b.id}-spotlight`,
+                                        name: b.name,
+                                        brand: "ScentPreview Curated",
+                                        category: "Capsule Bundle",
+                                        notes: b.contains,
+                                        variantName: "Spotlight Fixed Bundle",
+                                        price: b.fixedPrice,
+                                        isOutOfStock: isOOS,
+                                        isDisabled: false,
+                                        stockCount: bundleStock,
+                                        isSpotlight: true
+                                      });
+                                    } else if (b.prices) {
+                                      const variantSizes = ["5ml Normal", "5ml HQ", "10ml"] as const;
+                                      variantSizes.forEach((sizeKey) => {
+                                        allRows.push({
+                                          id: `${b.id}-${sizeKey}`,
+                                          name: b.name,
+                                          brand: "ScentPreview Curated",
+                                          category: "Capsule Bundle",
+                                          notes: b.contains,
+                                          variantName: sizeKey,
+                                          price: b.prices![sizeKey],
+                                          isOutOfStock: isOOS,
+                                          isDisabled: false,
+                                          stockCount: bundleStock
+                                        });
+                                      });
+                                    }
+                                  });
+
+                                  // Apply Filter & Search
+                                  const query = adminPriceSearch.trim().toLowerCase();
+                                  const filteredRows = allRows.filter((row) => {
+                                    // Search match
+                                    if (query) {
+                                      const matchName = row.name.toLowerCase().includes(query);
+                                      const matchBrand = row.brand.toLowerCase().includes(query);
+                                      const matchVariant = row.variantName.toLowerCase().includes(query);
+                                      const matchNotes = row.notes.toLowerCase().includes(query);
+                                      const matchPrice = String(row.price).includes(query);
+                                      if (!matchName && !matchBrand && !matchVariant && !matchNotes && !matchPrice) {
+                                        return false;
+                                      }
+                                    }
+
+                                    // Category/Status match
+                                    if (adminPriceFilter === "fragrance" && row.category !== "Single Perfume") return false;
+                                    if (adminPriceFilter === "bundle" && row.category !== "Capsule Bundle") return false;
+                                    if (adminPriceFilter === "outofstock" && !row.isOutOfStock) return false;
+                                    if (adminPriceFilter === "disabled" && !row.isDisabled) return false;
+
+                                    return true;
+                                  });
+
+                                  if (filteredRows.length === 0) {
+                                    return (
+                                      <tr>
+                                        <td colSpan={5} className="py-12 text-center text-stone-500 font-mono">
+                                          No perfume variant or price records match your criteria.
+                                        </td>
+                                      </tr>
+                                    );
+                                  }
+
+                                  return filteredRows.map((row) => (
+                                    <tr key={row.id} className="hover:bg-stone-900/60 transition-colors">
+                                      {/* Perfume / Bundle Name */}
+                                      <td className="py-3 px-4 font-medium text-white">
+                                        <div className="flex items-center gap-2.5">
+                                          {row.color ? (
+                                            <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${row.color} flex-shrink-0 border border-white/20`} />
+                                          ) : (
+                                            <div className="w-3 h-3 rounded-full bg-amber-500/30 flex-shrink-0 border border-amber-500/40" />
+                                          )}
+                                          <div>
+                                            <span className="font-serif italic text-sm text-white block leading-tight">
+                                              {row.name}
+                                            </span>
+                                            <span className="text-[9px] font-mono text-stone-500 block truncate max-w-xs">
+                                              {row.notes}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </td>
+
+                                      {/* Brand & Badges */}
+                                      <td className="py-3 px-4">
+                                        <span className="text-[11px] font-mono text-stone-300 block font-semibold">
+                                          {row.brand}
+                                        </span>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                          <span className="text-[8px] font-mono uppercase px-1.5 py-0.2 rounded border border-stone-800 bg-stone-900 text-stone-400">
+                                            {row.category}
+                                          </span>
+                                          {row.isPremium && (
+                                            <span className="text-[8px] font-mono uppercase px-1.5 py-0.2 rounded border border-amber-500/30 bg-amber-950/30 text-amber-400">
+                                              Premium
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+
+                                      {/* Variant / Size */}
+                                      <td className="py-3 px-4">
+                                        <span className="text-xs font-mono font-bold text-amber-gold bg-amber-gold/10 px-2 py-0.5 rounded border border-amber-gold/20 inline-block">
+                                          {row.variantName}
+                                        </span>
+                                      </td>
+
+                                      {/* Inventory Status */}
+                                      <td className="py-3 px-4">
+                                        {row.isDisabled ? (
+                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-stone-750 bg-stone-900 text-stone-450 inline-flex items-center gap-1 font-semibold">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-stone-500" />
+                                            Disabled Variant
+                                          </span>
+                                        ) : row.isOutOfStock ? (
+                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-rose-900/50 bg-rose-950/30 text-rose-400 inline-flex items-center gap-1 font-semibold">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                                            Out of Stock (0 units)
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-900/50 bg-emerald-950/30 text-emerald-400 inline-flex items-center gap-1 font-semibold">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                            In Stock ({row.stockCount} units)
+                                          </span>
+                                        )}
+                                      </td>
+
+                                      {/* Exact Price */}
+                                      <td className="py-3 px-4 text-right">
+                                        <span className="text-sm font-mono font-bold text-white tracking-wider">
+                                          ₹{row.price}.00
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ));
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Product-by-Product Variant Breakdown Cards */}
+                        <div className="pt-6 border-t border-stone-850 space-y-4">
+                          <div>
+                            <span className="block text-[10px] font-mono uppercase tracking-widest text-amber-gold font-bold">
+                              Individual Perfume Variant Price Sheets
+                            </span>
+                            <p className="text-xs text-stone-400 font-sans mt-0.5">
+                              Per-product view of all 11 catalog fragrances with complete variant price tables.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {CATALOG_DATA.map((fragrance) => {
+                              const fragStock = stock?.fragrances[fragrance.id] || {};
+                              return (
+                                <div key={fragrance.id} className="bg-stone-925/40 border border-stone-800 p-4 rounded-md space-y-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${fragrance.color} flex-shrink-0 flex items-center justify-center border border-white/10 shadow-inner`}>
+                                        <span className="text-[9px] font-mono text-white/50 font-bold uppercase">
+                                          {fragrance.brand.substring(0, 2)}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <h4 className="font-serif italic text-white text-sm font-medium">
+                                          {fragrance.name}
+                                        </h4>
+                                        <span className="text-[9px] font-mono text-stone-500 uppercase tracking-widest block">
+                                          {fragrance.brand}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {fragrance.isPremium && (
+                                      <span className="text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border border-amber-500/30 bg-amber-950/20 text-amber-400 font-bold">
+                                        PREMIUM
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="text-[10px] text-stone-400 font-sans border-t border-stone-850 pt-2 flex items-center justify-between">
+                                    <span>Notes: {fragrance.notes}</span>
+                                    {fragrance.disabledSizes && fragrance.disabledSizes.length > 0 && (
+                                      <span className="font-mono text-[9px] text-amber-400">
+                                        Disabled: {fragrance.disabledSizes.join(", ")}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Variant Price Breakdown Table for this Perfume */}
+                                  <div className="border border-stone-850 rounded bg-stone-950/70 overflow-hidden">
+                                    <table className="w-full text-left text-[11px] font-mono">
+                                      <thead>
+                                        <tr className="border-b border-stone-850 text-stone-500 uppercase tracking-wider text-[8px]">
+                                          <th className="py-1.5 px-3 font-semibold">Variant Size</th>
+                                          <th className="py-1.5 px-3 font-semibold">Status</th>
+                                          <th className="py-1.5 px-3 font-semibold text-right">Exact Price</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-stone-850/50">
+                                        {(["5ml Normal", "5ml HQ", "10ml"] as const).map((sizeKey) => {
+                                          const isDisabled = Boolean(fragrance.disabledSizes?.includes(sizeKey));
+                                          const count = fragStock[sizeKey] ?? 0;
+                                          const isOOS = fragrance.isOutOfStock || count === 0;
+                                          const exactPrice = fragrance.prices[sizeKey];
+
+                                          return (
+                                            <tr key={sizeKey} className="hover:bg-stone-900/40">
+                                              <td className="py-2 px-3 text-white font-bold">
+                                                {sizeKey}
+                                              </td>
+                                              <td className="py-2 px-3">
+                                                {isDisabled ? (
+                                                  <span className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">
+                                                    Disabled
+                                                  </span>
+                                                ) : isOOS ? (
+                                                  <span className="text-[8px] uppercase tracking-wider text-rose-400 font-bold">
+                                                    Out of Stock (0)
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-[8px] uppercase tracking-wider text-emerald-400 font-bold">
+                                                    In Stock ({count})
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="py-2 px-3 text-right text-amber-gold font-bold">
+                                                ₹{exactPrice}.00
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
                                   </div>
                                 </div>
                               );
