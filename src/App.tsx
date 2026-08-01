@@ -12,6 +12,7 @@ import AntiQuiz from "./components/AntiQuiz";
 import AestheticQuiz from "./components/AestheticQuiz";
 import ChordQuiz from "./components/ChordQuiz";
 import ScentBattle from "./components/ScentBattle";
+import GlassTiles from "./components/GlassTiles";
 import { 
   ShoppingBag, 
   X, 
@@ -1560,6 +1561,16 @@ export default function App() {
   if (showPaymentPage && paymentDetails) {
     return (
       <div className="min-h-screen bg-[#0F0E0D] text-white font-sans relative overflow-x-hidden p-6 md:p-12 flex flex-col items-center justify-center sand-grain">
+        {/* React Bits Pro Glass Tiles Shimmering Background */}
+        <GlassTiles 
+          colors={["#919191", "#FFFFFF", "#EEEEEE"]} 
+          tileSize={56} 
+          gap={6} 
+          shimmerSpeed={1.2} 
+          opacity={0.4}
+          className="fixed inset-0 w-screen h-screen pointer-events-none z-0" 
+        />
+        
         {/* Subtle decorative background pattern */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
         
@@ -1900,6 +1911,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F4F3EF] text-[#111111] font-sans relative overflow-x-hidden selection:bg-stone-900 selection:text-white sand-grain">
+      
+      {/* React Bits Pro Glass Tiles Shimmering Background (Full Screen Viewport Background) */}
+      <GlassTiles 
+        colors={["#919191", "#FFFFFF", "#EEEEEE"]} 
+        tileSize={56} 
+        gap={6} 
+        shimmerSpeed={1.2} 
+        opacity={0.7}
+        className="fixed inset-0 w-screen h-screen pointer-events-none z-0" 
+      />
       
       {/* Apple Liquid Glass Floating Background Backlight Blobs */}
       <div className="absolute top-[-5%] left-[-5%] w-[45vw] h-[45vw] rounded-full bg-amber-200/15 blur-[120px] pointer-events-none animate-blob-1 z-0" />
