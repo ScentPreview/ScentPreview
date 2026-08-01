@@ -53,9 +53,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Cinnamon", "Dates", "Pure Vanilla"],
     disabledSizes: ["10ml", "5ml HQ"],
     prices: {
-      "10ml": 492,
-      "5ml Normal": 332,
-      "5ml HQ": 376
+      "10ml": 748,
+      "5ml Normal": 482,
+      "5ml HQ": 538
     },
     color: "from-amber-600 to-amber-900",
     glassStyle: "shadow-amber-700/50"
@@ -70,9 +70,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Bergamot", "Mandarin", "Soft Amber"],
     disabledSizes: ["5ml Normal", "5ml HQ"],
     prices: {
-      "10ml": 452,
-      "5ml Normal": 312,
-      "5ml HQ": 356
+      "10ml": 682,
+      "5ml Normal": 448,
+      "5ml HQ": 504
     },
     color: "from-orange-400 to-amber-600",
     glassStyle: "shadow-orange-400/40"
@@ -87,9 +87,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Ginger", "Lavender", "Cedarwood"],
     disabledSizes: ["5ml HQ"],
     prices: {
-      "10ml": 452,
-      "5ml Normal": 312,
-      "5ml HQ": 356
+      "10ml": 682,
+      "5ml Normal": 448,
+      "5ml HQ": 504
     },
     color: "from-violet-950 to-neutral-900",
     glassStyle: "shadow-purple-900/40"
@@ -104,9 +104,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Apple", "Black Pepper", "Tonka Bean"],
     disabledSizes: ["5ml HQ"],
     prices: {
-      "10ml": 399,
-      "5ml Normal": 285,
-      "5ml HQ": 330
+      "10ml": 595,
+      "5ml Normal": 405,
+      "5ml HQ": 461
     },
     color: "from-indigo-900 to-zinc-950",
     glassStyle: "shadow-indigo-950/55"
@@ -121,9 +121,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Tangerine", "Apple", "Amber"],
     disabledSizes: ["5ml Normal"],
     prices: {
-      "10ml": 359,
-      "5ml Normal": 265,
-      "5ml HQ": 310
+      "10ml": 528,
+      "5ml Normal": 372,
+      "5ml HQ": 428
     },
     color: "from-sky-300 to-blue-700",
     glassStyle: "shadow-sky-500/30"
@@ -137,9 +137,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Oud / Incense / Dark Woods",
     notesList: ["Oud", "Incense", "Dark Woods"],
     prices: {
-      "10ml": 312,
-      "5ml Normal": 242,
-      "5ml HQ": 286
+      "10ml": 448,
+      "5ml Normal": 332,
+      "5ml HQ": 388
     },
     color: "from-stone-800 to-emerald-950",
     glassStyle: "shadow-stone-900/60"
@@ -153,9 +153,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Lemon / Green Tea / Jasmine",
     notesList: ["Lemon", "Green Tea", "Jasmine"],
     prices: {
-      "10ml": 512,
-      "5ml Normal": 325,
-      "5ml HQ": 369
+      "10ml": 838,
+      "5ml Normal": 527,
+      "5ml HQ": 582
     },
     color: "from-stone-200 to-stone-400",
     glassStyle: "shadow-stone-300/40"
@@ -170,9 +170,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Wasabi", "Violet Leaf", "Wet Cobblestones"],
     disabledSizes: ["5ml Normal", "5ml HQ"],
     prices: {
-      "10ml": 712,
-      "5ml Normal": 442,
-      "5ml HQ": 486
+      "10ml": 1115,
+      "5ml Normal": 665,
+      "5ml HQ": 721
     },
     color: "from-sky-100 to-sky-300",
     glassStyle: "shadow-sky-200/30"
@@ -187,9 +187,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Honey", "Toasted Coconut", "Tobacco Leaf"],
     disabledSizes: ["10ml", "5ml HQ"],
     prices: {
-      "10ml": 425,
-      "5ml Normal": 295,
-      "5ml HQ": 340
+      "10ml": 648,
+      "5ml Normal": 432,
+      "5ml HQ": 488
     },
     color: "from-amber-700 to-stone-900",
     glassStyle: "shadow-amber-800/45"
@@ -204,9 +204,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Tangerine", "Lavender", "Amber"],
     disabledSizes: ["10ml", "5ml Normal"],
     prices: {
-      "10ml": 349,
-      "5ml Normal": 255,
-      "5ml HQ": 299
+      "10ml": 528,
+      "5ml Normal": 372,
+      "5ml HQ": 428
     },
     color: "from-blue-400 to-sky-600",
     glassStyle: "shadow-blue-400/30"
@@ -221,9 +221,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Iris", "Black Pepper", "Leather"],
     disabledSizes: ["5ml HQ"],
     prices: {
-      "10ml": 1312,
-      "5ml Normal": 742,
-      "5ml HQ": 786
+      "10ml": 2115,
+      "5ml Normal": 1165,
+      "5ml HQ": 1221
     },
     color: "from-neutral-800 to-black",
     glassStyle: "shadow-neutral-900/50"
