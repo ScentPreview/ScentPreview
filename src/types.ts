@@ -237,7 +237,12 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Lattafa Khamrah + La Uno Qaswa",
     isOutOfStock: false,
     isSpotlight: true,
-    fixedPrice: 499
+    fixedPrice: 814,
+    prices: {
+      "10ml": 1196,
+      "5ml Normal": 814,
+      "5ml HQ": 926
+    }
   },
   {
     id: "bundle-day-night",
@@ -245,9 +250,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Zara Sunrise + Zara For Him Black",
     isOutOfStock: true,
     prices: {
-      "10ml": 599,
-      "5ml Normal": 333,
-      "5ml HQ": 520
+      "10ml": 1364,
+      "5ml Normal": 897,
+      "5ml HQ": 1008
     }
   },
   {
@@ -256,9 +261,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Calvin Klein CK One + Curated Marine Pairings",
     isOutOfStock: false,
     prices: {
-      "10ml": 689,
-      "5ml Normal": 386,
-      "5ml HQ": 599
+      "10ml": 1286,
+      "5ml Normal": 858,
+      "5ml HQ": 970
     }
   },
   {
@@ -267,9 +272,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Calvin Klein CK2 + Zara Intense Dark",
     isOutOfStock: false,
     prices: {
-      "10ml": 620,
-      "5ml Normal": 531,
-      "5ml HQ": 540
+      "10ml": 1710,
+      "5ml Normal": 1070,
+      "5ml HQ": 1182
     }
   },
   {
@@ -278,9 +283,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Givenchy Gentleman + Calvin Klein CK One",
     isOutOfStock: false,
     prices: {
-      "10ml": 720,
-      "5ml Normal": 373,
-      "5ml HQ": 610
+      "10ml": 2953,
+      "5ml Normal": 1692,
+      "5ml HQ": 1803
     }
   },
   {
@@ -289,9 +294,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Zara Seoul Winter + Curated Pairings",
     isOutOfStock: false,
     prices: {
-      "10ml": 586,
-      "5ml Normal": 396,
-      "5ml HQ": 530
+      "10ml": 1924,
+      "5ml Normal": 1285,
+      "5ml HQ": 1454
     }
   },
   {
@@ -300,9 +305,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Khamrah + Curated Winter Pairings",
     isOutOfStock: false,
     prices: {
-      "10ml": 665,
-      "5ml Normal": 444,
-      "5ml HQ": 623
+      "10ml": 1871,
+      "5ml Normal": 1258,
+      "5ml HQ": 1427
     }
   },
   {
@@ -311,9 +316,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     contains: "Zara Sunrise + Zara Seoul Winter + 2 Other Zara Classics",
     isOutOfStock: false,
     prices: {
-      "10ml": 765,
-      "5ml Normal": 444,
-      "5ml HQ": 673
+      "10ml": 2433,
+      "5ml Normal": 1673,
+      "5ml HQ": 1897
     }
   }
 ];

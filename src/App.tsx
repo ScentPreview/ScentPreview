@@ -206,14 +206,14 @@ const getBundleAesthetic = (id: string) => {
 
 const getBundleOriginalPrice = (id: string): string => {
   switch (id) {
-    case "spotlight-arabian": return "832";
-    case "bundle-day-night": return "555";
-    case "bundle-marine-core": return "643";
-    case "bundle-rare-collector": return "885";
-    case "bundle-office-rotation": return "622";
-    case "bundle-cozy-winter": return "660";
-    case "bundle-master-vault": return "740";
-    case "bundle-zara-classics": return "823";
+    case "spotlight-arabian": return "956";
+    case "bundle-day-night": return "1,040";
+    case "bundle-marine-core": return "945";
+    case "bundle-rare-collector": return "1,212";
+    case "bundle-office-rotation": return "1,779";
+    case "bundle-cozy-winter": return "1,487";
+    case "bundle-master-vault": return "1,470";
+    case "bundle-zara-classics": return "1,957";
     default: return "0";
   }
 };
