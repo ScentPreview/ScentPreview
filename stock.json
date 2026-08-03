@@ -1,69 +1,69 @@
 {
   "fragrances": {
-    "la-uno-qaswa": {
-      "5ml HQ": 2,
+    "zara-intense-dark": {
+      "5ml Normal": 5,
       "10ml": 1,
-      "5ml Normal": 11
+      "5ml HQ": 0
     },
-    "zara-sunrise": {
-      "10ml": 2,
+    "zara-seoul-winter": {
+      "5ml Normal": 0,
+      "10ml": 0,
+      "5ml HQ": 1
+    },
+    "givenchy-gentleman": {
       "5ml HQ": 0,
-      "5ml Normal": 0
+      "5ml Normal": 11,
+      "10ml": 0
     },
     "lattafa-khamrah": {
       "10ml": 0,
-      "5ml HQ": 0,
-      "5ml Normal": 13
-    },
-    "givenchy-gentleman": {
-      "5ml Normal": 11,
-      "5ml HQ": 0,
-      "10ml": 0
-    },
-    "zara-for-him-black": {
-      "5ml HQ": 0,
-      "5ml Normal": 5,
-      "10ml": 0
+      "5ml Normal": 13,
+      "5ml HQ": 0
     },
     "ck2": {
+      "10ml": 0,
+      "5ml HQ": 0,
+      "5ml Normal": 2
+    },
+    "la-uno-qaswa": {
+      "5ml Normal": 11,
+      "10ml": 1,
+      "5ml HQ": 2
+    },
+    "zara-sunrise": {
       "5ml HQ": 0,
       "5ml Normal": 0,
-      "10ml": 3
+      "10ml": 2
     },
-    "ck-one": {
+    "zara-seoul": {
       "10ml": 0,
-      "5ml HQ": 3,
-      "5ml Normal": 8
+      "5ml HQ": 2,
+      "5ml Normal": 0
+    },
+    "zara-for-him-black": {
+      "5ml Normal": 5,
+      "10ml": 0,
+      "5ml HQ": 0
     },
     "zara-rich-warm-addictive": {
       "10ml": 0,
       "5ml Normal": 16,
       "5ml HQ": 0
     },
-    "zara-seoul-winter": {
+    "ck-one": {
       "10ml": 0,
-      "5ml Normal": 0,
-      "5ml HQ": 1
-    },
-    "zara-intense-dark": {
-      "5ml Normal": 5,
-      "5ml HQ": 0,
-      "10ml": 1
-    },
-    "zara-seoul": {
-      "10ml": 0,
-      "5ml Normal": 0,
-      "5ml HQ": 2
+      "5ml HQ": 3,
+      "5ml Normal": 7
     }
   },
   "bundles": {
-    "bundle-cozy-winter": 0,
-    "spotlight-arabian": 6,
-    "bundle-marine-core": 0,
     "bundle-day-night": 0,
-    "bundle-office-rotation": 0,
     "bundle-zara-classics": 0,
+    "bundle-master-vault": 0,
+    "bundle-cozy-winter": 0,
     "bundle-rare-collector": 0,
-    "bundle-master-vault": 0
+    "bundle-marine-core": 0,
+    "spotlight-arabian": 6,
+    "bundle-office-rotation": 0
   }
 }

@@ -168,7 +168,7 @@ export const CATALOG_DATA: Fragrance[] = [
     isOutOfStock: false,
     notes: "Wasabi / Violet Leaf / Wet Cobblestones",
     notesList: ["Wasabi", "Violet Leaf", "Wet Cobblestones"],
-    disabledSizes: ["5ml Normal", "5ml HQ"],
+    disabledSizes: ["5ml HQ"],
     prices: {
       "10ml": 1115,
       "5ml Normal": 665,

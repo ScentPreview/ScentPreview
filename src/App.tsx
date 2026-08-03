@@ -42,26 +42,7 @@ import {
   Layers
 } from "lucide-react";
 
-const getSafeApiUrl = (endpoint: string): string => {
-  if (!endpoint) return "/";
-  if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
-    return endpoint;
-  }
-  try {
-    const origin = typeof window !== "undefined" && window.location && window.location.origin && window.location.origin !== "null" && window.location.origin !== "about:blank"
-      ? window.location.origin.replace(/\/+$/, "")
-      : "";
-    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-    return origin ? `${origin}${cleanEndpoint}` : cleanEndpoint;
-  } catch {
-    return endpoint;
-  }
-};
 
-const safeApiFetch = async (endpoint: string, options?: RequestInit) => {
-  const url = getSafeApiUrl(endpoint);
-  return await fetch(url, options);
-};
 
 const DEFAULT_FALLBACK_STOCK = {
   fragrances: {
@@ -300,7 +281,7 @@ export default function App() {
 
   const fetchStock = async () => {
     try {
-      const res = await safeApiFetch("/api/stock");
+      const res = await fetch("/api/stock");
       if (!res.ok) return;
       const data = await res.json();
       if (data && data.success && data.stock) {
@@ -322,7 +303,7 @@ export default function App() {
       console.log("[Redirection Auto-Sync] Found pending order in local storage:", parsedDetails.orderNumber);
       
       // Post to ensure it is registered on the server as "pending"
-      const response = await safeApiFetch("/api/orders", {
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsedDetails)
@@ -340,7 +321,7 @@ export default function App() {
       const isConfirmedLocally = localStorage.getItem("scent_isPaymentConfirmed") === "true";
       if (isConfirmedLocally) {
         console.log("[Redirection Auto-Sync] Order was paid locally. Ensuring server registration...");
-        const res = await safeApiFetch("/api/orders/confirm-payment", {
+        const res = await fetch("/api/orders/confirm-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(parsedDetails)
@@ -812,7 +793,7 @@ export default function App() {
     setIsLoadingAdminOrders(true);
     try {
       const token = localStorage.getItem("scent_admin_token") || "";
-      const response = await safeApiFetch("/api/orders", {
+      const response = await fetch("/api/orders", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -931,7 +912,7 @@ export default function App() {
 
       try {
         // 1. Try creating the pending order on the server
-        const createRes = await safeApiFetch("/api/orders", {
+        const createRes = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -953,7 +934,7 @@ export default function App() {
 
         // 2. Immediately trigger confirm-payment (which marks as paid and triggers notification dispatch)
         try {
-          const confirmRes = await safeApiFetch("/api/orders/confirm-payment", {
+          const confirmRes = await fetch("/api/orders/confirm-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -1023,7 +1004,7 @@ export default function App() {
   const handleDeleteOrder = async (orderNumber: string) => {
     try {
       const token = localStorage.getItem("scent_admin_token") || "";
-      const response = await safeApiFetch(`/api/orders/${orderNumber}`, {
+      const response = await fetch(`/api/orders/${orderNumber}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -1071,7 +1052,7 @@ export default function App() {
 
     setIsSavingStock(true);
     try {
-      const res = await safeApiFetch("/api/stock", {
+      const res = await fetch("/api/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(latestStockRef.current)
@@ -1105,7 +1086,7 @@ export default function App() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (isStockDirtyRef.current && latestStockRef.current) {
-        safeApiFetch("/api/stock", {
+        fetch("/api/stock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(latestStockRef.current),
@@ -1151,7 +1132,7 @@ export default function App() {
     stockDebounceRef.current = setTimeout(async () => {
       setIsSavingStock(true);
       try {
-        const res = await safeApiFetch("/api/stock", {
+        const res = await fetch("/api/stock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedStock)
@@ -1187,7 +1168,7 @@ export default function App() {
     setIsSavingStock(true);
     setAdminStatusMessage(null);
     try {
-      const res = await safeApiFetch("/api/stock", {
+      const res = await fetch("/api/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stock)
@@ -1222,7 +1203,7 @@ export default function App() {
     setIsSavingStock(true);
     setAdminStatusMessage(null);
     try {
-      const res = await safeApiFetch("/api/stock/reset", {
+      const res = await fetch("/api/stock/reset", {
         method: "POST"
       });
       const data = await res.json();
@@ -1270,13 +1251,44 @@ export default function App() {
   // Cart Handlers
   const getProductStock = (id: string, size: string): number => {
     if (!stock) return 10;
+    
+    // Check if it's a bundle first
+    const isBundle = BUNDLE_DATA.some(b => b.id === id);
+    if (isBundle) {
+      const bundleStock = stock.bundles[id] !== undefined ? stock.bundles[id] : 10;
+      let minStock = bundleStock;
+      
+      // Get constituents
+      let constituents: string[] = [];
+      switch (id) {
+        case "spotlight-arabian": constituents = ["lattafa-khamrah", "la-uno-qaswa"]; break;
+        case "bundle-day-night": constituents = ["zara-sunrise", "zara-for-him-black"]; break;
+        case "bundle-marine-core": constituents = ["ck-one", "la-uno-qaswa"]; break;
+        case "bundle-rare-collector": constituents = ["ck2", "zara-intense-dark"]; break;
+        case "bundle-office-rotation": constituents = ["givenchy-gentleman", "ck-one"]; break;
+        case "bundle-cozy-winter": constituents = ["zara-seoul-winter", "lattafa-khamrah", "zara-rich-warm-addictive"]; break;
+        case "bundle-master-vault": constituents = ["lattafa-khamrah", "zara-seoul-winter", "zara-intense-dark"]; break;
+        case "bundle-zara-classics": constituents = ["zara-sunrise", "zara-seoul-winter", "zara-for-him-black", "zara-intense-dark"]; break;
+      }
+      
+      // Assume "5ml Normal" size is required for bundles
+      const checkSize = "5ml Normal";
+      for (const cid of constituents) {
+        const cStock = stock.fragrances[cid]?.[checkSize];
+        if (cStock !== undefined) {
+          minStock = Math.min(minStock, cStock);
+        } else {
+          // If a constituent is completely missing from stock, it's 0
+          minStock = 0;
+        }
+      }
+      
+      return minStock;
+    }
+
     const fragStock = stock.fragrances[id];
     if (fragStock) {
       return fragStock[size] !== undefined ? fragStock[size] : 10;
-    }
-    const bundleStock = stock.bundles[id];
-    if (bundleStock !== undefined) {
-      return bundleStock;
     }
     return 10;
   };
@@ -1570,7 +1582,7 @@ export default function App() {
     };
 
     try {
-      const response = await safeApiFetch("/api/orders", {
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1708,7 +1720,7 @@ export default function App() {
                         
                         try {
                           // 1. Instantly confirm and fulfill the order on the backend in the background
-                          const res = await safeApiFetch("/api/orders/confirm-payment", {
+                          const res = await fetch("/api/orders/confirm-payment", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(paymentDetails),
@@ -1807,7 +1819,7 @@ export default function App() {
                   onClick={async () => {
                     setIsConfirmingPayment(true);
                     try {
-                      const res = await safeApiFetch("/api/orders/confirm-payment", {
+                      const res = await fetch("/api/orders/confirm-payment", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(paymentDetails),
@@ -1917,7 +1929,7 @@ export default function App() {
                   if (paymentDetails) {
                     try {
                       console.log("[Continue Action] User clicked Continue. Sending final payment confirmation...");
-                      const res = await safeApiFetch("/api/orders/confirm-payment", {
+                      const res = await fetch("/api/orders/confirm-payment", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(paymentDetails),
@@ -4163,7 +4175,7 @@ export default function App() {
                         e.preventDefault();
                         const sanitizedInput = adminPasscodeInput.trim().toUpperCase();
                         try {
-                          const res = await safeApiFetch("/api/login", {
+                          const res = await fetch("/api/login", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ passcode: sanitizedInput })

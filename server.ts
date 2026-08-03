@@ -810,6 +810,41 @@ Your evaluation must fit this schema:
         stockReduced: false,
       };
 
+      // Validate stock before creating order unless skipped
+      if (Array.isArray(items) && !skipStockReduction) {
+        const stock = await loadStockFromFirestore();
+        for (const item of items) {
+          const match = findItemIdByName(item.name);
+          if (match) {
+            if (match.type === "fragrance") {
+              const fStock = stock.fragrances[match.id];
+              if (fStock) {
+                const current = fStock[item.size] || 0;
+                if (current < item.quantity) {
+                  return res.status(400).json({ error: `Insufficient stock for ${item.name} (${item.size}).` });
+                }
+              }
+            } else {
+              const current = stock.bundles[match.id] || 0;
+              if (current < item.quantity) {
+                return res.status(400).json({ error: `Insufficient stock for bundle ${item.name}.` });
+              }
+              const constituentFragranceIds = getBundleConstituents(match.id);
+              for (const fragId of constituentFragranceIds) {
+                const fStock = stock.fragrances[fragId];
+                if (fStock) {
+                  const sizeToReduce = item.size || "5ml Normal";
+                  const curFragStock = fStock[sizeToReduce] || 0;
+                  if (curFragStock < item.quantity) {
+                    return res.status(400).json({ error: `Insufficient stock for constituent ${fragId} in bundle ${item.name}.` });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       // Reduce the stock of items by the requested quantities unless skipped
       if (Array.isArray(items) && !skipStockReduction) {
         await reduceStockForItems(items);
