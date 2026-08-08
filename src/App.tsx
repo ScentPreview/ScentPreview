@@ -4182,7 +4182,7 @@ export default function App() {
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
-                        const sanitizedInput = adminPasscodeInput.trim().toUpperCase();
+                        const sanitizedInput = adminPasscodeInput.trim();
                         try {
                           const res = await fetch("/api/login", {
                             method: "POST",
@@ -4221,7 +4221,7 @@ export default function App() {
                           setAdminPasscodeInput(e.target.value);
                           setAdminPasscodeError(null);
                         }}
-                        className="w-full bg-stone-950 border border-stone-800 rounded-sm px-4 py-3 text-xs tracking-widest text-center text-white focus:outline-none focus:border-amber-gold transition-colors font-mono uppercase"
+                        className="w-full bg-stone-950 border border-stone-800 rounded-sm px-4 py-3 text-xs tracking-widest text-center text-white focus:outline-none focus:border-amber-gold transition-colors font-mono"
                         autoFocus
                       />
                       {adminPasscodeError && (
