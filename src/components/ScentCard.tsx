@@ -139,9 +139,6 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
           <span className="text-[10px] text-stone-500 line-through font-normal">
             ₹{getScentOriginalPrice(fragrance.id, selectedSize)}
           </span>
-          <span className="text-[8.5px] text-emerald-700 font-sans font-bold bg-emerald-50/80 border border-emerald-100/60 px-1.5 py-0.5 rounded-full shadow-2xs">
-            40% OFF
-          </span>
         </div>
         <div className="flex items-baseline gap-1">
           <span className="text-[8px] text-stone-500 font-sans uppercase tracking-widest font-bold">

@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -595,9 +596,24 @@ Total Amount Paid: ₹${order.total}.00
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+  
+  // Trust proxy is required for express-rate-limit to properly identify IPs when running behind a reverse proxy (like in AI Studio/Cloud Run)
+  app.set("trust proxy", 1);
+  
+  const PORT = 3000;
 
   app.use(express.json());
+
+  // Rate Limiting for Admin Login to prevent brute force attacks
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per `window` (here, per 15 minutes)
+    message: { error: "Too many login attempts from this IP, please try again after 15 minutes" },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  });
+
+
 
   // Load initial orders and stock from Firestore on startup
   try {
@@ -734,8 +750,34 @@ Your evaluation must fit this schema:
     }
   });
 
-  // API Route: Reset stock data to default (the official user stock list)
-  app.post("/api/stock/reset", async (req, res) => {
+
+
+
+
+  // Middleware to authenticate admin requests via JWT
+  const authenticateAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Access denied. No token provided." });
+      }
+
+      const token = authHeader.split(" ")[1];
+      const jwtSecret = process.env.JWT_SECRET || "scentpreview_fallback_secret_key_2026";
+      
+      try {
+        const decoded = jwt.verify(token, jwtSecret);
+        (req as any).admin = decoded;
+        next();
+      } catch (err) {
+        return res.status(403).json({ error: "Access denied. Invalid or expired token." });
+      }
+    } catch (error) {
+      console.error("Auth middleware error:", error);
+      res.status(500).json({ error: "Internal server authentication error." });
+    }
+  };
+  app.post("/api/stock/reset", authenticateAdmin, async (req, res) => {
     try {
       await saveStockToFirestore(DEFAULT_STOCK);
       res.json({ success: true, message: "Stock successfully reset to the official list", stock: DEFAULT_STOCK });
@@ -746,7 +788,7 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Update stock levels directly (manual management in Admin portal)
-  app.post("/api/stock", async (req, res) => {
+  app.post("/api/stock", authenticateAdmin, async (req, res) => {
     try {
       const { fragrances, bundles } = req.body;
       if (!fragrances || !bundles) {
@@ -989,7 +1031,7 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Admin Login (Generates JWT)
-  app.post("/api/login", (req, res) => {
+  app.post("/api/login", loginLimiter, (req, res) => {
     try {
       const { passcode } = req.body;
       const expectedPasscode = process.env.ADMIN_PASSCODE || "SCENTSELLING";
@@ -1008,31 +1050,6 @@ Your evaluation must fit this schema:
       res.status(500).json({ error: "An error occurred during login." });
     }
   });
-
-  // Middleware to authenticate admin requests via JWT
-  const authenticateAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Access denied. No token provided." });
-      }
-
-      const token = authHeader.split(" ")[1];
-      const jwtSecret = process.env.JWT_SECRET || "scentpreview_fallback_secret_key_2026";
-
-      try {
-        const decoded = jwt.verify(token, jwtSecret);
-        (req as any).admin = decoded;
-        next();
-      } catch (err) {
-        return res.status(403).json({ error: "Access denied. Invalid or expired token." });
-      }
-    } catch (error) {
-      console.error("Auth middleware error:", error);
-      res.status(500).json({ error: "Internal server authentication error." });
-    }
-  };
-
 
   // API Route: Get all orders (for Admin Zone) - Protected
   app.get("/api/orders", authenticateAdmin, async (req, res) => {

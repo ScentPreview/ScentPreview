@@ -1054,7 +1054,10 @@ export default function App() {
     try {
       const res = await fetch("/api/stock", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
+        },
         body: JSON.stringify(latestStockRef.current)
       });
       const data = await res.json();
@@ -1088,7 +1091,10 @@ export default function App() {
       if (isStockDirtyRef.current && latestStockRef.current) {
         fetch("/api/stock", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
+          },
           body: JSON.stringify(latestStockRef.current),
           keepalive: true
         });
@@ -1134,7 +1140,10 @@ export default function App() {
       try {
         const res = await fetch("/api/stock", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
+          },
           body: JSON.stringify(updatedStock)
         });
         const data = await res.json();
@@ -1170,7 +1179,10 @@ export default function App() {
     try {
       const res = await fetch("/api/stock", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
+        },
         body: JSON.stringify(stock)
       });
       const data = await res.json();
@@ -1204,7 +1216,10 @@ export default function App() {
     setAdminStatusMessage(null);
     try {
       const res = await fetch("/api/stock/reset", {
-        method: "POST"
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
+        }
       });
       const data = await res.json();
       if (data.success) {
@@ -3044,9 +3059,6 @@ export default function App() {
                           <span className="font-mono text-2xl font-medium text-amber-gold">
                             ₹{spotlight.fixedPrice}.00
                           </span>
-                          <span className="text-[8px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold">
-                            40% OFF
-                          </span>
                         </div>
                       </div>
 
@@ -3157,9 +3169,6 @@ export default function App() {
                               <div className="flex items-center gap-1.5 mb-0.5">
                                 <span className="font-mono text-[10px] text-stone-400 line-through">
                                   ₹{getBundleOriginalPrice(bundle.id)}.00
-                                </span>
-                                <span className="text-[8px] font-mono text-emerald-600 bg-emerald-50 border border-emerald-100 px-1 rounded uppercase font-semibold">
-                                  40% OFF
                                 </span>
                               </div>
                               <span className="font-mono text-sm font-bold text-stone-950">
