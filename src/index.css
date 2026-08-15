@@ -1,6 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
 @import "tailwindcss";
 
+html { scroll-behavior: smooth; }
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
@@ -23,14 +30,22 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-sand-50);
+  background: #0B0A0A;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-sand-300);
+  background: rgba(177, 183, 171, 0.2);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-amber-gold);
+}
+
+/* High contrast text shadow for dark themes */
+.text-shadow-sm {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 /* Glass Refraction Classes */
@@ -197,3 +212,8 @@
   filter: drop-shadow(0 25px 35px rgba(201, 154, 83, 0.25)) blur(1px);
 }
 
+
+/* Global smooth scrolling and hardware acceleration for containers */
+* {
+  -webkit-overflow-scrolling: touch;
+}

@@ -172,7 +172,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-4 right-4 z-50 p-2 text-stone-400 hover:text-white hover:bg-stone-900 rounded-full cursor-pointer bg-stone-950/40 border border-stone-850/60 backdrop-blur-sm transition-all"
+          className="absolute top-4 right-4 z-50 p-2 text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm hover:bg-stone-900 rounded-full cursor-pointer bg-stone-950/40 border border-stone-850/60 backdrop-blur-sm transition-all"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -196,16 +196,16 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
               <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/20 transition-all duration-300" />
               
               <div className="relative space-y-4 max-w-sm pointer-events-none">
-                <span className="text-[10px] font-mono tracking-[0.3em] text-stone-500 uppercase block font-bold">
+                <span className="text-[10px] font-mono tracking-[0.3em] text-[#B1B7AB]/90 uppercase block font-bold">
                   ROUND {round} // CLASH {round}-A
                 </span>
-                <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black tracking-tighter text-white leading-none">
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black tracking-tighter text-[#FBF6F0] text-shadow-sm leading-none">
                   {activeLeft?.name}
                 </h3>
                 <span className="inline-block px-3 py-1 bg-stone-900 border border-stone-850 text-emerald-400 rounded-full text-[9px] font-mono font-bold tracking-widest uppercase">
                   {activeLeft?.subtitle}
                 </span>
-                <p className="text-stone-400 text-xs font-light tracking-wide leading-relaxed pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block">
+                <p className="text-[#B1B7AB] text-xs font-light tracking-wide leading-relaxed pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block">
                   Click to choose this frequency
                 </p>
               </div>
@@ -215,23 +215,23 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
             <button
               onClick={() => activeLeft && activeRight && handleSelect(activeRight, activeLeft, "right")}
               type="button"
-              className={`w-full md:w-1/2 h-1/2 md:h-full bg-stone-100 text-stone-950 p-6 sm:p-12 flex flex-col items-center justify-center text-center relative group overflow-hidden transition-all duration-200 cursor-pointer ${
+              className={`w-full md:w-1/2 h-1/2 md:h-full bg-[#111111] text-[#FBF6F0] text-shadow-sm p-6 sm:p-12 flex flex-col items-center justify-center text-center relative group overflow-hidden transition-all duration-200 cursor-pointer ${
                 direction === "left" ? "translate-x-full opacity-0" : ""
               }`}
             >
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/40 transition-all duration-300" />
+              <div className="absolute inset-0 bg-[#111111]/0 group-hover:bg-[#111111]/40 transition-all duration-300" />
               
               <div className="relative space-y-4 max-w-sm pointer-events-none">
-                <span className="text-[10px] font-mono tracking-[0.3em] text-stone-500 uppercase block font-bold">
+                <span className="text-[10px] font-mono tracking-[0.3em] text-[#B1B7AB]/90 uppercase block font-bold">
                   ROUND {round} // CLASH {round}-B
                 </span>
-                <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black tracking-tighter text-stone-950 leading-none">
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black tracking-tighter text-[#FBF6F0] text-shadow-sm leading-none">
                   {activeRight?.name}
                 </h3>
-                <span className="inline-block px-3 py-1 bg-stone-200 border border-stone-300 text-stone-800 rounded-full text-[9px] font-mono font-bold tracking-widest uppercase">
+                <span className="inline-block px-3 py-1 bg-[#276152] border border-stone-800 text-[#B1B7AB] rounded-full text-[9px] font-mono font-bold tracking-widest uppercase">
                   {activeRight?.subtitle}
                 </span>
-                <p className="text-stone-700 text-xs font-light tracking-wide leading-relaxed pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block">
+                <p className="text-[#B1B7AB] text-xs font-light tracking-wide leading-relaxed pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block">
                   Click to choose this frequency
                 </p>
               </div>
@@ -257,7 +257,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex-1 flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden bg-black text-white"
+            className="flex-1 flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden bg-black text-[#FBF6F0] text-shadow-sm"
           >
             {/* Heavy strobe-effect gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-black to-stone-900 opacity-60" />
@@ -269,18 +269,18 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
               </span>
 
               <div className="space-y-2">
-                <h3 className="text-xs sm:text-sm font-mono tracking-widest text-stone-400 uppercase">
+                <h3 className="text-xs sm:text-sm font-mono tracking-widest text-[#B1B7AB] uppercase">
                   {winnerFrag?.brand}
                 </h3>
-                <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-black tracking-tight text-white leading-none uppercase">
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-black tracking-tight text-[#FBF6F0] text-shadow-sm leading-none uppercase">
                   {winnerFrag?.name}
                 </h2>
-                <span className="inline-block mt-4 text-[11px] font-mono tracking-[0.25em] text-white uppercase font-bold bg-stone-900 border border-stone-800 px-4 py-1.5 rounded-full">
+                <span className="inline-block mt-4 text-[11px] font-mono tracking-[0.25em] text-[#FBF6F0] text-shadow-sm uppercase font-bold bg-stone-900 border border-stone-800 px-4 py-1.5 rounded-full">
                   YOUR UNDISPUTED PROFILE
                 </span>
               </div>
 
-              <p className="text-stone-300 text-xs sm:text-sm leading-relaxed font-light font-sans pt-2">
+              <p className="text-[#B1B7AB] text-xs sm:text-sm leading-relaxed font-light font-sans pt-2">
                 {winner?.description}
               </p>
 
@@ -298,10 +298,10 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
                         onClick={() => setSelectedSize(sizeOption)}
                         className={`px-2.5 py-1.5 rounded text-[10px] font-mono font-bold transition-all ${
                           isDisabled
-                            ? "opacity-25 cursor-not-allowed line-through text-stone-600 bg-transparent"
+                            ? "opacity-25 cursor-not-allowed line-through text-[#B1B7AB] bg-transparent"
                             : isSelected
-                            ? "bg-amber-500 text-stone-950"
-                            : "bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                            ? "bg-amber-500 text-[#111111]"
+                            : "bg-stone-900 text-[#B1B7AB] hover:bg-stone-800 hover:text-[#B1B7AB]"
                         }`}
                       >
                         {sizeOption.replace("Normal", "N").replace("HQ", "HQ")}
@@ -316,10 +316,10 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
                   onClick={handleAcquire}
                   className={`w-full sm:w-auto px-6 py-3.5 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md ${
                     isAdded
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-emerald-500 text-[#FBF6F0] text-shadow-sm"
                       : isOOS
-                      ? "bg-stone-900 border border-stone-800 text-stone-500 cursor-not-allowed opacity-80"
-                      : "bg-white text-stone-950 hover:bg-stone-200 cursor-pointer"
+                      ? "bg-stone-900 border border-stone-800 text-[#B1B7AB]/90 cursor-not-allowed opacity-80"
+                      : "bg-[#276152] text-[#FBF6F0] text-shadow-sm hover:bg-[#0D3A35] cursor-pointer"
                   }`}
                 >
                   {isAdded ? (
@@ -344,7 +344,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="text-stone-400 hover:text-white text-xs font-mono tracking-widest uppercase flex items-center gap-2 mx-auto cursor-pointer bg-stone-900/40 border border-stone-850 px-4 py-2 rounded-lg hover:bg-stone-900 transition-all"
+                  className="text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm text-xs font-mono tracking-widest uppercase flex items-center gap-2 mx-auto cursor-pointer bg-stone-900/40 border border-stone-850 px-4 py-2 rounded-lg hover:bg-stone-900 transition-all"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   RESET BATTLE BRACKET
@@ -355,7 +355,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
 
             {/* Unified Footer */}
             <div className="relative z-10 shrink-0 text-center border-t border-stone-900/60 pt-4">
-              <p className="text-[9px] font-mono text-stone-500 uppercase tracking-widest">
+              <p className="text-[9px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest">
                 Sterile ISO cleanroom hand-pouring // 100% authentic decanting vault
               </p>
             </div>

@@ -1118,8 +1118,8 @@ Your evaluation must fit this schema:
     });
   }
 
-  app.listen(PORT, "::", () => {
-    console.log(`Server running on http://[::]:${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

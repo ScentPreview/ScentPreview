@@ -181,7 +181,7 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-4 right-4 z-50 p-2 text-stone-400 hover:text-white hover:bg-stone-900 rounded-full cursor-pointer bg-stone-950/40 border border-stone-800/60 backdrop-blur-sm"
+          className="absolute top-4 right-4 z-50 p-2 text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm hover:bg-stone-900 rounded-full cursor-pointer bg-stone-950/40 border border-stone-800/60 backdrop-blur-sm"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -196,18 +196,18 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
               <span className="text-[9px] font-mono tracking-[0.2em] text-emerald-400 uppercase font-bold">
                 LAB SYSTEM 2.0 // CHORD SYNTHESIS
               </span>
-              <h3 className="text-2xl font-serif italic text-white tracking-wide">
+              <h3 className="text-2xl font-serif italic text-[#FBF6F0] text-shadow-sm tracking-wide">
                 Chemical Chord Matcher
               </h3>
             </div>
 
-            <p className="text-xs text-stone-400 font-sans leading-relaxed font-light hidden xs:block line-clamp-2 sm:line-clamp-none">
+            <p className="text-xs text-[#B1B7AB] font-sans leading-relaxed font-light hidden xs:block line-clamp-2 sm:line-clamp-none">
               Like sound waves, fragrance molecules strike the senses in pairs. Select exactly two complementary raw chemical notes below to synthesize your custom scent chord.
             </p>
 
             {/* Dynamic visual representation of the active chord */}
             <div className="border-t border-stone-800/60 pt-4 md:pt-6 space-y-4">
-              <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest block font-bold">
+              <span className="text-[10px] font-mono text-[#B1B7AB] uppercase tracking-widest block font-bold">
                 Active Chemical Chord
               </span>
 
@@ -230,7 +230,7 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                           <span className="text-[8px] font-mono text-amber-500 uppercase tracking-widest block font-bold">
                             Node {index + 1} / {node?.type}
                           </span>
-                          <span className="text-xs font-serif font-bold text-white block truncate">
+                          <span className="text-xs font-serif font-bold text-[#FBF6F0] text-shadow-sm block truncate">
                             {node?.name}
                           </span>
                         </div>
@@ -242,12 +242,12 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
             </div>
           </div>
 
-          <div className="hidden md:flex relative z-10 pt-8 border-t border-stone-800/60 items-center justify-between text-[10px] font-mono text-stone-500 uppercase tracking-widest">
+          <div className="hidden md:flex relative z-10 pt-8 border-t border-stone-800/60 items-center justify-between text-[10px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest">
             <span>ScentPreview Secure UI</span>
             <button
               type="button"
               onClick={onClose}
-              className="text-stone-400 hover:text-white transition-colors cursor-pointer"
+              className="text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm transition-colors cursor-pointer"
             >
               Exit Lab
             </button>
@@ -268,7 +268,7 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400 font-bold">
+                    <h4 className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#B1B7AB] font-bold">
                       Synthesize Chemical Nodes // Limit 2
                     </h4>
                   </div>
@@ -284,11 +284,11 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                           className={`w-full text-left p-4 rounded-xl border transition-all duration-300 flex flex-col justify-between h-28 cursor-pointer relative overflow-hidden group ${
                             isSelected
                               ? "bg-stone-900 border-emerald-500/40 text-stone-100"
-                              : "bg-stone-950 border-stone-850 text-stone-400 hover:border-stone-700 hover:text-stone-200"
+                              : "bg-stone-950 border-stone-850 text-[#B1B7AB] hover:border-stone-700 hover:text-[#B1B7AB]"
                           }`}
                         >
                           <div className="flex items-center justify-between w-full">
-                            <span className={`text-[8px] font-mono uppercase tracking-widest ${isSelected ? "text-emerald-400" : "text-stone-500"}`}>
+                            <span className={`text-[8px] font-mono uppercase tracking-widest ${isSelected ? "text-emerald-400" : "text-[#B1B7AB]/90"}`}>
                               {node.type} Node
                             </span>
                             <div className={`w-2 h-2 rounded-full border flex items-center justify-center ${
@@ -297,10 +297,10 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                           </div>
 
                           <div className="space-y-0.5 mt-2">
-                            <span className={`text-sm font-serif font-bold block ${isSelected ? "text-white" : "text-stone-300"}`}>
+                            <span className={`text-sm font-serif font-bold block ${isSelected ? "text-[#FBF6F0] text-shadow-sm" : "text-[#B1B7AB]"}`}>
                               {node.name}
                             </span>
-                            <p className="text-[9px] font-sans text-stone-500 leading-tight font-light truncate">
+                            <p className="text-[9px] font-sans text-[#B1B7AB]/90 leading-tight font-light truncate">
                               {node.desc}
                             </p>
                           </div>
@@ -317,13 +317,13 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                     disabled={selectedNodes.length !== 2}
                     className={`w-full py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-lg ${
                       selectedNodes.length === 2
-                        ? "bg-white text-stone-950 hover:bg-stone-200 cursor-pointer"
-                        : "bg-stone-900 text-stone-600 border border-stone-850 cursor-not-allowed"
+                        ? "bg-[#276152] text-[#FBF6F0] text-shadow-sm hover:bg-[#0D3A35] cursor-pointer"
+                        : "bg-stone-900 text-[#B1B7AB] border border-stone-850 cursor-not-allowed"
                     }`}
                   >
                     Synthesize Scent Chord ({selectedNodes.length}/2 Active)
                   </button>
-                  <p className="text-center text-[9px] font-mono text-stone-500 mt-3 uppercase tracking-wider">
+                  <p className="text-center text-[9px] font-mono text-[#B1B7AB]/90 mt-3 uppercase tracking-wider">
                     Chemical formulation compiles instantly upon click
                   </p>
                 </div>
@@ -343,13 +343,13 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                       <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest font-bold">
                         CHORD SYNTHESIS COMPLETE
                       </span>
-                      <h4 className="text-xs font-mono uppercase tracking-widest text-stone-400 font-bold">
+                      <h4 className="text-xs font-mono uppercase tracking-widest text-[#B1B7AB] font-bold">
                         Compiled Scent Molecules
                       </h4>
                     </div>
                     <button
                       onClick={handleReset}
-                      className="text-xs font-mono text-stone-400 hover:text-white flex items-center gap-1.5 cursor-pointer bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-lg transition-all"
+                      className="text-xs font-mono text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm flex items-center gap-1.5 cursor-pointer bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-lg transition-all"
                     >
                       <RotateCcw className="w-3 h-3" />
                       RESTART
@@ -358,13 +358,13 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
 
                   {matches.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-stone-950 border border-stone-850/80 rounded-2xl space-y-4 my-auto">
-                      <p className="text-sm font-serif italic text-stone-300">
+                      <p className="text-sm font-serif italic text-[#B1B7AB]">
                         "Your selected chemical chord is highly complex."
                       </p>
                       <button
                         type="button"
                         onClick={handleReset}
-                        className="py-2.5 px-6 bg-white text-stone-950 rounded-lg text-xs font-mono font-bold tracking-widest uppercase transition-all shadow"
+                        className="py-2.5 px-6 bg-[#276152] text-[#FBF6F0] text-shadow-sm rounded-lg text-xs font-mono font-bold tracking-widest uppercase transition-all shadow"
                       >
                         Adjust Selected Nodes
                       </button>
@@ -385,13 +385,13 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                             className="bg-stone-950 border border-stone-850 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-stone-700 transition-all group"
                           >
                             <div className="space-y-1.5">
-                              <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-widest border border-stone-800 px-2 py-0.5 rounded-sm">
+                              <span className="text-[9px] font-mono font-bold text-[#B1B7AB] uppercase tracking-widest border border-stone-800 px-2 py-0.5 rounded-sm">
                                 {surv.brand}
                               </span>
-                              <h5 className="text-lg font-serif font-bold text-white uppercase tracking-tight">
+                              <h5 className="text-lg font-serif font-bold text-[#FBF6F0] text-shadow-sm uppercase tracking-tight">
                                 {surv.name}
                               </h5>
-                              <p className="text-[10px] font-mono text-stone-500 uppercase tracking-wider line-clamp-1">
+                              <p className="text-[10px] font-mono text-[#B1B7AB]/90 uppercase tracking-wider line-clamp-1">
                                 Notes: {surv.notes}
                               </p>
                             </div>
@@ -411,10 +411,10 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                                         onClick={() => setSelectedSizes((prev) => ({ ...prev, [surv.id]: sizeOption }))}
                                         className={`px-2 py-1 rounded text-[9px] font-mono font-bold transition-all ${
                                           isDisabled
-                                            ? "opacity-25 cursor-not-allowed line-through text-stone-600 bg-transparent"
+                                            ? "opacity-25 cursor-not-allowed line-through text-[#B1B7AB] bg-transparent"
                                             : isSelected
-                                            ? "bg-amber-500 text-stone-950"
-                                            : "bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                                            ? "bg-amber-500 text-[#111111]"
+                                            : "bg-stone-900 text-[#B1B7AB] hover:bg-stone-800 hover:text-[#B1B7AB]"
                                         }`}
                                       >
                                         {sizeOption.replace("Normal", "N").replace("HQ", "HQ")}
@@ -433,10 +433,10 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                                     onClick={() => handleAddMatch(surv.id)}
                                     className={`w-full sm:w-36 py-2 px-3 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow ${
                                       isAdded
-                                        ? "bg-emerald-500 text-white"
+                                        ? "bg-emerald-500 text-[#FBF6F0] text-shadow-sm"
                                         : isOOS
-                                        ? "bg-stone-900 border border-stone-800 text-stone-500 cursor-not-allowed opacity-80"
-                                        : "bg-white text-stone-950 hover:bg-stone-200 cursor-pointer"
+                                        ? "bg-stone-900 border border-stone-800 text-[#B1B7AB]/90 cursor-not-allowed opacity-80"
+                                        : "bg-[#276152] text-[#FBF6F0] text-shadow-sm hover:bg-[#0D3A35] cursor-pointer"
                                     }`}
                                   >
                                     {isAdded ? (
@@ -469,14 +469,14 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="flex-1 py-3 bg-stone-900 hover:bg-stone-800 text-stone-300 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all"
+                    className="flex-1 py-3 bg-stone-900 hover:bg-stone-800 text-[#B1B7AB] rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all"
                   >
                     Adjust Selection Chord
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 py-3 bg-white hover:bg-stone-200 text-stone-950 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all shadow"
+                    className="flex-1 py-3 bg-[#276152] hover:bg-[#0D3A35] text-[#FBF6F0] text-shadow-sm rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all shadow"
                   >
                     Return to Archive Catalog
                   </button>

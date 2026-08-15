@@ -294,7 +294,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-4 right-4 z-50 p-2 text-stone-400 hover:text-white hover:bg-stone-900 rounded-full md:hidden cursor-pointer bg-stone-950/40 border border-stone-800/60 backdrop-blur-sm"
+          className="absolute top-4 right-4 z-50 p-2 text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm hover:bg-stone-900 rounded-full md:hidden cursor-pointer bg-stone-950/40 border border-stone-800/60 backdrop-blur-sm"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -310,18 +310,18 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
               <span className="text-[9px] font-mono tracking-[0.2em] text-amber-500 uppercase font-bold">
                 LAB SYSTEM 2.0 // BYPASS SEARCH
               </span>
-              <h3 className="text-2xl font-serif italic text-white tracking-wide">
+              <h3 className="text-2xl font-serif italic text-[#FBF6F0] text-shadow-sm tracking-wide">
                 The Anti-Quiz
               </h3>
             </div>
 
-            <p className="text-xs text-stone-400 font-sans leading-relaxed font-light hidden xs:block line-clamp-2 sm:line-clamp-none">
+            <p className="text-xs text-[#B1B7AB] font-sans leading-relaxed font-light hidden xs:block line-clamp-2 sm:line-clamp-none">
               Standard search assumes you know what you want. We do not. Tell us what you absolutely despise, and we will chemically bypass those profiles to isolate your signature scent.
             </p>
 
             {/* Live survivors tracking with kinetic status indicator */}
             <div className="border-t border-stone-800/60 pt-4 md:pt-6 space-y-3 md:space-y-4">
-              <span className="text-[10px] font-mono text-stone-400 uppercase tracking-widest block font-bold">
+              <span className="text-[10px] font-mono text-[#B1B7AB] uppercase tracking-widest block font-bold">
                 Live Isolated Catalog
               </span>
 
@@ -337,10 +337,10 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                   </motion.span>
                 </div>
                 <div className="text-left">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-stone-300 block">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#B1B7AB] block">
                     {survivors.length === 1 ? "Survivor" : "Survivors"} remaining
                   </span>
-                  <span className="text-[9px] font-mono text-stone-500">
+                  <span className="text-[9px] font-mono text-[#B1B7AB]/90">
                     {survivors.length === 0 ? "Perfect Filter Set" : "Isolating chemical notes..."}
                   </span>
                 </div>
@@ -361,14 +361,14 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                       transition={{ duration: 0.3, delay: i * 0.03 }}
                       className={`p-2 rounded border text-center relative overflow-hidden transition-all duration-300 ${
                         isEliminated 
-                          ? "bg-stone-950/40 border-stone-900 text-stone-600 line-through" 
-                          : "bg-stone-900 border-stone-800 text-stone-300"
+                          ? "bg-stone-950/40 border-stone-900 text-[#B1B7AB] line-through" 
+                          : "bg-stone-900 border-stone-800 text-[#B1B7AB]"
                       }`}
                     >
                       <div className="text-[9px] font-mono tracking-tighter truncate font-medium">
                         {f.brand}
                       </div>
-                      <div className={`text-[8px] font-sans truncate ${isEliminated ? "line-through opacity-40" : "text-stone-400 font-light"}`}>
+                      <div className={`text-[8px] font-sans truncate ${isEliminated ? "line-through opacity-40" : "text-[#B1B7AB] font-light"}`}>
                         {f.name.replace("Calvin Klein ", "").replace("Zara ", "")}
                       </div>
                     </motion.div>
@@ -378,12 +378,12 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
             </div>
           </div>
 
-          <div className="hidden md:flex relative z-10 pt-8 border-t border-stone-800/60 items-center justify-between text-[10px] font-mono text-stone-500 uppercase tracking-widest">
+          <div className="hidden md:flex relative z-10 pt-8 border-t border-stone-800/60 items-center justify-between text-[10px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest">
             <span>ScentPreview Secure UI</span>
             <button
               type="button"
               onClick={onClose}
-              className="text-stone-400 hover:text-white transition-colors cursor-pointer"
+              className="text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm transition-colors cursor-pointer"
             >
               Exit Lab
             </button>
@@ -405,12 +405,12 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
               >
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-[10px] font-mono uppercase tracking-[0.2em] text-stone-400 font-bold">
+                    <h4 className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#B1B7AB] font-bold">
                       Isolate Dealbreakers // Select what you hate
                     </h4>
                     <button
                       onClick={onClose}
-                      className="hidden md:block text-stone-500 hover:text-stone-200 transition-colors cursor-pointer p-1 rounded-full hover:bg-stone-900"
+                      className="hidden md:block text-[#B1B7AB]/90 hover:text-[#B1B7AB] transition-colors cursor-pointer p-1 rounded-full hover:bg-stone-900"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -428,7 +428,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                           className={`w-full text-left p-4 rounded-xl border transition-all duration-300 flex items-center justify-between group cursor-pointer ${
                             isSelected
                               ? "bg-stone-900 border-amber-500/40 text-stone-100"
-                              : "bg-stone-950 border-stone-850 text-stone-400 hover:border-stone-700 hover:text-stone-200"
+                              : "bg-stone-950 border-stone-850 text-[#B1B7AB] hover:border-stone-700 hover:text-[#B1B7AB]"
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -438,13 +438,13 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                               {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
                             </div>
                             <span className={`text-xs font-mono uppercase tracking-wider transition-all duration-300 ${
-                              isSelected ? "line-through text-stone-500 font-bold" : "font-normal"
+                              isSelected ? "line-through text-[#B1B7AB]/90 font-bold" : "font-normal"
                             }`}>
                               {db.label}
                             </span>
                           </div>
                           
-                          <span className="text-[9px] font-mono text-stone-500 uppercase tracking-widest group-hover:text-stone-400 transition-colors">
+                          <span className="text-[9px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest group-hover:text-[#B1B7AB] transition-colors">
                             {isSelected ? "[BYPASSED]" : "EXCLUDE"}
                           </span>
                         </button>
@@ -460,13 +460,13 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                     disabled={selectedDealbreakers.length === 0}
                     className={`w-full py-4 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all shadow-lg ${
                       selectedDealbreakers.length > 0
-                        ? "bg-white text-stone-950 hover:bg-stone-200 cursor-pointer"
-                        : "bg-stone-900 text-stone-600 border border-stone-850 cursor-not-allowed"
+                        ? "bg-[#276152] text-[#FBF6F0] text-shadow-sm hover:bg-[#0D3A35] cursor-pointer"
+                        : "bg-stone-900 text-[#B1B7AB] border border-stone-850 cursor-not-allowed"
                     }`}
                   >
                     Filter Out the Noise ({selectedDealbreakers.length} active)
                   </button>
-                  <p className="text-center text-[9px] font-mono text-stone-500 mt-3 uppercase tracking-wider">
+                  <p className="text-center text-[9px] font-mono text-[#B1B7AB]/90 mt-3 uppercase tracking-wider">
                     Chemical formulation compiles instantly upon click
                   </p>
                 </div>
@@ -486,13 +486,13 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                       <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest font-bold">
                         CHEMICAL COMPILATION SUCCESSFUL
                       </span>
-                      <h4 className="text-xs font-mono uppercase tracking-widest text-stone-400 font-bold">
+                      <h4 className="text-xs font-mono uppercase tracking-widest text-[#B1B7AB] font-bold">
                         Your Tailored Chemical Match
                       </h4>
                     </div>
                     <button
                       onClick={handleReset}
-                      className="text-xs font-mono text-stone-400 hover:text-white flex items-center gap-1.5 cursor-pointer bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-lg transition-all"
+                      className="text-xs font-mono text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm flex items-center gap-1.5 cursor-pointer bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-lg transition-all"
                     >
                       <RotateCcw className="w-3 h-3" />
                       RESTART
@@ -509,7 +509,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                         <p className="text-sm font-serif italic text-stone-100 leading-relaxed">
                           "You hate everything. Perfect. Try the Master Layering Vault."
                         </p>
-                        <p className="text-[11px] text-stone-500 font-sans leading-relaxed">
+                        <p className="text-[11px] text-[#B1B7AB]/90 font-sans leading-relaxed">
                           By eliminating all simple styles, your subconscious demands complex, customizable olfactory layering. We have isolated the ultimate solution.
                         </p>
                       </div>
@@ -521,8 +521,8 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                           onClick={handleAddVaultToCart}
                           className={`w-full py-3.5 rounded-xl text-xs font-mono font-bold tracking-widest uppercase transition-all shadow-md flex items-center justify-center gap-2 ${
                             isVaultOutOfStock()
-                              ? "bg-stone-900 border border-stone-800 text-stone-500 cursor-not-allowed opacity-80"
-                              : "bg-amber-500 hover:bg-amber-400 text-stone-950 cursor-pointer"
+                              ? "bg-stone-900 border border-stone-800 text-[#B1B7AB]/90 cursor-not-allowed opacity-80"
+                              : "bg-amber-500 hover:bg-amber-400 text-[#111111] cursor-pointer"
                           }`}
                         >
                           {addedIds["master-vault"] ? (
@@ -544,7 +544,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                         <button
                           type="button"
                           onClick={handleReset}
-                          className="w-full py-2.5 bg-transparent border border-stone-800 hover:border-stone-600 text-stone-400 hover:text-white rounded-xl text-[10px] font-mono tracking-wider uppercase transition-all"
+                          className="w-full py-2.5 bg-transparent border border-stone-800 hover:border-stone-600 text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm rounded-xl text-[10px] font-mono tracking-wider uppercase transition-all"
                         >
                           Reset & Try Again
                         </button>
@@ -571,7 +571,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                           >
                             <div className="space-y-2 max-w-xs sm:max-w-sm">
                               <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-widest border border-stone-800 px-2 py-0.5 rounded-sm">
+                                <span className="text-[9px] font-mono font-bold text-[#B1B7AB] uppercase tracking-widest border border-stone-800 px-2 py-0.5 rounded-sm">
                                   {surv.brand}
                                 </span>
                                 <span className="text-[9px] font-mono font-semibold text-emerald-400 uppercase tracking-wide">
@@ -579,14 +579,14 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                                 </span>
                               </div>
                               <div>
-                                <h5 className="text-lg font-serif font-bold text-white uppercase tracking-tight">
+                                <h5 className="text-lg font-serif font-bold text-[#FBF6F0] text-shadow-sm uppercase tracking-tight">
                                   {surv.name}
                                 </h5>
                                 <p className="text-xs font-serif italic text-amber-500 mt-0.5">
                                   "{surv.microDesc}"
                                 </p>
                               </div>
-                              <p className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">
+                              <p className="text-[10px] font-mono text-[#B1B7AB]/90 uppercase tracking-wider">
                                 Notes: {surv.notes}
                               </p>
                             </div>
@@ -594,7 +594,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                             {/* Controls for Add to Cart */}
                             <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-stone-900 shrink-0">
                               <div className="space-y-1 text-left sm:text-right">
-                                <span className="block text-xs font-mono text-stone-500">
+                                <span className="block text-xs font-mono text-[#B1B7AB]/90">
                                   Select Extraction Size
                                 </span>
                                 {/* Size selector */}
@@ -610,10 +610,10 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                                         onClick={() => setSelectedSizes((prev) => ({ ...prev, [surv.id]: sizeOption }))}
                                         className={`px-2 py-1 rounded text-[9px] font-mono font-bold transition-all ${
                                           isDisabled
-                                            ? "opacity-25 cursor-not-allowed line-through text-stone-600 bg-transparent"
+                                            ? "opacity-25 cursor-not-allowed line-through text-[#B1B7AB] bg-transparent"
                                             : isSelected
-                                            ? "bg-amber-500 text-stone-950"
-                                            : "bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                                            ? "bg-amber-500 text-[#111111]"
+                                            : "bg-stone-900 text-[#B1B7AB] hover:bg-stone-800 hover:text-[#B1B7AB]"
                                         }`}
                                       >
                                         {sizeOption.replace("Normal", "N").replace("HQ", "HQ")}
@@ -632,10 +632,10 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                                     onClick={() => handleAddSurvivorToCart(surv.id)}
                                     className={`w-full sm:w-36 py-2 px-3 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow ${
                                       isAdded
-                                        ? "bg-emerald-500 text-white"
+                                        ? "bg-emerald-500 text-[#FBF6F0] text-shadow-sm"
                                         : isOOS
-                                        ? "bg-stone-900 border border-stone-800 text-stone-500 cursor-not-allowed opacity-80"
-                                        : "bg-white text-stone-950 hover:bg-stone-200 cursor-pointer"
+                                        ? "bg-stone-900 border border-stone-800 text-[#B1B7AB]/90 cursor-not-allowed opacity-80"
+                                        : "bg-[#276152] text-[#FBF6F0] text-shadow-sm hover:bg-[#0D3A35] cursor-pointer"
                                     }`}
                                   >
                                     {isAdded ? (
@@ -668,14 +668,14 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="flex-1 py-3 bg-stone-900 hover:bg-stone-800 text-stone-300 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all"
+                    className="flex-1 py-3 bg-stone-900 hover:bg-stone-800 text-[#B1B7AB] rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all"
                   >
                     Adjust Excluded Notes
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 py-3 bg-white hover:bg-stone-200 text-stone-950 rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all shadow"
+                    className="flex-1 py-3 bg-[#276152] hover:bg-[#0D3A35] text-[#FBF6F0] text-shadow-sm rounded-xl text-xs font-mono font-bold uppercase tracking-widest transition-all shadow"
                   >
                     Return to Archive Catalog
                   </button>

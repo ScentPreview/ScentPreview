@@ -142,7 +142,7 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-4 right-4 z-50 p-2 text-stone-400 hover:text-white hover:bg-stone-900 rounded-full cursor-pointer bg-stone-950/40 border border-stone-800/60 backdrop-blur-sm"
+          className="absolute top-4 right-4 z-50 p-2 text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm hover:bg-stone-900 rounded-full cursor-pointer bg-stone-950/40 border border-stone-800/60 backdrop-blur-sm"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -158,12 +158,12 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
               <span className="text-[8px] sm:text-[9px] font-mono tracking-[0.25em] text-emerald-400 uppercase font-bold block">
                 LAB SYSTEM 2.0 // AESTHETIC CHANNEL
               </span>
-              <h3 className="text-sm sm:text-base font-serif italic text-white tracking-wide">
+              <h3 className="text-sm sm:text-base font-serif italic text-[#FBF6F0] text-shadow-sm tracking-wide">
                 Lifestyle Profile Selector
               </h3>
             </div>
           </div>
-          <div className="hidden sm:block text-[10px] font-mono text-stone-500 uppercase tracking-widest">
+          <div className="hidden sm:block text-[10px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest">
             {selectedProfile ? "Revealing Matched Scent" : "Select Your Vibe"}
           </div>
         </div>
@@ -182,10 +182,10 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                 className="w-full space-y-6"
               >
                 <div className="text-center max-w-lg mx-auto space-y-2 mb-2">
-                  <h4 className="text-xl sm:text-2xl font-serif text-white tracking-tight">
+                  <h4 className="text-xl sm:text-2xl font-serif text-[#FBF6F0] text-shadow-sm tracking-tight">
                     Select a channel to project today.
                   </h4>
-                  <p className="text-xs text-stone-400 font-sans leading-relaxed font-light">
+                  <p className="text-xs text-[#B1B7AB] font-sans leading-relaxed font-light">
                     Click an archetype below to reveal the specific molecules structured to project that physical environment and mental frequency.
                   </p>
                 </div>
@@ -199,22 +199,22 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                       className="group relative w-full h-40 sm:h-44 text-left p-6 bg-stone-950 hover:bg-[#111111] border border-stone-900 hover:border-stone-700 rounded-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer"
                     >
                       {/* Accent Light Layer */}
-                      <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-white/[0.01] group-hover:bg-emerald-500/[0.04] rounded-full blur-2xl transition-colors duration-500" />
+                      <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-[#111111]/[0.01] group-hover:bg-emerald-500/[0.04] rounded-full blur-2xl transition-colors duration-500" />
                       
                       <div className="flex items-center justify-between w-full">
-                        <span className="text-[10px] font-mono tracking-widest text-stone-600 group-hover:text-amber-500 transition-colors">
+                        <span className="text-[10px] font-mono tracking-widest text-[#B1B7AB] group-hover:text-amber-500 transition-colors">
                           {profile.num} / ARCHETYPE
                         </span>
-                        <span className="text-[9px] font-mono text-stone-500 uppercase tracking-widest bg-stone-900 border border-stone-850 px-2.5 py-1 rounded">
+                        <span className="text-[9px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest bg-stone-900 border border-stone-850 px-2.5 py-1 rounded">
                           SELECT
                         </span>
                       </div>
 
                       <div className="space-y-1.5">
-                        <h5 className="text-lg font-serif font-bold text-stone-250 group-hover:text-white transition-colors">
+                        <h5 className="text-lg font-serif font-bold text-stone-250 group-hover:text-[#FBF6F0] text-shadow-sm transition-colors">
                           {profile.title}
                         </h5>
-                        <p className="text-xs font-serif italic text-stone-400 group-hover:text-emerald-400 transition-colors">
+                        <p className="text-xs font-serif italic text-[#B1B7AB] group-hover:text-emerald-400 transition-colors">
                           "{profile.vibe}"
                         </p>
                       </div>
@@ -236,7 +236,7 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                 <button
                   type="button"
                   onClick={handleBackToGrid}
-                  className="inline-flex items-center gap-2 text-xs font-mono text-stone-400 hover:text-white hover:bg-stone-900/60 border border-stone-900 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 text-xs font-mono text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm hover:bg-stone-900/60 border border-stone-900 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Return to Profiles
@@ -250,7 +250,7 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                     <span className="text-[9px] font-mono tracking-[0.25em] text-amber-500 uppercase font-bold">
                       SYSTEM DETECTED ARCHETYPE: {selectedProfile.num}
                     </span>
-                    <h4 className="text-2xl sm:text-3xl font-serif text-white tracking-tight">
+                    <h4 className="text-2xl sm:text-3xl font-serif text-[#FBF6F0] text-shadow-sm tracking-tight">
                       {selectedProfile.title}
                     </h4>
                   </div>
@@ -267,14 +267,14 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                     ))}
                   </div>
 
-                  <p className="text-xs sm:text-sm font-sans text-stone-300 leading-relaxed font-light">
+                  <p className="text-xs sm:text-sm font-sans text-[#B1B7AB] leading-relaxed font-light">
                     {selectedProfile.breakdown}
                   </p>
                 </div>
 
                 {/* Matches Showcase */}
                 <div className="space-y-3">
-                  <h5 className="text-[10px] font-mono text-stone-500 uppercase tracking-widest font-bold">
+                  <h5 className="text-[10px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest font-bold">
                     UNLOCKED SIGNATURE MATCHES
                   </h5>
 
@@ -294,13 +294,13 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                           className="bg-stone-950 border border-stone-900 p-4 sm:p-5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-stone-700 transition-all group"
                         >
                           <div className="space-y-1.5">
-                            <span className="text-[9px] font-mono font-bold text-stone-500 uppercase tracking-widest">
+                            <span className="text-[9px] font-mono font-bold text-[#B1B7AB]/90 uppercase tracking-widest">
                               {originalFrag.brand}
                             </span>
-                            <h6 className="text-base sm:text-lg font-serif text-white uppercase tracking-tight">
+                            <h6 className="text-base sm:text-lg font-serif text-[#FBF6F0] text-shadow-sm uppercase tracking-tight">
                               {originalFrag.name}
                             </h6>
-                            <p className="text-[10px] sm:text-xs font-sans text-stone-400 font-light line-clamp-1">
+                            <p className="text-[10px] sm:text-xs font-sans text-[#B1B7AB] font-light line-clamp-1">
                               Notes: {originalFrag.notes}
                             </p>
                           </div>
@@ -319,10 +319,10 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                                     onClick={() => setSelectedSize((prev) => ({ ...prev, [fragId]: sizeOption }))}
                                     className={`px-2 py-1 rounded text-[9px] font-mono font-bold transition-all ${
                                       isDisabled
-                                        ? "opacity-25 cursor-not-allowed line-through text-stone-600 bg-transparent"
+                                        ? "opacity-25 cursor-not-allowed line-through text-[#B1B7AB] bg-transparent"
                                         : isSelected
-                                        ? "bg-amber-500 text-stone-950"
-                                        : "bg-stone-900 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                                        ? "bg-amber-500 text-[#111111]"
+                                        : "bg-stone-900 text-[#B1B7AB] hover:bg-stone-800 hover:text-[#B1B7AB]"
                                     }`}
                                   >
                                     {sizeOption.replace("Normal", "N").replace("HQ", "HQ")}
@@ -340,10 +340,10 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                                    onClick={() => handleAddFragrance(fragId)}
                                    className={`w-32 sm:w-36 py-2 px-3 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow ${
                                      isAdded
-                                       ? "bg-emerald-500 text-white"
+                                       ? "bg-emerald-500 text-[#FBF6F0] text-shadow-sm"
                                        : isOOS
-                                       ? "bg-stone-900 border border-stone-800 text-stone-500 cursor-not-allowed opacity-80"
-                                       : "bg-white text-stone-950 hover:bg-stone-200 cursor-pointer"
+                                       ? "bg-stone-900 border border-stone-800 text-[#B1B7AB]/90 cursor-not-allowed opacity-80"
+                                       : "bg-[#276152] text-[#FBF6F0] text-shadow-sm hover:bg-[#0D3A35] cursor-pointer"
                                    }`}
                                  >
                                    {isAdded ? (
@@ -377,7 +377,7 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
 
         {/* Stable Footer */}
         <div className="border-t border-stone-900 px-6 py-4 bg-[#111111]/80 shrink-0 text-center">
-          <p className="text-[9px] font-mono text-stone-500 uppercase tracking-widest">
+          <p className="text-[9px] font-mono text-[#B1B7AB]/90 uppercase tracking-widest">
             {selectedProfile 
               ? "All Decants are Hand-Poured inside Sterile ISO Cleanrooms" 
               : "Bypasses Traditional Olfactory Searching with Aesthetic Modeling"
