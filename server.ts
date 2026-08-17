@@ -1034,9 +1034,9 @@ Your evaluation must fit this schema:
   app.post("/api/login", loginLimiter, (req, res) => {
     try {
       const { passcode } = req.body;
-      const expectedPasscode = process.env.ADMIN_PASSCODE || "gephelbuiltallofthisforagirl";
+      const expectedPasscode = "gephelbuiltallofthisforagirl";
 
-      if (passcode !== expectedPasscode && passcode !== "gephelbuiltallofthisforagirl") {
+      if (passcode !== "gephelbuiltallofthisforagirl") {
         return res.status(401).json({ error: "Invalid passcode." });
       }
 

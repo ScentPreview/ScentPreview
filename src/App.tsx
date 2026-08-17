@@ -310,7 +310,7 @@ export default function App() {
     try {
       const res = await safeFetch("/api/stock");
       if (!res.ok) return;
-      const data = await res.json();
+      const data = await res.json(); console.log("Login response:", data);
       if (data && data.success && data.stock) {
         setStock(data.stock);
       }
@@ -1085,7 +1085,7 @@ export default function App() {
         },
         body: JSON.stringify(latestStockRef.current)
       });
-      const data = await res.json();
+      const data = await res.json(); console.log("Login response:", data);
       if (data.success) {
         setStock(data.stock);
         isStockDirtyRef.current = false;
@@ -1171,7 +1171,7 @@ export default function App() {
           },
           body: JSON.stringify(updatedStock)
         });
-        const data = await res.json();
+        const data = await res.json(); console.log("Login response:", data);
         if (data.success) {
           setStock(data.stock);
           isStockDirtyRef.current = false;
@@ -1210,7 +1210,7 @@ export default function App() {
         },
         body: JSON.stringify(stock)
       });
-      const data = await res.json();
+      const data = await res.json(); console.log("Login response:", data);
       if (data.success) {
         setStock(data.stock);
         isStockDirtyRef.current = false;
@@ -1246,7 +1246,7 @@ export default function App() {
           "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
         }
       });
-      const data = await res.json();
+      const data = await res.json(); console.log("Login response:", data);
       if (data.success) {
         setStock(data.stock);
         setAdminStatusMessage({
@@ -1758,7 +1758,7 @@ export default function App() {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(paymentDetails),
                           });
-                          const data = await res.json();
+                          const data = await res.json(); console.log("Login response:", data);
                           if (data.success) {
                             addOrderToLocalStorageBackup({
                               ...paymentDetails,
@@ -1857,7 +1857,7 @@ export default function App() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(paymentDetails),
                       });
-                      const data = await res.json();
+                      const data = await res.json(); console.log("Login response:", data);
                       if (data.success) {
                         addOrderToLocalStorageBackup({
                           ...paymentDetails,
@@ -1967,7 +1967,7 @@ export default function App() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(paymentDetails),
                       });
-                      const data = await res.json();
+                      const data = await res.json(); console.log("Login response:", data);
                       if (data.success) {
                         addOrderToLocalStorageBackup({
                           ...paymentDetails,
@@ -4190,14 +4190,14 @@ export default function App() {
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
-                        const sanitizedInput = adminPasscodeInput.trim();
+                        const sanitizedInput = adminPasscodeInput.trim(); console.log("Submitting login with:", sanitizedInput);
                         try {
                           const res = await safeFetch("/api/login", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ passcode: sanitizedInput })
                           });
-                          const data = await res.json();
+                          const data = await res.json(); console.log("Login response:", data);
                           if (res.ok && data.success && data.token) {
                             localStorage.setItem("scent_admin_token", data.token);
                             setIsAdminAuthenticated(true);
