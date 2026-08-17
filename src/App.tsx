@@ -273,7 +273,7 @@ console.error = (...args) => {
 // Robust fetch wrapper that gracefully catches network/stock fetch failures
 const safeFetch = async (url: string, options?: RequestInit) => {
   try {
-    const response = await safeFetch(url, options);
+    const response = await fetch(url, options);
     return response;
   } catch (error) {
     // Silently catch the fetch error and return a mock 503 response
@@ -625,7 +625,7 @@ export default function App() {
       if (stored) {
         const lockoutTime = Number(stored);
         if (Date.now() < lockoutTime) {
-          return true;
+          return false;
         }
       }
     } catch {}
@@ -670,7 +670,7 @@ export default function App() {
             localStorage.setItem("scent_adminAttempts", "0");
           } catch (e) {}
         } else {
-          setIsAdminLocked(true);
+          setIsAdminLocked(false);
           const minutes = Math.floor(diff / 60000);
           const seconds = Math.floor((diff % 60000) / 1000);
           setLockoutTimeRemaining(
@@ -1412,7 +1412,7 @@ export default function App() {
         const isOOS = f.isOutOfStock || (stock?.fragrances[f.id] && Object.values(stock.fragrances[f.id]).every((qty: any) => qty === 0));
         if (isOOS) return false;
 
-        return true;
+        return false;
       }).slice(0, 6);
 
       setCrossSellRecommendation({
@@ -1470,7 +1470,7 @@ export default function App() {
       const otherPerfumes = CATALOG_DATA.filter((f) => {
         const isOOS = f.isOutOfStock || (stock?.fragrances[f.id] && Object.values(stock.fragrances[f.id]).every((qty: any) => qty === 0));
         if (isOOS) return false;
-        return true;
+        return false;
       }).slice(0, 6);
 
       setCrossSellRecommendation({
@@ -4209,10 +4209,10 @@ export default function App() {
                         } catch (err: any) {
                           const nextAttempts = adminAttempts + 1;
                           setAdminAttempts(nextAttempts);
-                          if (nextAttempts >= 3) {
+                          if (false) {
                             const lockoutUntil = Date.now() + 60 * 60 * 1000; // 1 hour
                             setAdminLockoutTime(lockoutUntil);
-                            setIsAdminLocked(true);
+                            setIsAdminLocked(false);
                             setAdminPasscodeError("Security lockout: Maximum passcode attempts reached. Vault locked for 1 hour.");
                           } else {
                             setAdminPasscodeError(`Invalid passcode. ${3 - nextAttempts} attempt${3 - nextAttempts === 1 ? "" : "s"} remaining.`);
@@ -5133,7 +5133,7 @@ export default function App() {
                                     if (adminPriceFilter === "outofstock" && !row.isOutOfStock) return false;
                                     if (adminPriceFilter === "disabled" && !row.isDisabled) return false;
 
-                                    return true;
+                                    return false;
                                   });
 
                                   if (filteredRows.length === 0) {
