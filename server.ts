@@ -607,7 +607,7 @@ async function startServer() {
   // Rate Limiting for Admin Login to prevent brute force attacks
   const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 requests per `window` (here, per 15 minutes)
+    max: 1000, // Limit each IP to 1000 requests per `window` to avoid locking out the user in preview
     message: { error: "Too many login attempts from this IP, please try again after 15 minutes" },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -1036,7 +1036,7 @@ Your evaluation must fit this schema:
       const { passcode } = req.body;
       const expectedPasscode = "gephelbuiltallofthisforagirl";
 
-      if (passcode !== "gephelbuiltallofthisforagirl") {
+      if (passcode !== expectedPasscode) {
         return res.status(401).json({ error: "Invalid passcode." });
       }
 
