@@ -199,7 +199,6 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                       className="group relative w-full h-40 sm:h-44 text-left p-6 bg-stone-950 hover:bg-[#111111] border border-stone-900 hover:border-stone-700 rounded-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer"
                     >
                       {/* Accent Light Layer */}
-                      <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-[#111111]/[0.01] group-hover:bg-emerald-500/[0.04] rounded-full blur-2xl transition-colors duration-500" />
                       
                       <div className="flex items-center justify-between w-full">
                         <span className="text-[10px] font-mono tracking-widest text-[#B1B7AB] group-hover:text-amber-500 transition-colors">
@@ -244,7 +243,6 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
 
                 {/* Aesthetic Detail Display Card */}
                 <div className="bg-[#111111]/80 border border-stone-850 p-6 sm:p-8 rounded-2xl space-y-4 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/[0.03] rounded-full blur-2xl pointer-events-none" />
                   
                   <div className="space-y-1">
                     <span className="text-[9px] font-mono tracking-[0.25em] text-amber-500 uppercase font-bold">

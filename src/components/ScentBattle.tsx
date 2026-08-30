@@ -261,7 +261,6 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
           >
             {/* Heavy strobe-effect gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-black to-stone-900 opacity-60" />
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none" />
 
             <div className="relative z-10 text-center max-w-xl mx-auto space-y-6 my-auto">
               <span className="text-[10px] font-mono tracking-[0.4em] text-amber-500 uppercase font-bold block">

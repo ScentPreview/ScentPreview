@@ -556,9 +556,6 @@ export default function App() {
       return false;
     }
   });
-  const [enquiryCopied, setEnquiryCopied] = useState<boolean>(false);
-  const [enquiryTopic, setEnquiryTopic] = useState<string>("Bespoke Decant Volume request");
-  const [enquiryNote, setEnquiryNote] = useState<string>("");
 
   // Cross Sell Recommendation State
   const [crossSellRecommendation, setCrossSellRecommendation] = useState<{
@@ -1671,8 +1668,6 @@ export default function App() {
       <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative  p-6 md:p-12 flex flex-col items-center justify-center">
         
         {/* Niche Perfumery Studio Lighting / Radial Gradients */}
-        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#0D3A35]/20 rounded-full  pointer-events-none z-0" />
-        <div className="absolute bottom-1/4 right-1/4 translate-x-1/4 translate-y-1/4 w-[600px] h-[600px] bg-[#276152]/15 rounded-full  pointer-events-none z-0" />
 
         
         <div className="max-w-2xl w-full bg-stone-900/60 border border-stone-800 rounded-sm p-6 md:p-10 relative z-10 shadow-2xl">
@@ -1703,7 +1698,6 @@ export default function App() {
 
               {/* Exact UPI Details requested by user */}
               <div className="bg-stone-950 border border-amber-gold/30 rounded p-6 mb-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-gold/5 rounded-full blur-2xl pointer-events-none" />
                 
                 <span className="block text-[8px] font-mono uppercase tracking-[0.15em] text-[#B1B7AB] mb-2">
                   Recipient UPI Address
@@ -2014,9 +2008,6 @@ export default function App() {
     <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative  selection:bg-[#276152] selection:text-[#FBF6F0] text-shadow-sm">
       
       {/* Niche Perfumery Studio Lighting / Radial Gradients */}
-      <div className="absolute top-0 left-1/4 -translate-x-1/4 -translate-y-1/4 w-[50vw] h-[50vw] bg-[#0D3A35]/25 rounded-full  pointer-events-none z-0" />
-      <div className="absolute top-[40%] right-[-10%] w-[45vw] h-[45vw] bg-[#276152]/20 rounded-full  pointer-events-none z-0" />
-      <div className="absolute bottom-[-10%] left-[10%] w-[60vw] h-[60vw] bg-[#0D3A35]/15 rounded-full  pointer-events-none z-0" />
 
       {/* 2026 EDITION Floating Vertical Ticker */}
       <div className="ticker hidden lg:block z-40 text-[#FBF6F0] text-shadow-sm border-stone-900">
@@ -2864,8 +2855,6 @@ export default function App() {
 
         {/* Sensory Test Call-To-Action Banner */}
         <div className="mb-16 bg-gradient-to-r from-stone-900 via-stone-950 to-neutral-900 text-[#FBF6F0] text-shadow-sm rounded-2xl p-6 sm:p-8 border border-stone-800 shadow-xl overflow-hidden relative group">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-emerald-500/10 rounded-full  pointer-events-none group-hover:bg-emerald-500/15 transition-all duration-700" />
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full  pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <span className="text-[9px] font-mono tracking-[0.25em] text-emerald-400 uppercase font-bold block">
@@ -3130,120 +3119,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* Curation & Enquiries Desk Section */}
-        <div className="mt-28 border-t border-stone-800/60 pt-16">
-          <div className="bg-[#0B0A0A] border border-stone-800/50 rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-3xs">
-            {/* Subtle luxury background glow effect */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-amber-500/5 via-transparent to-transparent rounded-full pointer-events-none" />
-            
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              {/* Left Column: Text & Interaction */}
-              <div className="lg:col-span-7 space-y-4">
-                <span className="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-800 text-[9px] font-mono px-2.5 py-1 rounded-full uppercase tracking-wider font-bold border border-amber-500/20">
-                  <Mail className="w-3 h-3 text-amber-600 animate-pulse" />
-                  <span>Curation Desk & Relations</span>
-                </span>
-                
-                <h3 className="text-2xl md:text-3xl font-serif text-[#FBF6F0] text-shadow-sm tracking-tight leading-tight">
-                  Have a bespoke request or order enquiry?
-                </h3>
-                
-                <p className="text-[#B1B7AB] text-[12px] md:text-xs font-sans font-light leading-relaxed max-w-xl">
-                  Seeking a custom volume decant, sourcing a rare collector bottle, arranging a bespoke corporate gift set, or inquiring about an active shipment? Reach out directly to our curation desk.
-                </p>
-                
-                {/* Email Display & Fast Actions */}
-                <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <div className="bg-[#111111] border border-stone-800/80 px-4 py-3 rounded-xl flex items-center justify-between gap-4 shadow-3xs flex-1 sm:max-w-md">
-                    <span className="font-mono text-xs md:text-sm font-semibold text-[#FBF6F0] text-shadow-sm tracking-wide select-all">
-                      scentpreview@gmail.com
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText("scentpreview@gmail.com");
-                        setEnquiryCopied(true);
-                        setTimeout(() => setEnquiryCopied(false), 2000);
-                      }}
-                      className="p-1.5 hover:bg-[#111111] rounded-lg text-[#B1B7AB] hover:text-[#B1B7AB] transition-colors cursor-pointer flex items-center justify-center"
-                      title="Copy email address"
-                    >
-                      {enquiryCopied ? (
-                        <Check className="w-4 h-4 text-emerald-600 animate-scale-up" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  
-                  <a
-                    href="mailto:scentpreview@gmail.com?subject=ScentPreview%20Curation%20Inquiry"
-                    className="bg-stone-900 hover:bg-black text-[#FBF6F0] text-shadow-sm font-mono text-[10px] tracking-widest uppercase font-bold px-6 py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer text-center apple-liquid-btn"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Send Message</span>
-                  </a>
-                </div>
-              </div>
-              
-              {/* Right Column: Pre-composed drafting desk */}
-              <div className="lg:col-span-5">
-                <div className="bg-[#111111] border border-stone-800/60 rounded-xl p-5 shadow-3xs flex flex-col gap-3.5 relative">
-                  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                    <span className="text-[9px] font-mono uppercase tracking-wider text-[#B1B7AB] font-bold">
-                      Direct Draft Assist
-                    </span>
-                    <span className="text-[8px] font-mono text-[#B1B7AB]">
-                      Auto-populates mail client
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3.5">
-                    <div>
-                      <label className="block text-[8px] font-mono uppercase tracking-widest text-[#B1B7AB] font-bold mb-1">
-                        Inquiry Topic
-                      </label>
-                      <select 
-                        value={enquiryTopic}
-                        onChange={(e) => setEnquiryTopic(e.target.value)}
-                        className="w-full bg-[#0B0A0A] border border-stone-800 rounded-lg px-3 py-2 text-[11px] font-sans text-[#B1B7AB] outline-none focus:border-amber-500 transition-colors cursor-pointer"
-                      >
-                        <option value="Bespoke Decant Volume request">Bespoke Decant Volume request</option>
-                        <option value="Order Status / Shipping assistance">Order Status / Shipping assistance</option>
-                        <option value="Sourcing Vaulted / Rare fragrance">Sourcing Vaulted / Rare fragrance</option>
-                        <option value="Corporate / Custom Curation Gift Sets">Corporate / Custom Curation Gift Sets</option>
-                        <option value="General Feedback / Partnership enquiry">General Feedback / Partnership enquiry</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[8px] font-mono uppercase tracking-widest text-[#B1B7AB] font-bold mb-1">
-                        Optional Detail Note
-                      </label>
-                      <textarea
-                        value={enquiryNote}
-                        onChange={(e) => setEnquiryNote(e.target.value)}
-                        placeholder="E.g., Looking to procure a 30ml decant of Givenchy Gentleman..."
-                        rows={2}
-                        className="w-full bg-[#0B0A0A] border border-stone-800 rounded-lg px-3 py-2 text-[11px] font-sans text-[#B1B7AB] outline-none focus:border-amber-500 transition-colors placeholder:text-[#B1B7AB] resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  <a
-                    href={`mailto:scentpreview@gmail.com?subject=${encodeURIComponent(enquiryTopic)}&body=${encodeURIComponent(enquiryNote ? enquiryNote : "Hello ScentPreview, I would like to enquire about...")}`}
-                    className="w-full mt-1.5 py-3 rounded-lg text-center bg-[#0B0A0A] hover:bg-[#111111] border border-stone-800 text-[#B1B7AB] hover:text-[#FBF6F0] text-shadow-sm text-[10px] font-mono tracking-wider uppercase font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Prepare Email Draft</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
 
       </section>
 

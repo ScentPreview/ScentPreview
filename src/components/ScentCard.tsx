@@ -128,10 +128,6 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
       transition={{ type: "spring", stiffness: 350, damping: 25 }}
       className="relative rounded-2xl p-5 flex flex-col justify-between transition-all duration-300shadow-sm hover:shadow-xl hover:border-[#276152]/60 border border-[#276152]/30 bg-[#111111]/95"
     >
-      {/* Decorative background aura for Premium variants */}
-      {fragrance.isPremium && (
-        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-      )}
 
       {/* Discounted Price Above the Bottle */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-stone-700/50 font-mono">

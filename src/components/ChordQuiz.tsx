@@ -189,7 +189,6 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
 
         {/* Left Side: Chord visualization panel */}
         <div className="w-full md:w-5/12 bg-[#111111] p-5 sm:p-8 border-b md:border-b-0 md:border-r border-stone-800/80 flex flex-col justify-between shrink-0 md:shrink relative overflow-hidden">
-          <div className="absolute top-1/3 left-1/3 w-[200px] h-[200px] bg-amber-500/5 rounded-full blur-[60px] pointer-events-none" />
           
           <div className="relative z-10 space-y-4 md:space-y-6">
             <div className="space-y-1">
