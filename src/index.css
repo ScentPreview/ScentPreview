@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
 @import "tailwindcss";
 
-html { scroll-behavior: smooth; }
+
 
 body {
-  overflow-x: hidden;
+  
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -215,3 +215,4 @@ body {
 
 
 /* Global smooth scrolling and hardware acceleration for containers */
+body { overflow-x: clip; }

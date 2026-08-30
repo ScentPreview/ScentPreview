@@ -1671,8 +1671,8 @@ export default function App() {
       <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative  p-6 md:p-12 flex flex-col items-center justify-center">
         
         {/* Niche Perfumery Studio Lighting / Radial Gradients */}
-        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#0D3A35]/20 rounded-full blur-[140px] pointer-events-none z-0" />
-        <div className="absolute bottom-1/4 right-1/4 translate-x-1/4 translate-y-1/4 w-[600px] h-[600px] bg-[#276152]/15 rounded-full blur-[150px] pointer-events-none z-0" />
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#0D3A35]/20 rounded-full  pointer-events-none z-0" />
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/4 translate-y-1/4 w-[600px] h-[600px] bg-[#276152]/15 rounded-full  pointer-events-none z-0" />
 
         
         <div className="max-w-2xl w-full bg-stone-900/60 border border-stone-800 rounded-sm p-6 md:p-10 relative z-10 shadow-2xl">
@@ -2014,9 +2014,9 @@ export default function App() {
     <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative  selection:bg-[#276152] selection:text-[#FBF6F0] text-shadow-sm">
       
       {/* Niche Perfumery Studio Lighting / Radial Gradients */}
-      <div className="absolute top-0 left-1/4 -translate-x-1/4 -translate-y-1/4 w-[50vw] h-[50vw] bg-[#0D3A35]/25 rounded-full blur-[140px] pointer-events-none z-0" />
-      <div className="absolute top-[40%] right-[-10%] w-[45vw] h-[45vw] bg-[#276152]/20 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-10%] left-[10%] w-[60vw] h-[60vw] bg-[#0D3A35]/15 rounded-full blur-[160px] pointer-events-none z-0" />
+      <div className="absolute top-0 left-1/4 -translate-x-1/4 -translate-y-1/4 w-[50vw] h-[50vw] bg-[#0D3A35]/25 rounded-full  pointer-events-none z-0" />
+      <div className="absolute top-[40%] right-[-10%] w-[45vw] h-[45vw] bg-[#276152]/20 rounded-full  pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] left-[10%] w-[60vw] h-[60vw] bg-[#0D3A35]/15 rounded-full  pointer-events-none z-0" />
 
       {/* 2026 EDITION Floating Vertical Ticker */}
       <div className="ticker hidden lg:block z-40 text-[#FBF6F0] text-shadow-sm border-stone-900">
@@ -2187,7 +2187,7 @@ export default function App() {
       <section id="buy-now-section" className="hidden">
         
         {/* Subtle glowing fluid pattern in background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/5 rounded-full  pointer-events-none" />
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex items-center gap-2 mb-4">
@@ -2864,8 +2864,8 @@ export default function App() {
 
         {/* Sensory Test Call-To-Action Banner */}
         <div className="mb-16 bg-gradient-to-r from-stone-900 via-stone-950 to-neutral-900 text-[#FBF6F0] text-shadow-sm rounded-2xl p-6 sm:p-8 border border-stone-800 shadow-xl overflow-hidden relative group">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-emerald-500/10 rounded-full blur-[90px] pointer-events-none group-hover:bg-emerald-500/15 transition-all duration-700" />
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-[60px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-emerald-500/10 rounded-full  pointer-events-none group-hover:bg-emerald-500/15 transition-all duration-700" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full  pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <span className="text-[9px] font-mono tracking-[0.25em] text-emerald-400 uppercase font-bold block">
