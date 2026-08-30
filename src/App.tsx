@@ -1668,7 +1668,7 @@ export default function App() {
 
   if (showPaymentPage && paymentDetails) {
     return (
-      <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative overflow-x-hidden p-6 md:p-12 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative  p-6 md:p-12 flex flex-col items-center justify-center">
         
         {/* Niche Perfumery Studio Lighting / Radial Gradients */}
         <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#0D3A35]/20 rounded-full blur-[140px] pointer-events-none z-0" />
@@ -2011,7 +2011,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative overflow-x-hidden selection:bg-[#276152] selection:text-[#FBF6F0] text-shadow-sm">
+    <div className="min-h-screen bg-[#0B0A0A] text-[#FBF6F0] text-shadow-sm font-sans relative  selection:bg-[#276152] selection:text-[#FBF6F0] text-shadow-sm">
       
       {/* Niche Perfumery Studio Lighting / Radial Gradients */}
       <div className="absolute top-0 left-1/4 -translate-x-1/4 -translate-y-1/4 w-[50vw] h-[50vw] bg-[#0D3A35]/25 rounded-full blur-[140px] pointer-events-none z-0" />
@@ -2184,94 +2184,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* 4. Brand Founders: The Engineering Behind Scent */}
-      <section id="founders-section" className="bg-[#0B0A0A] border-t border-b border-stone-800/85 py-24 px-6 md:px-12 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="max-w-xl mb-16">
-            <span className="text-[10px] font-mono tracking-[0.2em] text-[#B1B7AB] uppercase font-bold block mb-2">
-              The Intellect Behind The System
-            </span>
-            <h2 className="text-3xl md:text-4xl font-serif text-[#FBF6F0] text-shadow-sm tracking-tight">
-              Our Founders & Growth Architects
-            </h2>
-            <div className="h-[2px] w-12 bg-amber-gold mt-4" />
-          </div>
-
-          {/* Two Columns Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-stretch">
-            
-            {/* Founder & CEO */}
-            <div className="bg-[#111111] border border-stone-800/60 rounded-sm p-8 flex flex-col justify-between transition-all duration-300 hover:border-stone-800">
-              <div>
-                <div className="flex items-center justify-between border-b border-stone-100 pb-4 mb-6">
-                  <div>
-                    <span className="text-[9px] font-mono uppercase text-[#B1B7AB] tracking-wider">
-                      Engineering & Product
-                    </span>
-                    <h3 className="text-lg font-serif italic text-[#FBF6F0] text-shadow-sm font-medium mt-1">
-                      Our Founder & CEO
-                    </h3>
-                  </div>
-                  <span className="text-2xl">💻</span>
-                </div>
-
-                <h4 className="text-sm font-sans font-semibold text-stone-850 mb-4 leading-snug">
-                  The fragrance industry is broken—buried under pretentious marketing and expensive blind buys.
-                </h4>
-
-                <p className="text-[#B1B7AB] text-xs font-sans leading-relaxed mb-6 font-light">
-                  Our Founder and CEO, a developer who engineered minimalist platforms like <span className="text-[#FBF6F0] text-shadow-sm font-medium">StupidSimple.ai</span> and <span className="text-[#FBF6F0] text-shadow-sm font-medium">GoalHub</span>, saw a textbook engineering problem. Finding a premium scent shouldn't be a gamble. He applied a strict, high-contrast philosophy to the physical world, stripping away the nonsense to deliver pure, high-conviction fragrance previews.
-                </p>
-              </div>
-
-              <div className="bg-[#0B0A0A] border border-stone-150/40 rounded-sm p-4">
-                <p className="text-[10px] font-mono text-[#B1B7AB] uppercase tracking-wider italic">
-                  "Our Founder saw the gap. We built the solution."
-                </p>
-              </div>
-            </div>
-
-            {/* Co-Founder & CMO */}
-            <div className="bg-[#111111] border border-stone-800/60 rounded-sm p-8 flex flex-col justify-between transition-all duration-300 hover:border-stone-800">
-              <div>
-                <div className="flex items-center justify-between border-b border-stone-100 pb-4 mb-6">
-                  <div>
-                    <span className="text-[9px] font-mono uppercase text-[#B1B7AB] tracking-wider">
-                      Growth & Distribution
-                    </span>
-                    <h3 className="text-lg font-serif italic text-[#FBF6F0] text-shadow-sm font-medium mt-1">
-                      Our Co-Founder & CMO
-                    </h3>
-                  </div>
-                  <span className="text-2xl">⚡</span>
-                </div>
-
-                <h4 className="text-sm font-sans font-semibold text-stone-850 mb-4 leading-snug">
-                  He doesn’t build the platforms—he builds the hype that scales them.
-                </h4>
-
-                <p className="text-[#B1B7AB] text-xs font-sans leading-relaxed mb-6 font-light">
-                  Our Co-Founder and CMO masterminds the front-end engine, from the brand’s psychological angle to the high-converting hooks that drive traffic straight to checkout. As the marketing architect behind the ads that launched <span className="text-[#FBF6F0] text-shadow-sm font-medium">StupidSimple.ai</span> and <span className="text-[#FBF6F0] text-shadow-sm font-medium">GoalHub</span>, he proved that mastering attention moves any product.
-                </p>
-
-                <p className="text-[#B1B7AB] text-xs font-sans leading-relaxed mb-6 font-light">
-                  Now, he’s bringing that growth logic to the fragrance world with one vision: make perfumes easy.
-                </p>
-              </div>
-
-              <div className="bg-[#0B0A0A] border border-stone-150/40 rounded-sm p-4">
-                <p className="text-[10px] font-mono text-[#B1B7AB] uppercase tracking-wider italic">
-                  "Our Co-Founder hooks the audience, drives the traffic, and scales the brand."
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Luxurious Buy Now & Express Checkout Section */}
       <section id="buy-now-section" className="hidden">
         
         {/* Subtle glowing fluid pattern in background */}
@@ -3359,9 +3271,6 @@ export default function App() {
               <Lock className="w-3 h-3" />
               Admin Vault
             </button>
-            <span className="text-[10px] font-mono text-[#B1B7AB] uppercase tracking-widest hidden sm:inline">
-              Loro Piana x Apple Philosophy
-            </span>
             <span className="text-[10px] font-mono text-amber-gold uppercase tracking-widest">
               India Edition
             </span>
