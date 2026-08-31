@@ -1,4 +1,14 @@
 {
+  "bundles": {
+    "bundle-zara-classics": 0,
+    "bundle-cozy-winter": 0,
+    "bundle-rare-collector": 0,
+    "bundle-master-vault": 0,
+    "bundle-marine-core": 0,
+    "bundle-office-rotation": 0,
+    "spotlight-arabian": 6,
+    "bundle-day-night": 0
+  },
   "fragrances": {
     "zara-intense-dark": {
       "5ml HQ": 0,
@@ -55,15 +65,5 @@
       "5ml Normal": 11,
       "10ml": 0
     }
-  },
-  "bundles": {
-    "bundle-zara-classics": 0,
-    "bundle-cozy-winter": 0,
-    "bundle-rare-collector": 0,
-    "bundle-master-vault": 0,
-    "bundle-marine-core": 0,
-    "bundle-office-rotation": 0,
-    "spotlight-arabian": 6,
-    "bundle-day-night": 0
   }
 }

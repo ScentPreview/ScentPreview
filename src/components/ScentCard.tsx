@@ -251,8 +251,8 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
             </span>
             
             {/* Odometer Roll-up pricing effect */}
-            <div className="h-6 overflow-hidden flex items-center mt-0.5">
-              <AnimatePresence mode="wait">
+            <div className="h-6 overflow-hidden flex items-center mt-0.5 relative">
+              <AnimatePresence mode="popLayout">
                 <motion.span
                   key={selectedSize + "-" + price + "-" + quantity}
                   initial={{ y: 12, opacity: 0 }}
