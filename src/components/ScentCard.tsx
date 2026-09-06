@@ -126,11 +126,11 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
     <motion.div
       whileHover={{ y: -6, scale: 1.015 }}
       transition={{ type: "spring", stiffness: 350, damping: 25 }}
-      className="relative rounded-2xl p-5 flex flex-col justify-between transition-all duration-300shadow-sm hover:shadow-xl hover:border-[#276152]/60 border border-[#276152]/30 bg-[#111111]/95"
+      className="relative rounded-2xl p-6 md:p-5 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-[#276152]/60 border border-[#276152]/30 bg-[#111111]/95"
     >
 
       {/* Discounted Price Above the Bottle */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-stone-700/50 font-mono">
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-4 pb-3 border-b border-stone-700/50 font-mono gap-1 xl:gap-0">
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] text-[#B1B7AB]/90 line-through font-normal">
             ₹{getScentOriginalPrice(fragrance.id, selectedSize)}
@@ -148,12 +148,12 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
 
       {/* Top Details & Badges */}
       <div>
-        <div className="flex items-center justify-between gap-2 mb-2.5">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-2 mb-2.5">
           <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-[#B1B7AB]/90 font-semibold">
             {fragrance.brand}
           </span>
           
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-row xl:flex-col items-center xl:items-end gap-1 flex-wrap mt-1 xl:mt-0">
             {/* Premium Tier Badge */}
             {fragrance.isPremium && (
               <span className="inline-flex items-center gap-1 bg-[#276152] text-[#FBF6F0] border border-[#0D3A35] text-[8px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
@@ -217,7 +217,8 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
                       : "text-[#B1B7AB] hover:text-[#FBF6F0]  hover:bg-[#0D3A35]/60"
                 }`}
               >
-                <span className="truncate">{size === "5ml Normal" ? "5ml N" : size}</span>
+                <span className="truncate hidden sm:inline">{size === "5ml Normal" ? "5ml N" : size}</span>
+                <span className="truncate sm:hidden">{size === "5ml Normal" ? "5N" : size === "5ml HQ" ? "5HQ" : "10"}</span>
                 {isSizeDisabled && (
                   <span className="absolute -top-1 -right-1 flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -244,7 +245,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-4 bg-[#111111]/40 border border-stone-800/20 p-2 rounded-xl">
+        <div className="flex flex-col 2xl:flex-row items-start 2xl:items-center justify-between mb-4 bg-[#111111]/40 border border-stone-800/20 p-2 rounded-xl gap-2 2xl:gap-0 w-full">
           <div className="flex flex-col">
             <span className="text-[8px] font-mono uppercase tracking-[0.1em] text-[#B1B7AB] font-bold">
               Subtotal Price
@@ -268,7 +269,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
           </div>
 
           {/* Premium Miniature Quantity Selector */}
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-start 2xl:items-end w-full 2xl:w-auto">
             <span className="text-[8px] font-mono uppercase tracking-[0.1em] text-[#B1B7AB] font-bold mb-1">
               Quantity
             </span>

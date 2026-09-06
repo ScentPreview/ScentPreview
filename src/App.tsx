@@ -2810,7 +2810,7 @@ export default function App() {
       </section>
 
       {/* 2. Interactive Scent Grid: The Kinetic Catalog */}
-      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-6 md:px-12 py-24">
+      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-5 md:px-12 py-16 md:py-24">
         
         {/* Section Heading */}
         <div className="border-b border-stone-800/60 pb-5 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -2880,7 +2880,7 @@ export default function App() {
 
         {/* Asymmetric Staggered Masonry Layout */}
         {filteredCatalog.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-6 md:gap-8 lg:gap-10">
             {filteredCatalog.map((fragrance, index) => {
               // Apply staggered offset effect for masonry pattern
               const isStaggered = index % 3 === 1;
@@ -2926,7 +2926,7 @@ export default function App() {
             </div>
 
             {/* Asymmetric Bento Grid for Bundles */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-stretch">
               
               {/* The Spotlight Block: Massive Double-Sized Card */}
               {(() => {
