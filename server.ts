@@ -33,6 +33,7 @@ const ORDERS_FILE_PATH = path.join(process.cwd(), "orders.json");
 const BACKUP_ORDERS_FILE_PATH = path.join(process.cwd(), "orders.backup.json");
 
 let ordersDb: Order[] = [];
+let complaintsDb: Complaint[] = [];
 
 // Helper to load orders from disk with backup fallback
 function loadOrdersFromDisk(): Order[] {
@@ -602,7 +603,31 @@ async function startServer() {
   
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // Strict Rate Limiting / Blocking State
+  const blockedIPs = new Map<string, number>();
+  const failedAttempts = new Map<string, number>();
+
+  // Global block middleware
+  app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const blockUntil = blockedIPs.get(ip);
+    
+    if (blockUntil && Date.now() < blockUntil) {
+      // Return 429 Too Many Requests if the user is completely blocked
+      return res.status(429).send("ACCESS BLOCKED. Try again in 1 hour.");
+    }
+    
+    if (blockUntil && Date.now() >= blockUntil) {
+       blockedIPs.delete(ip);
+       failedAttempts.delete(ip);
+    }
+    next();
+  });
+
+
 
   // Rate Limiting for Admin Login to prevent brute force attacks
   const loginLimiter = rateLimit({
@@ -1031,14 +1056,25 @@ Your evaluation must fit this schema:
   });
 
   // API Route: Admin Login (Generates JWT)
-  app.post("/api/login", loginLimiter, (req, res) => {
+  app.post("/api/login", (req, res) => {
     try {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
       const { passcode } = req.body;
       const expectedPasscode = "gephelbuiltallofthisforagirl";
 
       if (passcode !== expectedPasscode) {
-        return res.status(401).json({ error: "Invalid passcode." });
+        const attempts = (failedAttempts.get(ip) || 0) + 1;
+        failedAttempts.set(ip, attempts);
+        
+        if (attempts >= 3) {
+          blockedIPs.set(ip, Date.now() + 60 * 60 * 1000); // 1 hour block
+        }
+        
+        return res.status(401).json({ error: `Invalid passcode. ${3 - attempts} attempts remaining.` });
       }
+
+      // Success - reset attempts
+      failedAttempts.delete(ip);
 
       const jwtSecret = process.env.JWT_SECRET || "scentpreview_fallback_secret_key_2026";
 
@@ -1060,6 +1096,80 @@ Your evaluation must fit this schema:
     } catch (error: any) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ error: "Failed to fetch orders." });
+    }
+  });
+
+
+  // API Route: Submit Complaint
+  app.post("/api/complaints", async (req, res) => {
+    try {
+      const { buyerName, email, perfumeSize, imageProof } = req.body;
+      const claimId = "CLM-" + Math.floor(1000 + Math.random() * 9000);
+      const complaint: Complaint = {
+        id: claimId,
+        buyerName,
+        email,
+        perfumeOrdered: perfumeSize,
+        imageProof, // Base64
+        status: "pending",
+        createdAt: new Date()
+      };
+      
+      complaintsDb.push(complaint);
+      
+      if (firestoreDb) {
+        await setDoc(doc(firestoreDb, "complaints", complaint.id), complaint);
+      }
+      
+      res.json({ success: true, complaint });
+    } catch (error: any) {
+      console.error("Error creating complaint:", error);
+      res.status(500).json({ error: "Failed to submit claim.", details: error.message, stack: error.stack });
+    }
+  });
+
+  // API Route: Update complaint status
+  app.patch("/api/complaints/:id", authenticateAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const complaint = complaintsDb.find(c => c.id === id);
+      if (complaint) {
+        complaint.status = status;
+      }
+      
+      if (firestoreDb) {
+        await setDoc(doc(firestoreDb, "complaints", id), { status }, { merge: true });
+      }
+      
+      res.json({ success: true, id, status });
+    } catch (error: any) {
+      console.error("Error updating complaint:", error);
+      res.status(500).json({ error: "Failed to update claim." });
+    }
+  });
+
+  // API Route: Get all complaints
+  app.get("/api/complaints", authenticateAdmin, async (req, res) => {
+    try {
+      if (firestoreDb) {
+        const snapshot = await getDocs(collection(firestoreDb, "complaints"));
+        const complaints: Complaint[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Complaint;
+          if (data.createdAt) {
+            data.createdAt = (data.createdAt as any).toDate ? (data.createdAt as any).toDate() : new Date(data.createdAt);
+          }
+          complaints.push(data);
+        });
+        complaints.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        complaintsDb = complaints;
+      }
+      res.json({ success: true, complaints: complaintsDb });
+    } catch (error: any) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).json({ error: "Failed to fetch complaints." });
     }
   });
 

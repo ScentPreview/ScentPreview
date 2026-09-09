@@ -7,5 +7,8 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read, write: if true;
     }
+    match /complaints/{complaintId} {
+      allow read, write: if true;
+    }
   }
 }

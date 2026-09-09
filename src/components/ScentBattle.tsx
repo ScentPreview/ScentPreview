@@ -166,7 +166,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
 
   return (
     <div className="fixed inset-0 z-[100] bg-stone-950 overflow-hidden flex items-center justify-center p-0 sm:p-6 md:p-12 animate-fade-in">
-      <div className="w-full h-full sm:h-[85vh] max-w-4xl bg-black border-0 sm:border border-stone-900 text-stone-100 sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:min-h-[500px] md:min-h-[600px] sm:max-h-[90vh] md:max-h-[900px] relative">
+      <div className="w-full h-full sm:h-[85vh] max-w-4xl bg-black border-0 sm:border border-stone-900 text-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:min-h-[500px] md:min-h-[600px] sm:max-h-[90vh] md:max-h-[900px] relative">
         
         {/* Absolute Exit Button */}
         <button
@@ -189,7 +189,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
             <button
               onClick={() => activeLeft && activeRight && handleSelect(activeLeft, activeRight, "left")}
               type="button"
-              className={`w-full md:w-1/2 h-1/2 md:h-full bg-black text-stone-100 p-6 sm:p-12 flex flex-col items-center justify-center text-center relative group overflow-hidden transition-all duration-200 cursor-pointer ${
+              className={`w-full md:w-1/2 h-1/2 md:h-full bg-black text-white p-6 sm:p-12 flex flex-col items-center justify-center text-center relative group overflow-hidden transition-all duration-200 cursor-pointer ${
                 direction === "right" ? "-translate-x-full opacity-0" : ""
               }`}
             >
@@ -299,7 +299,7 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
                           isDisabled
                             ? "opacity-25 cursor-not-allowed line-through text-[#B1B7AB] bg-transparent"
                             : isSelected
-                            ? "bg-amber-500 text-[#111111]"
+                            ? "bg-amber-500 text-black"
                             : "bg-stone-900 text-[#B1B7AB] hover:bg-stone-800 hover:text-[#B1B7AB]"
                         }`}
                       >

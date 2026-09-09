@@ -1,204 +1,92 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Fragrance } from "../types";
-import { Plus, Check, Camera } from "lucide-react";
+import { Fragrance, SizeType } from "../types";
+import { Check } from "lucide-react";
 
 interface ScentCardProps {
   fragrance: Fragrance;
-  onAddToCart: (fragrance: Fragrance, size: "10ml" | "5ml Normal" | "5ml HQ", quantity?: number) => void;
-  onBuyNow?: (fragrance: Fragrance, size: "10ml" | "5ml Normal" | "5ml HQ", quantity?: number) => void;
+  onAddToCart?: (fragrance: Fragrance, size: SizeType, quantity: number) => void;
+  onBuyNow?: (fragrance: Fragrance, size: SizeType, quantity: number) => void;
+  onNoteClick?: (note: string) => void;
   fragranceStock?: Record<string, number>;
 }
 
-type SizeType = "10ml" | "5ml Normal" | "5ml HQ";
-
-const getScentOriginalPrice = (id: string, size: SizeType): string => {
-  const data: Record<string, Record<string, string>> = {
-    "givenchy-gentleman": {
-      "10ml": "2,187",
-      "5ml Normal": "1,237",
-      "5ml HQ": "1,310"
-    },
-    "ck2": {
-      "10ml": "1,187",
-      "5ml Normal": "737",
-      "5ml HQ": "810"
-    },
-    "ck-one": {
-      "10ml": "853",
-      "5ml Normal": "542",
-      "5ml HQ": "615"
-    },
-    "lattafa-khamrah": {
-      "10ml": "820",
-      "5ml Normal": "553",
-      "5ml HQ": "627"
-    },
-    "zara-sunrise": {
-      "10ml": "753",
-      "5ml Normal": "520",
-      "5ml HQ": "593"
-    },
-    "zara-for-him-black": {
-      "10ml": "753",
-      "5ml Normal": "520",
-      "5ml HQ": "593"
-    },
-    "zara-intense-dark": {
-      "10ml": "665",
-      "5ml Normal": "475",
-      "5ml HQ": "550"
-    },
-    "zara-rich-warm-addictive": {
-      "10ml": "708",
-      "5ml Normal": "492",
-      "5ml HQ": "567"
-    },
-    "zara-seoul-winter": {
-      "10ml": "598",
-      "5ml Normal": "442",
-      "5ml HQ": "517"
-    },
-    "zara-seoul": {
-      "10ml": "582",
-      "5ml Normal": "425",
-      "5ml HQ": "498"
-    },
-    "la-uno-qaswa": {
-      "10ml": "520",
-      "5ml Normal": "403",
-      "5ml HQ": "477"
-    }
-  };
-  return data[id]?.[size] || "0";
-};
-
-export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceStock }: ScentCardProps) {
-  const findFirstInStockSize = (): SizeType => {
+export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClick, fragranceStock }: ScentCardProps) {
+  const [selectedSize, setSelectedSize] = useState<SizeType>(() => {
     const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
-    const inStock = sizes.find((size) => {
-      const isDisabled = fragrance.disabledSizes?.includes(size);
-      const stockQty = fragranceStock ? fragranceStock[size] : undefined;
-      return !isDisabled && !fragrance.isOutOfStock && (stockQty === undefined || stockQty > 0);
-    });
-    if (inStock) return inStock;
+    for (const size of sizes) {
+      const stock = fragranceStock ? fragranceStock[size] : undefined;
+      const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock === 0;
+      if (!isSizeDisabled) {
+        return size;
+      }
+    }
+    return "10ml"; // Fallback if all are out of stock
+  });
 
-    const enabled = sizes.find((size) => !fragrance.disabledSizes?.includes(size));
-    return enabled || "10ml";
-  };
-
-  const [selectedSize, setSelectedSize] = useState<SizeType>(() => findFirstInStockSize());
-  const [added, setAdded] = useState(false);
+  useEffect(() => {
+    const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
+    const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
+    
+    if (isCurrentOutOfStock) {
+      const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
+      for (const size of sizes) {
+        const stock = fragranceStock ? fragranceStock[size] : undefined;
+        const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock === 0;
+        if (!isSizeDisabled) {
+          setSelectedSize(size);
+          return;
+        }
+      }
+    }
+  }, [fragranceStock, fragrance.disabledSizes, fragrance.isOutOfStock, selectedSize]);
   const [quantity, setQuantity] = useState(1);
-
-  useEffect(() => {
-    setSelectedSize(findFirstInStockSize());
-  }, [fragrance, fragranceStock]);
-
-  useEffect(() => {
-    setQuantity(1);
-  }, [selectedSize, fragrance]);
+  const [added, setAdded] = useState(false);
 
   const price = fragrance.prices[selectedSize];
+  const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
+  const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
+  const stockToDisplay = currentStock !== undefined && currentStock <= 5 && currentStock > 0 ? currentStock : null;
+  const showLowStockAlert = stockToDisplay !== null;
 
   const handleSizeChange = (size: SizeType) => {
     setSelectedSize(size);
+    setQuantity(1);
   };
 
-  const allSizesOutOfStock = fragranceStock 
-    ? Object.values(fragranceStock).every((qty) => qty === 0)
-    : false;
-
-  const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
-  const isCurrentOutOfStock = fragrance.isOutOfStock || fragrance.disabledSizes?.includes(selectedSize) || currentStock === 0 || allSizesOutOfStock;
-
   const handleAction = () => {
-    if (isCurrentOutOfStock) return;
-    onAddToCart(fragrance, selectedSize, quantity);
+    onAddToCart?.(fragrance, selectedSize, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const showLowStockAlert = (fragrance.id === "ck2" && selectedSize === "10ml" && currentStock === undefined) || (currentStock !== undefined && currentStock > 0 && currentStock <= 5);
-  const stockToDisplay = currentStock !== undefined ? currentStock : 2;
-
   return (
-    <motion.div
-      whileHover={{ y: -6, scale: 1.015 }}
-      transition={{ type: "spring", stiffness: 350, damping: 25 }}
-      className="relative rounded-2xl p-6 md:p-5 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:border-[#276152]/60 border border-[#276152]/30 bg-[#111111]/95"
+    <motion.div 
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: "-50px" }}
+      className="flex flex-col h-full bg-[#FFFFFF] border border-black/5 shadow-sm rounded-3xl overflow-hidden p-0 relative"
     >
+      
 
-      {/* Discounted Price Above the Bottle */}
-      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-4 pb-3 border-b border-stone-700/50 font-mono gap-1 xl:gap-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-[#B1B7AB]/90 line-through font-normal">
-            ₹{getScentOriginalPrice(fragrance.id, selectedSize)}
-          </span>
-        </div>
-        <div className="flex items-baseline gap-1">
-          <span className="text-[8px] text-[#B1B7AB]/90 font-sans uppercase tracking-widest font-bold">
-            DECANTS:
-          </span>
-          <span className="text-sm font-bold text-[#FBF6F0] ">
-            ₹{price}.00
-          </span>
-        </div>
-      </div>
-
-      {/* Top Details & Badges */}
-      <div>
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-2 mb-2.5">
-          <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-[#B1B7AB]/90 font-semibold">
-            {fragrance.brand}
-          </span>
-          
-          <div className="flex flex-row xl:flex-col items-center xl:items-end gap-1 flex-wrap mt-1 xl:mt-0">
-            {/* Premium Tier Badge */}
-            {fragrance.isPremium && (
-              <span className="inline-flex items-center gap-1 bg-[#276152] text-[#FBF6F0] border border-[#0D3A35] text-[8px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
-                PREMIUM
-              </span>
-            )}
-            {/* Low Stock Badge */}
-            {allSizesOutOfStock ? (
-              <span className="inline-flex items-center gap-1 bg-stone-900/60 border border-stone-700 text-[#B1B7AB] text-[8px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm font-bold">
-                OUT OF STOCK
-              </span>
-            ) : currentStock !== undefined && currentStock > 0 && currentStock <= 3 ? (
-              <span className="inline-flex items-center gap-1 bg-red-950/40 border border-red-900/50 text-red-400 text-[8px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm font-bold animate-pulse">
-                LOW STOCK
-              </span>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Product Title (Editorial Serif Italic) */}
-        <h3 className="text-lg font-serif italic text-[#FBF6F0]  tracking-tight mb-2">
-          {fragrance.name}
-        </h3>
+      <div className="p-5 flex-1 flex flex-col">
+                <h3 className="text-2xl font-sans font-bold text-black uppercase mb-3 leading-none tracking-tight">{fragrance.name}</h3>
         
-        {/* Scent Notes Badges */}
-        <div className="flex flex-wrap gap-1.5 mb-5">
-          {fragrance.notesList.map((note) => (
-            <span
-              key={note}
-              className="text-[10px] px-2.5 py-0.5 border border-stone-800/60 rounded-full font-mono font-medium tracking-wider transition-colors text-[#FBF6F0] bg-[#111111]/90 hover:bg-[#276152]/80 hover:border-[#276152] shadow-sm"
-            >
-              {note}
-            </span>
-          ))}
+        <div className="space-y-2 mb-6 flex-1">
+          <p className="text-[11px] font-mono font-medium text-black uppercase tracking-wider">
+            Notes: {fragrance.notes}
+          </p>
+          <p className="text-[11px] font-sans text-black leading-relaxed">
+            Profile: {fragrance.description}
+          </p>
+          <p className="text-[11px] font-mono font-medium text-black uppercase tracking-wider">
+            Tag: {fragrance.type}
+          </p>
         </div>
-      </div>
 
-      {/* Interactive Size Selector Segmented Toggle */}
-      <div className="mb-5">
-        <span className="block text-[8px] font-mono uppercase tracking-widest text-[#B1B7AB] mb-2">
-          Select Volume / Tier
-        </span>
-        
-        <div className="grid grid-cols-3 gap-1 p-1 bg-[#276152]/50 rounded-xl border border-stone-700/50 relative shadow-2xs">
-          {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size) => {
+        {/* Size Selection */}
+        <div className="flex border border-black/5 rounded-2xl overflow-hidden mb-4">
+          {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size, idx) => {
             const isSelected = selectedSize === size;
             const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
             const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || sizeStock === 0;
@@ -206,146 +94,57 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, fragranceS
             return (
               <button
                 key={size}
-                type="button"
                 disabled={isSizeDisabled}
                 onClick={() => handleSizeChange(size)}
-                className={`relative py-1.5 text-[9px] font-mono rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer ${
-                  isSelected 
-                    ? "bg-[#276152] text-[#FBF6F0]  font-semibold shadow-sm apple-liquid-btn" 
-                    : isSizeDisabled
-                      ? "text-[#B1B7AB] line-through cursor-not-allowed bg-[#111111]/30"
-                      : "text-[#B1B7AB] hover:text-[#FBF6F0]  hover:bg-[#0D3A35]/60"
+                className={`flex-1 py-2 text-[9px] font-sans uppercase tracking-widest transition-colors ${
+                  idx !== 2 ? 'border-r border-black/5' : ''
+                } ${
+                  isSelected ? "bg-black text-white" : isSizeDisabled ? "text-black/40 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5"
                 }`}
               >
-                <span className="truncate hidden sm:inline">{size === "5ml Normal" ? "5ml N" : size}</span>
-                <span className="truncate sm:hidden">{size === "5ml Normal" ? "5N" : size === "5ml HQ" ? "5HQ" : "10"}</span>
-                {isSizeDisabled && (
-                  <span className="absolute -top-1 -right-1 flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
-                  </span>
-                )}
+                {size.replace('ml Normal', 'N').replace('ml HQ', 'HQ').replace('ml', 'ML')}
               </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Pricing & Actions Row */}
-      <div className="border-t border-stone-800 pt-4 mt-auto">
-        {showLowStockAlert && (
-          <div className="mb-3 px-3 py-1.5 bg-amber-50/80 border border-amber-200/60 rounded-xl flex items-center gap-1.5">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-            </span>
-            <span className="text-[10px] font-mono font-medium text-amber-850 uppercase tracking-wide">
-              Only {stockToDisplay} bottles left!
-            </span>
+        {/* Quantity and Price */}
+        <div className="flex items-stretch border border-black/5 rounded-2xl overflow-hidden mb-4 h-10">
+          <div className="flex-1 flex items-center justify-center border-r border-black/5 font-sans text-sm font-bold text-black">
+            ₹{price * quantity}
           </div>
-        )}
-
-        <div className="flex flex-col 2xl:flex-row items-start 2xl:items-center justify-between mb-4 bg-[#111111]/40 border border-stone-800/20 p-2 rounded-xl gap-2 2xl:gap-0 w-full">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-mono uppercase tracking-[0.1em] text-[#B1B7AB] font-bold">
-              Subtotal Price
-            </span>
-            
-            {/* Odometer Roll-up pricing effect */}
-            <div className="h-6 overflow-hidden flex items-center mt-0.5 relative">
-              <AnimatePresence mode="popLayout">
-                <motion.span
-                  key={selectedSize + "-" + price + "-" + quantity}
-                  initial={{ y: 12, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -12, opacity: 0 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="inline-block font-mono text-sm font-semibold text-[#FBF6F0] "
-                >
-                  ₹{price * quantity}.00
-                </motion.span>
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Premium Miniature Quantity Selector */}
-          <div className="flex flex-col items-start 2xl:items-end w-full 2xl:w-auto">
-            <span className="text-[8px] font-mono uppercase tracking-[0.1em] text-[#B1B7AB] font-bold mb-1">
-              Quantity
-            </span>
-            <div className="flex items-center gap-1.5 bg-[#111111]/95 border border-stone-800/60 rounded-lg p-0.5 shadow-3xs">
-              <button
-                type="button"
-                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                disabled={isCurrentOutOfStock}
-                className="w-5 h-5 flex items-center justify-center text-[#B1B7AB]/90 hover:text-[#FBF6F0]  transition-colors font-mono cursor-pointer text-xs font-semibold hover:bg-[#0D3A35]/40 rounded"
-              >
-                -
-              </button>
-              <span className="w-5 text-center font-mono text-[11px] font-bold text-[#FBF6F0] ">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => currentStock !== undefined ? Math.min(currentStock, q + 1) : q + 1)}
-                disabled={isCurrentOutOfStock}
-                className="w-5 h-5 flex items-center justify-center text-[#B1B7AB]/90 hover:text-[#FBF6F0]  transition-colors font-mono cursor-pointer text-xs font-semibold hover:bg-[#0D3A35]/40 rounded"
-              >
-                +
-              </button>
-            </div>
+          <div className="flex items-center w-24">
+            <button
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              disabled={isCurrentOutOfStock}
+              className="flex-1 h-full flex items-center justify-center hover:bg-black/5 text-black border-r border-black/5 font-sans"
+            >-</button>
+            <span className="flex-1 text-center font-sans text-[11px] font-bold text-black">{quantity}</span>
+            <button
+              onClick={() => setQuantity((q) => currentStock !== undefined ? Math.min(currentStock, q + 1) : q + 1)}
+              disabled={isCurrentOutOfStock}
+              className="flex-1 h-full flex items-center justify-center hover:bg-black/5 text-black border-l border-black/5 font-sans"
+            >+</button>
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="flex flex-col gap-2">
-          {isCurrentOutOfStock ? (
-            <button
-              disabled
-              className="w-full py-2.5 px-3 rounded-xl text-[10px] font-mono tracking-widest uppercase bg-[#111111]/60 text-[#B1B7AB] cursor-not-allowed flex items-center justify-center gap-1.5 border border-stone-800/40"
-            >
-              <span>Sold Out</span>
-            </button>
-          ) : (
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={handleAction}
-              className={`w-full py-2.5 px-3 rounded-xl text-[10px] font-mono tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 apple-liquid-btn ${
-                added
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-[#FBF6F0] "
-                  : "bg-stone-900 hover:bg-black text-[#FBF6F0]  hover:shadow-md"
-              }`}
-            >
-              {added ? (
-                <>
-                  <Check className="w-3 h-3 animate-bounce" />
-                  Added To Cart
-                </>
-              ) : (
-                <>
-                  <span>Add to Cart</span>
-                  <span className="opacity-60">+</span>
-                </>
-              )}
-            </motion.button>
-          )}
-
-          {isCurrentOutOfStock ? (
-            <button
-              disabled
-              className="w-full py-2.5 px-3 rounded-xl text-[10px] font-mono tracking-widest uppercase bg-[#0B0A0A]/40 text-[#B1B7AB] cursor-not-allowed flex items-center justify-center gap-1.5 border border-stone-800/40"
-            >
-              <span>Unavailable</span>
-            </button>
-          ) : (
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onBuyNow?.(fragrance, selectedSize, quantity)}
-              className="w-full py-2.5 px-3 rounded-xl text-[10px] font-mono tracking-widest uppercase transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 bg-amber-gold hover:bg-amber-400 text-[#111111]  font-bold shadow-md apple-liquid-btn"
-            >
-              Buy Now
-            </motion.button>
-          )}
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            disabled={isCurrentOutOfStock}
+            onClick={handleAction}
+            className="py-3 border border-black/5 rounded-2xl overflow-hidden text-[9px] font-sans uppercase tracking-widest font-bold text-black hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+          >
+            {added ? <Check className="w-3 h-3" /> : null}
+            {added ? "ADDED" : isCurrentOutOfStock ? "SOLD OUT" : "ADD TO CART"}
+          </button>
+          <button
+            disabled={isCurrentOutOfStock}
+            onClick={() => onBuyNow?.(fragrance, selectedSize, quantity)}
+            className="py-3 bg-black text-white text-[9px] font-sans uppercase tracking-widest font-bold hover:bg-[#0E0E0E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            BUY NOW
+          </button>
         </div>
       </div>
     </motion.div>
