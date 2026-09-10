@@ -3,41 +3,8 @@ import re
 with open("server.ts", "r") as f:
     content = f.read()
 
-# Let's see if firestoreDb is imported properly
-# Add Complaint type and complaints cache
-interfaces = '''interface Order {
-  orderNumber: string;
-  items: any[];
-  total: number;
-  name: string;
-  email: string;
-  address: string;
-  phone: string;
-  state?: string;
-  pincode?: string;
-  shippingProtection?: boolean;
-  status: string;
-  createdAt: Date;
-  stockReduced?: boolean;
-}'''
-
-new_interfaces = '''interface Order {
-  orderNumber: string;
-  items: any[];
-  total: number;
-  name: string;
-  email: string;
-  address: string;
-  phone: string;
-  state?: string;
-  pincode?: string;
-  shippingProtection?: boolean;
-  status: string;
-  createdAt: Date;
-  stockReduced?: boolean;
-}
-
-interface Complaint {
+# Replace Complaint Interface
+old_interface = """interface Complaint {
   id: string;
   buyerName: string;
   email: string;
@@ -45,78 +12,76 @@ interface Complaint {
   imageProof: string;
   status: string;
   createdAt: Date;
-}
-'''
-if "interface Complaint" not in content:
-    content = content.replace(interfaces, new_interfaces)
+}"""
 
+new_interface = """interface Complaint {
+  id: string;
+  buyerName: string;
+  email: string;
+  perfumeAndSize: string;
+  proofImage: string;
+  status: string;
+  submittedAt: Date;
+}"""
 
-db_vars = '''let ordersDb: Order[] = [];
-const DB_FILE_PATH = path.join(process.cwd(), "orders_backup.json");'''
-new_db_vars = '''let ordersDb: Order[] = [];
-let complaintsDb: Complaint[] = [];
-const DB_FILE_PATH = path.join(process.cwd(), "orders_backup.json");'''
-if "complaintsDb: Complaint[] = []" not in content:
-    content = content.replace(db_vars, new_db_vars)
+content = content.replace(old_interface, new_interface)
 
-
-# Add APIs before the wildcard catch-all route:
-api_routes = '''
-  // API Route: Submit Complaint
-  app.post("/api/complaints", async (req, res) => {
+# Replace POST route
+old_post = """  app.post("/api/complaints", async (req, res) => {
     try {
-      const { buyerName, email, perfumeOrdered, imageProof } = req.body;
+      const { buyerName, email, perfumeSize, imageProof } = req.body;
+      const claimId = "CLM-" + Math.floor(1000 + Math.random() * 9000);
       const complaint: Complaint = {
-        id: "CLM-" + Math.random().toString(36).substring(2, 9).toUpperCase(),
+        id: claimId,
         buyerName,
         email,
-        perfumeOrdered,
+        perfumeOrdered: perfumeSize,
         imageProof, // Base64
         status: "pending",
         createdAt: new Date()
-      };
-      
-      complaintsDb.push(complaint);
-      
-      if (firestoreDb) {
-        await setDoc(doc(firestoreDb, "complaints", complaint.id), complaint);
-      }
-      
-      res.json({ success: true, complaint });
-    } catch (error: any) {
-      console.error("Error creating complaint:", error);
-      res.status(500).json({ error: "Failed to submit claim." });
-    }
-  });
+      };"""
 
-  // API Route: Get all complaints
-  app.get("/api/complaints", authenticateAdmin, async (req, res) => {
+new_post = """  app.post("/api/complaints", async (req, res) => {
     try {
-      if (firestoreDb) {
-        const snapshot = await getDocs(collection(firestoreDb, "complaints"));
-        const complaints: Complaint[] = [];
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data() as Complaint;
-          if (data.createdAt) {
+      const { buyerName, email, perfumeAndSize, proofImage } = req.body;
+      const claimId = "CLM-" + Math.floor(1000 + Math.random() * 9000);
+      const complaint: Complaint = {
+        id: claimId,
+        buyerName,
+        email,
+        perfumeAndSize,
+        proofImage, // Base64
+        status: "pending",
+        submittedAt: new Date()
+      };"""
+
+content = content.replace(old_post, new_post)
+
+# Replace GET route date parsing
+old_get_parse = """          if (data.createdAt) {
             data.createdAt = (data.createdAt as any).toDate ? (data.createdAt as any).toDate() : new Date(data.createdAt);
           }
           complaints.push(data);
         });
-        complaints.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        complaintsDb = complaints;
-      }
-      res.json({ success: true, complaints: complaintsDb });
-    } catch (error: any) {
-      console.error("Error fetching complaints:", error);
-      res.status(500).json({ error: "Failed to fetch complaints." });
-    }
-  });
-'''
+        complaints.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());"""
 
-# Find a good spot to insert it, like before app.delete("/api/orders/:orderNumber"
-if "app.post(\"/api/complaints\"" not in content:
-    content = content.replace('  // API Route: Delete an order by orderNumber', api_routes + '\n  // API Route: Delete an order by orderNumber')
+new_get_parse = """          // Fallbacks for older data if they exist
+          if ((data as any).createdAt && !data.submittedAt) data.submittedAt = (data as any).createdAt;
+          if ((data as any).perfumeOrdered && !data.perfumeAndSize) data.perfumeAndSize = (data as any).perfumeOrdered;
+          if ((data as any).imageProof && !data.proofImage) data.proofImage = (data as any).imageProof;
+
+          if (data.submittedAt) {
+            data.submittedAt = (data.submittedAt as any).toDate ? (data.submittedAt as any).toDate() : new Date(data.submittedAt);
+          }
+          complaints.push(data);
+        });
+        complaints.sort((a, b) => {
+           const timeB = b.submittedAt ? b.submittedAt.getTime() : 0;
+           const timeA = a.submittedAt ? a.submittedAt.getTime() : 0;
+           return timeB - timeA;
+        });"""
+
+content = content.replace(old_get_parse, new_get_parse)
 
 with open("server.ts", "w") as f:
     f.write(content)
-

@@ -1,3 +1,5 @@
+export type SizeType = "10ml" | "5ml Normal" | "5ml HQ";
+
 export interface Fragrance {
   id: string;
   name: string;
@@ -60,9 +62,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notesList: ["Iris", "Black Pepper", "Leather"],
     disabledSizes: ["10ml"],
     prices: {
-      "10ml": 1100,
-      "5ml Normal": 700,
-      "5ml HQ": 750
+      "10ml": 2115,
+      "5ml Normal": 1165,
+      "5ml HQ": 1221
     },
     color: "from-neutral-800 to-black",
     glassStyle: "shadow-black/50"
@@ -79,9 +81,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Oud / Incense / Dark Woods",
     notesList: ["Oud", "Incense", "Dark Woods"],
     prices: {
-      "10ml": 600,
-      "5ml Normal": 400,
-      "5ml HQ": 450
+      "10ml": 448,
+      "5ml Normal": 332,
+      "5ml HQ": 388
     },
     color: "from-stone-700 to-stone-900",
     glassStyle: "shadow-stone-800/50"
@@ -118,9 +120,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Tangerine / Lavender / Amber",
     notesList: ["Tangerine", "Lavender", "Amber"],
     prices: {
-      "10ml": 682,
-      "5ml Normal": 448,
-      "5ml HQ": 504
+      "10ml": 528,
+      "5ml Normal": 372,
+      "5ml HQ": 428
     },
     color: "from-blue-600 to-blue-900",
     glassStyle: "shadow-blue-700/50"
@@ -137,9 +139,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Apple / Black Pepper / Tonka Bean",
     notesList: ["Apple", "Black Pepper", "Tonka Bean"],
     prices: {
-      "10ml": 682,
-      "5ml Normal": 448,
-      "5ml HQ": 504
+      "10ml": 595,
+      "5ml Normal": 405,
+      "5ml HQ": 461
     },
     color: "from-stone-800 to-black",
     glassStyle: "shadow-stone-900/50"
@@ -178,9 +180,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Honey / Toasted Coconut / Tobacco Leaf",
     notesList: ["Honey", "Toasted Coconut", "Tobacco Leaf"],
     prices: {
-      "10ml": 682,
-      "5ml Normal": 448,
-      "5ml HQ": 504
+      "10ml": 648,
+      "5ml Normal": 432,
+      "5ml HQ": 488
     },
     color: "from-amber-500 to-amber-800",
     glassStyle: "shadow-amber-600/50"
@@ -197,9 +199,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Lemon / Green Tea / Jasmine",
     notesList: ["Lemon", "Green Tea", "Jasmine"],
     prices: {
-      "10ml": 650,
-      "5ml Normal": 420,
-      "5ml HQ": 480
+      "10ml": 838,
+      "5ml Normal": 527,
+      "5ml HQ": 582
     },
     color: "from-emerald-300 to-teal-500",
     glassStyle: "shadow-emerald-400/40"
@@ -216,9 +218,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Wasabi / Violet Leaf / Wet Cobblestones",
     notesList: ["Wasabi", "Violet Leaf", "Wet Cobblestones"],
     prices: {
-      "10ml": 650,
-      "5ml Normal": 420,
-      "5ml HQ": 480
+      "10ml": 1115,
+      "5ml Normal": 665,
+      "5ml HQ": 721
     },
     color: "from-cyan-300 to-blue-400",
     glassStyle: "shadow-cyan-400/40"
@@ -255,9 +257,9 @@ export const CATALOG_DATA: Fragrance[] = [
     notes: "Tangerine / Apple / Amber",
     notesList: ["Tangerine", "Apple", "Amber"],
     prices: {
-      "10ml": 682,
-      "5ml Normal": 448,
-      "5ml HQ": 504
+      "10ml": 528,
+      "5ml Normal": 372,
+      "5ml HQ": 428
     },
     color: "from-blue-800 to-indigo-900",
     glassStyle: "shadow-indigo-800/50"

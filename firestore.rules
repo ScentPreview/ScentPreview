@@ -10,5 +10,8 @@ service cloud.firestore {
     match /complaints/{complaintId} {
       allow read, write: if true;
     }
+    match /admin_login_attempts/{deviceId} {
+      allow read, write: if true;
+    }
   }
 }

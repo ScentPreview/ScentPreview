@@ -29,6 +29,16 @@ interface Order {
   stockReduced?: boolean;
 }
 
+interface Complaint {
+  id: string;
+  buyerName: string;
+  email: string;
+  perfumeAndSize: string;
+  proofImage: string;
+  status: string;
+  submittedAt: Date;
+}
+
 const ORDERS_FILE_PATH = path.join(process.cwd(), "orders.json");
 const BACKUP_ORDERS_FILE_PATH = path.join(process.cwd(), "orders.backup.json");
 
@@ -606,37 +616,8 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // Strict Rate Limiting / Blocking State
-  const blockedIPs = new Map<string, number>();
-  const failedAttempts = new Map<string, number>();
-
-  // Global block middleware
-  app.use((req, res, next) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    const blockUntil = blockedIPs.get(ip);
-    
-    if (blockUntil && Date.now() < blockUntil) {
-      // Return 429 Too Many Requests if the user is completely blocked
-      return res.status(429).send("ACCESS BLOCKED. Try again in 1 hour.");
-    }
-    
-    if (blockUntil && Date.now() >= blockUntil) {
-       blockedIPs.delete(ip);
-       failedAttempts.delete(ip);
-    }
-    next();
-  });
 
 
-
-  // Rate Limiting for Admin Login to prevent brute force attacks
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 1000 requests per `window` to avoid locking out the user in preview
-    message: { error: "Too many login attempts from this IP, please try again after 15 minutes" },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  });
 
 
 
@@ -1055,26 +1036,21 @@ Your evaluation must fit this schema:
     }
   });
 
+  const adminLoginLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 3, // Limit each IP to 3 login requests per `window`
+    message: { error: "Too many login attempts from this IP, please try again after 10 minutes", lockoutUntil: Date.now() + 10 * 60 * 1000 }
+  });
+
   // API Route: Admin Login (Generates JWT)
-  app.post("/api/login", (req, res) => {
+  app.post("/api/login", adminLoginLimiter, (req, res) => {
     try {
-      const ip = req.ip || req.socket.remoteAddress || 'unknown';
       const { passcode } = req.body;
       const expectedPasscode = "gephelbuiltallofthisforagirl";
 
       if (passcode !== expectedPasscode) {
-        const attempts = (failedAttempts.get(ip) || 0) + 1;
-        failedAttempts.set(ip, attempts);
-        
-        if (attempts >= 3) {
-          blockedIPs.set(ip, Date.now() + 60 * 60 * 1000); // 1 hour block
-        }
-        
-        return res.status(401).json({ error: `Invalid passcode. ${3 - attempts} attempts remaining.` });
+        return res.status(401).json({ error: "Invalid passcode." });
       }
-
-      // Success - reset attempts
-      failedAttempts.delete(ip);
 
       const jwtSecret = process.env.JWT_SECRET || "scentpreview_fallback_secret_key_2026";
 
@@ -1086,6 +1062,9 @@ Your evaluation must fit this schema:
       res.status(500).json({ error: "An error occurred during login." });
     }
   });
+
+
+
 
   // API Route: Get all orders (for Admin Zone) - Protected
   app.get("/api/orders", authenticateAdmin, async (req, res) => {
@@ -1103,16 +1082,16 @@ Your evaluation must fit this schema:
   // API Route: Submit Complaint
   app.post("/api/complaints", async (req, res) => {
     try {
-      const { buyerName, email, perfumeSize, imageProof } = req.body;
+      const { buyerName, email, perfumeAndSize, proofImage } = req.body;
       const claimId = "CLM-" + Math.floor(1000 + Math.random() * 9000);
       const complaint: Complaint = {
         id: claimId,
         buyerName,
         email,
-        perfumeOrdered: perfumeSize,
-        imageProof, // Base64
+        perfumeAndSize,
+        proofImage, // Base64
         status: "pending",
-        createdAt: new Date()
+        submittedAt: new Date()
       };
       
       complaintsDb.push(complaint);
@@ -1158,12 +1137,21 @@ Your evaluation must fit this schema:
         const complaints: Complaint[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Complaint;
-          if (data.createdAt) {
-            data.createdAt = (data.createdAt as any).toDate ? (data.createdAt as any).toDate() : new Date(data.createdAt);
+          // Fallbacks for older data if they exist
+          if ((data as any).createdAt && !data.submittedAt) data.submittedAt = (data as any).createdAt;
+          if ((data as any).perfumeOrdered && !data.perfumeAndSize) data.perfumeAndSize = (data as any).perfumeOrdered;
+          if ((data as any).imageProof && !data.proofImage) data.proofImage = (data as any).imageProof;
+
+          if (data.submittedAt) {
+            data.submittedAt = (data.submittedAt as any).toDate ? (data.submittedAt as any).toDate() : new Date(data.submittedAt);
           }
           complaints.push(data);
         });
-        complaints.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        complaints.sort((a, b) => {
+           const timeB = b.submittedAt ? b.submittedAt.getTime() : 0;
+           const timeA = a.submittedAt ? a.submittedAt.getTime() : 0;
+           return timeB - timeA;
+        });
         complaintsDb = complaints;
       }
       res.json({ success: true, complaints: complaintsDb });
