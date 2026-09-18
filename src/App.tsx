@@ -2290,8 +2290,9 @@ export default function App() {
       <header className="sticky top-0 bg-[#F4F4F2] z-40 border-b border-black/5">
         <nav className="w-full flex items-stretch h-20 px-4 max-w-7xl mx-auto">
           <div className="flex-1 flex items-center px-6">
-            <span className="text-2xl font-sans font-bold font-bold text-black tracking-tight">
-              SP 0.2
+            <span className="text-xl font-sans font-bold tracking-tight text-black flex items-center gap-1.5">
+              <span>Scent Preview</span>
+              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-black/5 text-neutral-600">0.2</span>
             </span>
           </div>
           <div className="hidden md:flex flex-1 items-center justify-center gap-10">
@@ -2324,7 +2325,7 @@ export default function App() {
               onClick={() => setIsCartOpen(true)}
               className="h-full px-6 flex items-center text-[11px] font-sans tracking-[0.15em] text-black hover:text-amber-700 transition-colors whitespace-nowrap cursor-pointer"
             >
-              CART ({cart.reduce((sum, i) => sum + i.quantity, 0)})
+              Cart ({cart.reduce((sum, i) => sum + i.quantity, 0)})
             </button>
           </div>
         </nav>
@@ -2333,23 +2334,23 @@ export default function App() {
       {/* Brutalist Hero Section */}
       <section className="w-full max-w-7xl mx-auto flex flex-col md:flex-row min-h-[75vh] mt-4">
         <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative z-10">
-          <div>
-            <span className="text-[10px] font-sans tracking-[0.2em] text-black uppercase border border-black/5 shadow-sm rounded-2xl px-2 py-1 mb-8 inline-block">
-              EDITION 0.2
+          <div className="overflow-visible">
+            <span className="text-[10px] font-sans font-medium tracking-[0.18em] text-neutral-500 uppercase border border-black/5 rounded-full px-2.5 py-1 mb-6 inline-block">
+              Edition 0.2
             </span>
-            <h1 className="text-6xl md:text-8xl font-serif font-medium  text-black uppercase tracking-tighter leading-[0.8] mb-6">
-              SCENT<br />PREVIEW
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[92px] font-sans font-semibold text-black tracking-[-0.035em] leading-[0.92] mb-6">
+              Scent<br />Preview
             </h1>
           </div>
           <div className="max-w-sm mt-12 md:mt-0">
             <p className="text-xs font-sans text-black leading-relaxed mb-8">
-              CURATED PREMIUM FRAGRANCE DECANTS. HAND-POURED, PERFECTLY MEASURED, AND DELIVERED DIRECTLY TO YOUR DOOR.
+              Curated premium fragrance decants. Hand-poured, perfectly measured, and delivered directly to your door.
             </p>
             <button
               onClick={scrollToCatalog}
-              className="border border-black/5 shadow-sm rounded-2xl px-6 py-4 text-[10px] font-sans tracking-[0.2em] text-black hover:bg-stone-900 hover:text-white transition-colors uppercase w-full sm:w-auto cursor-pointer"
+              className="border border-black/5 shadow-sm rounded-2xl px-6 py-4 text-[10px] font-sans tracking-[0.15em] text-black hover:bg-stone-900 hover:text-white transition-colors w-full sm:w-auto cursor-pointer"
             >
-              EXPLORE CATALOG
+              Explore Catalog
             </button>
           </div>
         </div>
@@ -3083,8 +3084,8 @@ export default function App() {
             {/* Men's Collection */}
             {filteredCatalog.filter(f => f.gender === "Men").length > 0 && (
               <div>
-                <h3 className="text-xl md:text-2xl font-serif text-black tracking-tight mb-6 flex items-center gap-4">
-                  <span>MEN'S COLLECTION 0.2</span>
+                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-6 flex items-center gap-4">
+                  <span>Men's Collection 0.2</span>
                   <div className="h-px bg-black/5 flex-1" />
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 bg-transparent">
@@ -3106,8 +3107,8 @@ export default function App() {
             {/* Women's Collection */}
             {filteredCatalog.filter(f => f.gender === "Women").length > 0 && (
               <div>
-                <h3 className="text-xl md:text-2xl font-serif text-black tracking-tight mb-6 flex items-center gap-4">
-                  <span>WOMEN'S COLLECTION 0.2</span>
+                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-6 flex items-center gap-4">
+                  <span>Women's Collection 0.2</span>
                   <div className="h-px bg-black/5 flex-1" />
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 bg-transparent">
@@ -3177,45 +3178,40 @@ export default function App() {
                           </span>
                         )}
                       </div>
-                      <h3 className="text-2xl font-bold font-sans text-black uppercase tracking-tighter mb-2">
+                      <h3 className="text-xl font-sans font-semibold text-black tracking-tight mb-2">
                         {bundle.name}
                       </h3>
-                      <p className="text-[10px] font-sans tracking-[0.2em] text-black uppercase mb-4 leading-relaxed">
-                        CONTAINS: {bundle.contains}
+                      <p className="text-xs font-sans text-neutral-600 mb-4 leading-relaxed">
+                        Contains: {bundle.contains}
                       </p>
                     </div>
 
-                    <div className="mt-8 border-t border-black/5 pt-4 flex flex-col gap-4">
-                      <div className="flex justify-between items-end">
-                        <span className="text-[9px] font-sans tracking-[0.15em] uppercase text-black tracking-widest">
-                          {isSpotlight ? "FIXED PRICE" : "SET PRICE"}
-                        </span>
-                        <div className="text-right">
-                          {originalPrice && (
-                            <span className="block font-mono text-[10px] text-black line-through">
-                              ₹{originalPrice}
-                            </span>
-                          )}
-                          <span className="font-mono text-xl font-bold text-black">
-                            ₹{price}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="mt-8 border-t border-black/5 pt-4 flex flex-col gap-2">
                       <div className="grid grid-cols-2 gap-2">
                         <button
                           disabled={isBundleOutOfStock}
                           onClick={() => handleAddBundleToCart(bundle)}
-                          className="py-3 border border-black/5 shadow-sm rounded-2xl text-[9px] font-sans tracking-[0.15em] uppercase tracking-widest font-bold text-black hover:bg-stone-900 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          className="py-2.5 border border-black/10 shadow-sm rounded-2xl text-[11px] font-sans font-medium text-black hover:bg-stone-900 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
-                          ADD TO CART
+                          Add to Cart
                         </button>
                         <button
                           disabled={isBundleOutOfStock}
                           onClick={() => handleBuyBundleNow(bundle)}
-                          className="py-3 bg-stone-900 text-white text-[9px] font-sans tracking-[0.15em] uppercase tracking-widest font-bold hover:bg-[#0E0E0E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          className="py-2.5 bg-stone-900 text-white text-[11px] font-sans font-medium hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
-                          BUY NOW
+                          Buy Now
                         </button>
+                      </div>
+                      <div className="text-center mt-1">
+                        <span className="font-mono text-xs font-medium text-neutral-600">
+                          ₹{price}
+                        </span>
+                        {originalPrice && (
+                          <span className="font-mono text-[10px] text-neutral-400 line-through ml-1.5">
+                            ₹{originalPrice}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

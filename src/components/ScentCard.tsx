@@ -70,22 +70,24 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
       
 
       <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-2xl font-sans font-bold text-black uppercase mb-3 leading-none tracking-tight">{fragrance.name}</h3>
+        <h3 className="text-lg font-sans font-semibold text-neutral-900 mb-1 leading-snug tracking-tight">{fragrance.name}</h3>
         
         <div className="space-y-2 mb-6 flex-1">
-          <p className="text-[11px] font-mono font-medium text-black uppercase tracking-wider">
-            Notes: {fragrance.notes}
+          <p className="text-xs font-sans text-neutral-700 leading-relaxed">
+            <span className="font-semibold text-black">Notes:</span> {fragrance.notes}
           </p>
-          <p className="text-[11px] font-sans text-black leading-relaxed">
-            Profile: {fragrance.description}
+          <p className="text-xs font-sans text-neutral-600 leading-relaxed">
+            {fragrance.description}
           </p>
-          <p className="text-[11px] font-mono font-medium text-black uppercase tracking-wider">
-            Tag: {fragrance.type}
-          </p>
+          <div className="pt-1">
+            <span className="inline-block text-[10px] font-sans px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600 font-medium">
+              {fragrance.type}
+            </span>
+          </div>
         </div>
 
         {/* Size Selection */}
-        <div className="flex border border-black/5 rounded-2xl overflow-hidden mb-4">
+        <div className="flex border border-black/5 rounded-2xl overflow-hidden mb-3">
           {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size, idx) => {
             const isSelected = selectedSize === size;
             const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
@@ -96,34 +98,32 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
                 key={size}
                 disabled={isSizeDisabled}
                 onClick={() => handleSizeChange(size)}
-                className={`flex-1 py-2 text-[9px] font-sans uppercase tracking-widest transition-colors ${
+                className={`flex-1 py-2 text-[10px] font-sans font-medium transition-colors ${
                   idx !== 2 ? 'border-r border-black/5' : ''
                 } ${
                   isSelected ? "bg-black text-white" : isSizeDisabled ? "text-black/40 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5"
                 }`}
               >
-                {size.replace('ml Normal', 'N').replace('ml HQ', 'HQ').replace('ml', 'ML')}
+                {size.replace('ml Normal', ' (N)').replace('ml HQ', ' (HQ)')}
               </button>
             );
           })}
         </div>
 
-        {/* Quantity and Price */}
-        <div className="flex items-stretch border border-black/5 rounded-2xl overflow-hidden mb-4 h-10">
-          <div className="flex-1 flex items-center justify-center border-r border-black/5 font-sans text-sm font-bold text-black">
-            ₹{price * quantity}
-          </div>
-          <div className="flex items-center w-24">
+        {/* Quantity Selection */}
+        <div className="flex items-center justify-between border border-black/5 rounded-2xl px-3 py-1.5 mb-3 bg-stone-50/50">
+          <span className="text-[11px] font-sans text-neutral-600 font-medium">Quantity</span>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setQuantity(q => Math.max(1, q - 1))}
               disabled={isCurrentOutOfStock}
-              className="flex-1 h-full flex items-center justify-center hover:bg-black/5 text-black border-r border-black/5 font-sans"
+              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/10 text-black font-sans text-xs disabled:opacity-30 transition-colors cursor-pointer"
             >-</button>
-            <span className="flex-1 text-center font-sans text-[11px] font-bold text-black">{quantity}</span>
+            <span className="w-5 text-center font-sans text-xs font-semibold text-black">{quantity}</span>
             <button
               onClick={() => setQuantity((q) => currentStock !== undefined ? Math.min(currentStock, q + 1) : q + 1)}
               disabled={isCurrentOutOfStock}
-              className="flex-1 h-full flex items-center justify-center hover:bg-black/5 text-black border-l border-black/5 font-sans"
+              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/10 text-black font-sans text-xs disabled:opacity-30 transition-colors cursor-pointer"
             >+</button>
           </div>
         </div>
@@ -133,18 +133,30 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
           <button
             disabled={isCurrentOutOfStock}
             onClick={handleAction}
-            className="py-3 border border-black/5 rounded-2xl overflow-hidden text-[9px] font-sans uppercase tracking-widest font-bold text-black hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+            className="py-2.5 border border-black/10 rounded-2xl text-[11px] font-sans font-medium text-black hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
           >
-            {added ? <Check className="w-3 h-3" /> : null}
-            {added ? "ADDED" : isCurrentOutOfStock ? "SOLD OUT" : "ADD TO CART"}
+            {added ? <Check className="w-3.5 h-3.5" /> : null}
+            {added ? "Added" : isCurrentOutOfStock ? "Sold out" : "Add to Cart"}
           </button>
           <button
             disabled={isCurrentOutOfStock}
             onClick={() => onBuyNow?.(fragrance, selectedSize, quantity)}
-            className="py-3 bg-black text-white text-[9px] font-sans uppercase tracking-widest font-bold hover:bg-[#0E0E0E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="py-2.5 bg-black text-white rounded-2xl text-[11px] font-sans font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
           >
-            BUY NOW
+            Buy Now
           </button>
+        </div>
+
+        {/* Price: small below the buy/add to cart */}
+        <div className="mt-2 text-center">
+          <span className="text-xs font-mono font-medium text-neutral-600">
+            ₹{price * quantity}
+            {quantity > 1 ? (
+              <span className="text-[10px] text-neutral-400 ml-1">
+                (₹{price} each)
+              </span>
+            ) : null}
+          </span>
         </div>
       </div>
     </motion.div>
