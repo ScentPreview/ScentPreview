@@ -689,6 +689,12 @@ export default function App() {
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
   const [selectedDetailFragrance, setSelectedDetailFragrance] = useState<Fragrance | null>(null);
+
+  const handleOpenFragranceDetails = (fragrance: Fragrance) => {
+    setSelectedDetailFragrance(fragrance);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  };
+
   const [policyModal, setPolicyModal] = useState<"terms" | "privacy" | "shipping" | "returns" | null>(null);
   const [isClaimFormOpen, setIsClaimFormOpen] = useState(false);
   const [adminComplaints, setAdminComplaints] = useState<any[]>([]);
@@ -2351,7 +2357,7 @@ export default function App() {
             setSelectedDetailFragrance(null);
           }}
           onSelectFragrance={(f) => {
-            setSelectedDetailFragrance(f);
+            handleOpenFragranceDetails(f);
           }}
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
@@ -3008,7 +3014,7 @@ export default function App() {
                   onAddToCart={handleAddToCart}
                   onBuyNow={handleBuyNow}
                   onNoteClick={setSelectedNote}
-                  onOpenDetails={(f) => setSelectedDetailFragrance(f)}
+                  onOpenDetails={handleOpenFragranceDetails}
                   fragranceStock={stock?.fragrances[fragrance.id]}
                 />
               </div>
@@ -3038,7 +3044,7 @@ export default function App() {
                   onAddToCart={handleAddToCart}
                   onBuyNow={handleBuyNow}
                   onNoteClick={setSelectedNote}
-                  onOpenDetails={(f) => setSelectedDetailFragrance(f)}
+                  onOpenDetails={handleOpenFragranceDetails}
                   fragranceStock={stock?.fragrances[fragrance.id]}
                 />
               </div>
@@ -3135,7 +3141,7 @@ export default function App() {
                         onAddToCart={handleAddToCart}
                         onBuyNow={handleBuyNow}
                         onNoteClick={setSelectedNote}
-                        onOpenDetails={(f) => setSelectedDetailFragrance(f)}
+                        onOpenDetails={handleOpenFragranceDetails}
                         fragranceStock={stock?.fragrances[fragrance.id]}
                       />
                     </div>
@@ -3159,7 +3165,7 @@ export default function App() {
                         onAddToCart={handleAddToCart}
                         onBuyNow={handleBuyNow}
                         onNoteClick={setSelectedNote}
-                        onOpenDetails={(f) => setSelectedDetailFragrance(f)}
+                        onOpenDetails={handleOpenFragranceDetails}
                         fragranceStock={stock?.fragrances[fragrance.id]}
                       />
                     </div>

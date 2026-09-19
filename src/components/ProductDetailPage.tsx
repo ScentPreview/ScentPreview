@@ -40,7 +40,16 @@ export default function ProductDetailPage({
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
-  // Initialize selected size to first in-stock size when fragrance changes (No auto scroll)
+  // Scroll to top immediately when opening or changing fragrance so user sees the selected perfume profile first
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const el = document.getElementById("product-detail-view");
+    if (el) {
+      el.scrollIntoView({ behavior: "instant", block: "start" });
+    }
+  }, [fragrance.id]);
+
+  // Initialize selected size to first in-stock size when fragrance changes
   useEffect(() => {
     const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
     for (const size of sizes) {
@@ -96,7 +105,7 @@ export default function ProductDetailPage({
     });
 
   return (
-    <div className="w-full min-h-screen bg-[#F4F4F2] pb-24">
+    <div id="product-detail-view" className="w-full min-h-screen bg-[#F4F4F2] pb-24">
       {/* Top Breadcrumb & Back Navigation */}
       <div className="max-w-7xl mx-auto px-5 md:px-12 pt-8 pb-4">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/5 pb-4">
