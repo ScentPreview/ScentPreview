@@ -7,6 +7,7 @@ import {
   CapsuleBundle 
 } from "./types";
 import ScentCard from "./components/ScentCard";
+import ProductDetailPage from "./components/ProductDetailPage";
 import AntiQuiz from "./components/AntiQuiz";
 import AestheticQuiz from "./components/AestheticQuiz";
 import ChordQuiz from "./components/ChordQuiz";
@@ -551,7 +552,10 @@ const ClaimFormModal = ({ isOpen, onClose, availableSkus, onSubmitSuccess }: { i
 export default function App() {
   // Navigation / Scroll helper
   const scrollToCatalog = () => {
-    document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth" });
+    setSelectedDetailFragrance(null);
+    setTimeout(() => {
+      document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
   };
 
   const scrollToBuyNow = () => {
@@ -666,7 +670,7 @@ export default function App() {
   }, []);
 
   // State Management
-  const [cart, setCart] = useState<{ id: string; name: string; brand: string; size: string; price: number; quantity: number }[]>(() => {
+  const [cart, setCart] = useState<{ id: string; name: string; brand: string; size: string; price: number; quantity: number; image?: string }[]>(() => {
     try {
       const stored = localStorage.getItem("scent_cart");
       return stored ? JSON.parse(stored) : [];
@@ -684,6 +688,7 @@ export default function App() {
   }, [isCartOpen]);
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
+  const [selectedDetailFragrance, setSelectedDetailFragrance] = useState<Fragrance | null>(null);
   const [policyModal, setPolicyModal] = useState<"terms" | "privacy" | "shipping" | "returns" | null>(null);
   const [isClaimFormOpen, setIsClaimFormOpen] = useState(false);
   const [adminComplaints, setAdminComplaints] = useState<any[]>([]);
@@ -1657,7 +1662,8 @@ export default function App() {
         brand: fragrance.brand, 
         size, 
         price, 
-        quantity: targetQty
+        quantity: targetQty,
+        image: fragrance.image
       }];
     });
 
@@ -2290,7 +2296,12 @@ export default function App() {
       <header className="sticky top-0 bg-[#F4F4F2] z-40 border-b border-black/5">
         <nav className="w-full flex items-stretch h-20 px-4 max-w-7xl mx-auto">
           <div className="flex-1 flex items-center px-6">
-            <span className="text-xl font-sans font-bold tracking-tight text-black flex items-center gap-1.5">
+            <span 
+              onClick={() => {
+                setSelectedDetailFragrance(null);
+              }}
+              className="text-xl font-sans font-bold tracking-tight text-black flex items-center gap-1.5 cursor-pointer"
+            >
               <span>Scent Preview</span>
               <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-black/5 text-neutral-600">0.2</span>
             </span>
@@ -2306,6 +2317,7 @@ export default function App() {
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 if (e.target.value) {
+                  setSelectedDetailFragrance(null);
                   document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }
               }}
@@ -2331,7 +2343,32 @@ export default function App() {
         </nav>
       </header>
 
-      {/* Brutalist Hero Section */}
+      {/* Product Detail Page View (Amazon Style) OR Main Catalog */}
+      {selectedDetailFragrance ? (
+        <ProductDetailPage
+          fragrance={selectedDetailFragrance}
+          onBack={() => {
+            setSelectedDetailFragrance(null);
+          }}
+          onSelectFragrance={(f) => {
+            setSelectedDetailFragrance(f);
+          }}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
+          onNoteClick={(note) => {
+            setSelectedNote(note);
+            setSelectedDetailFragrance(null);
+            setTimeout(() => {
+              document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth" });
+            }, 50);
+          }}
+          fragranceStock={stock?.fragrances[selectedDetailFragrance.id]}
+          allFragrances={CATALOG_DATA}
+          stock={stock}
+        />
+      ) : (
+        <>
+          {/* Brutalist Hero Section */}
       <section className="w-full max-w-7xl mx-auto flex flex-col md:flex-row min-h-[75vh] mt-4">
         <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative z-10">
           <div className="overflow-visible">
@@ -2963,14 +3000,15 @@ export default function App() {
               Our most sought-after masculine extractions. Verified crowd-pleasers with exceptional projection and longevity.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             {CATALOG_DATA.filter(f => ["givenchy-gentleman", "zara-for-him-black"].includes(f.id)).map((fragrance) => (
-              <div key={fragrance.id} className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-amber-500/20 p-2 transition-all hover:shadow-xl hover:shadow-amber-500/10">
+              <div key={fragrance.id} className="h-full">
                 <ScentCard
                   fragrance={fragrance}
                   onAddToCart={handleAddToCart}
                   onBuyNow={handleBuyNow}
                   onNoteClick={setSelectedNote}
+                  onOpenDetails={(f) => setSelectedDetailFragrance(f)}
                   fragranceStock={stock?.fragrances[fragrance.id]}
                 />
               </div>
@@ -2992,14 +3030,15 @@ export default function App() {
               Our most sought-after feminine extractions. Verified crowd-pleasers with exceptional projection and longevity.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             {CATALOG_DATA.filter(f => ["lattafa-khamrah", "ck-one"].includes(f.id)).map((fragrance) => (
-              <div key={fragrance.id} className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-amber-500/20 p-2 transition-all hover:shadow-xl hover:shadow-amber-500/10">
+              <div key={fragrance.id} className="h-full">
                 <ScentCard
                   fragrance={fragrance}
                   onAddToCart={handleAddToCart}
                   onBuyNow={handleBuyNow}
                   onNoteClick={setSelectedNote}
+                  onOpenDetails={(f) => setSelectedDetailFragrance(f)}
                   fragranceStock={stock?.fragrances[fragrance.id]}
                 />
               </div>
@@ -3084,18 +3123,19 @@ export default function App() {
             {/* Men's Collection */}
             {filteredCatalog.filter(f => f.gender === "Men").length > 0 && (
               <div>
-                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-6 flex items-center gap-4">
+                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-8 flex items-center gap-4">
                   <span>Men's Collection 0.2</span>
                   <div className="h-px bg-black/5 flex-1" />
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 bg-transparent">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Men").map((fragrance) => (
-                    <div key={fragrance.id} className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-black/5 p-2 transition-all hover:shadow-xl hover:shadow-black/5">
+                    <div key={fragrance.id} className="h-full">
                       <ScentCard
                         fragrance={fragrance}
                         onAddToCart={handleAddToCart}
                         onBuyNow={handleBuyNow}
                         onNoteClick={setSelectedNote}
+                        onOpenDetails={(f) => setSelectedDetailFragrance(f)}
                         fragranceStock={stock?.fragrances[fragrance.id]}
                       />
                     </div>
@@ -3107,18 +3147,19 @@ export default function App() {
             {/* Women's Collection */}
             {filteredCatalog.filter(f => f.gender === "Women").length > 0 && (
               <div>
-                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-6 flex items-center gap-4">
+                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-8 flex items-center gap-4">
                   <span>Women's Collection 0.2</span>
                   <div className="h-px bg-black/5 flex-1" />
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 bg-transparent">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Women").map((fragrance) => (
-                    <div key={fragrance.id} className="bg-[#FFFFFF] rounded-2xl shadow-sm border border-black/5 p-2 transition-all hover:shadow-xl hover:shadow-black/5">
+                    <div key={fragrance.id} className="h-full">
                       <ScentCard
                         fragrance={fragrance}
                         onAddToCart={handleAddToCart}
                         onBuyNow={handleBuyNow}
                         onNoteClick={setSelectedNote}
+                        onOpenDetails={(f) => setSelectedDetailFragrance(f)}
                         fragranceStock={stock?.fragrances[fragrance.id]}
                       />
                     </div>
@@ -3187,22 +3228,16 @@ export default function App() {
                     </div>
 
                     <div className="mt-8 border-t border-black/5 pt-4 flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          disabled={isBundleOutOfStock}
-                          onClick={() => handleAddBundleToCart(bundle)}
-                          className="py-2.5 border border-black/10 shadow-sm rounded-2xl text-[11px] font-sans font-medium text-black hover:bg-stone-900 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          Add to Cart
-                        </button>
-                        <button
-                          disabled={isBundleOutOfStock}
-                          onClick={() => handleBuyBundleNow(bundle)}
-                          className="py-2.5 bg-stone-900 text-white text-[11px] font-sans font-medium hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          Buy Now
-                        </button>
-                      </div>
+                      <button
+                        disabled={isBundleOutOfStock}
+                        onClick={() => {
+                          handleAddBundleToCart(bundle, true);
+                          setIsCartOpen(true);
+                        }}
+                        className="w-full py-2.5 bg-black text-white rounded-2xl text-[11px] font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        {isBundleOutOfStock ? "Sold Out" : "Add to cart"}
+                      </button>
                       <div className="text-center mt-1">
                         <span className="font-mono text-xs font-medium text-neutral-600">
                           ₹{price}
@@ -3221,6 +3256,8 @@ export default function App() {
           </div>
         )}
       </section>
+        </>
+      )}
 
       {/* Modern Editorial Footer */}
       <footer className="bg-[#FFFFFF] text-black  py-16 px-6 md:px-12 border-t border-black/5">
@@ -3564,18 +3601,24 @@ export default function App() {
                                   exit={{ opacity: 0, x: 40, scale: 0.95 }}
                                   transition={{ type: "spring", damping: 25, stiffness: 220 }}
                                   key={item.id + "-" + item.size}
-                                  className="flex items-center justify-between p-4 bg-white/50   border border-stone-200 shadow-3xs hover:border-white/95 transition-all"
+                                  className="flex items-center justify-between p-4 bg-white/50 border border-stone-200 shadow-3xs hover:border-white/95 transition-all"
                                 >
-                                  <div>
-                                    <span className="block text-[8px] font-mono text-black uppercase tracking-widest">
-                                      {item.brand}
-                                    </span>
-                                    <span className="font-sans font-bold text-black  text-sm block leading-tight">
-                                      {item.name}
-                                    </span>
-                                    <span className="block text-[9px] font-mono text-amber-600 mt-0.5">
-                                      Volume: {item.size}
-                                    </span>
+                                  <div className="flex items-center gap-3">
+                                    {item.image && (
+                                      <div className="w-12 h-12 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                                        <img src={item.image} alt={item.name} className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="block text-[8px] font-mono text-black uppercase tracking-widest">
+                                        {item.brand}
+                                      </span>
+                                      <span className="font-sans font-bold text-black text-sm block leading-tight">
+                                        {item.name}
+                                      </span>
+                                      <span className="block text-[9px] font-mono text-amber-600 mt-0.5">
+                                        Volume: {item.size}
+                                      </span>
                                     
                                     {/* Quantity Display (Interactive, respects stock) */}
                                     <div className="flex items-center gap-2 mt-2">
@@ -3606,6 +3649,7 @@ export default function App() {
                                       )}
                                     </div>
                                   </div>
+                                </div>
 
                                   <div className="flex items-center gap-4">
                                     <span className="font-sans text-[11px] tracking-wider font-semibold text-black ">
@@ -3734,15 +3778,20 @@ export default function App() {
                   {/* Cart Items List */}
                   <div className="space-y-4 max-h-[180px] md:max-h-[50vh] overflow-y-auto pr-1">
                     {cart.map((item) => (
-                      <div key={item.id + "-" + item.size} className="flex items-start gap-3 border-b border-stone-200/50 pb-3">
-                        <div className="flex-1">
+                      <div key={item.id + "-" + item.size} className="flex items-center gap-3 border-b border-stone-200/50 pb-3">
+                        {item.image && (
+                          <div className="w-10 h-10 rounded-lg bg-stone-50 border border-stone-200/80 flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                            <img src={item.image} alt={item.name} className="max-h-full max-w-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
                           <span className="block text-[8px] font-mono text-black uppercase tracking-widest">{item.brand}</span>
-                          <span className="font-sans font-bold text-black  text-xs font-semibold">{item.name}</span>
+                          <span className="font-sans font-bold text-black text-xs font-semibold truncate block">{item.name}</span>
                           <span className="block text-[9px] font-mono text-black mt-0.5">
                             Qty: {item.quantity} × {item.size}
                           </span>
                         </div>
-                        <span className="font-sans text-[11px] tracking-wider text-black  font-semibold">
+                        <span className="font-sans text-[11px] tracking-wider text-black font-semibold shrink-0">
                           ₹{item.price * item.quantity}.00
                         </span>
                       </div>

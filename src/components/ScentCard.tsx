@@ -8,10 +8,11 @@ interface ScentCardProps {
   onAddToCart?: (fragrance: Fragrance, size: SizeType, quantity: number) => void;
   onBuyNow?: (fragrance: Fragrance, size: SizeType, quantity: number) => void;
   onNoteClick?: (note: string) => void;
+  onOpenDetails?: (fragrance: Fragrance) => void;
   fragranceStock?: Record<string, number>;
 }
 
-export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClick, fragranceStock }: ScentCardProps) {
+export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClick, onOpenDetails, fragranceStock }: ScentCardProps) {
   const [selectedSize, setSelectedSize] = useState<SizeType>(() => {
     const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
     for (const size of sizes) {
@@ -40,22 +41,19 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
       }
     }
   }, [fragranceStock, fragrance.disabledSizes, fragrance.isOutOfStock, selectedSize]);
-  const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   const price = fragrance.prices[selectedSize];
   const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
   const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
-  const stockToDisplay = currentStock !== undefined && currentStock <= 5 && currentStock > 0 ? currentStock : null;
-  const showLowStockAlert = stockToDisplay !== null;
 
   const handleSizeChange = (size: SizeType) => {
     setSelectedSize(size);
-    setQuantity(1);
   };
 
   const handleAction = () => {
-    onAddToCart?.(fragrance, selectedSize, quantity);
+    if (isCurrentOutOfStock) return;
+    onAddToCart?.(fragrance, selectedSize, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -65,98 +63,95 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: "-50px" }}
-      className="flex flex-col h-full bg-[#FFFFFF] border border-black/5 shadow-sm rounded-3xl overflow-hidden p-0 relative"
+      className="flex flex-col h-full bg-[#FFFFFF] border border-black/10 shadow-sm rounded-3xl overflow-hidden p-0 relative transition-all hover:border-black/30 hover:shadow-md group"
     >
-      
+      {/* Fragrance Bottle Product Image Showcase */}
+      {fragrance.image && (
+        <div 
+          onClick={() => onOpenDetails?.(fragrance)}
+          className="w-full h-56 sm:h-64 bg-stone-50/70 border-b border-black/5 flex items-center justify-center p-6 cursor-pointer overflow-hidden group/img relative"
+          title={`View ${fragrance.name} details`}
+        >
+          <img 
+            src={fragrance.image} 
+            alt={fragrance.name} 
+            className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover/img:scale-105"
+            referrerPolicy="no-referrer"
+            loading="lazy"
+          />
+        </div>
+      )}
 
-      <div className="p-5 flex-1 flex flex-col">
-        <h3 className="text-lg font-sans font-semibold text-neutral-900 mb-1 leading-snug tracking-tight">{fragrance.name}</h3>
-        
-        <div className="space-y-2 mb-6 flex-1">
+      <div className="p-6 sm:p-7 md:p-8 flex-1 flex flex-col justify-between">
+        {/* Clickable Fragrance Details Area */}
+        <div 
+          onClick={() => onOpenDetails?.(fragrance)}
+          className="cursor-pointer space-y-3 mb-6 group/detail"
+          title="Press to view full fragrance profile and options"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-xl font-sans font-semibold text-neutral-900 group-hover/detail:text-black group-hover/detail:underline decoration-neutral-300 underline-offset-4 leading-snug tracking-tight transition-colors">
+              {fragrance.name}
+            </h3>
+            <span className="text-[11px] font-mono text-neutral-400 group-hover/detail:text-black transition-colors shrink-0 pt-0.5">
+              Details ↗
+            </span>
+          </div>
+          
           <p className="text-xs font-sans text-neutral-700 leading-relaxed">
             <span className="font-semibold text-black">Notes:</span> {fragrance.notes}
           </p>
-          <p className="text-xs font-sans text-neutral-600 leading-relaxed">
+          <p className="text-xs font-sans text-neutral-600 leading-relaxed line-clamp-2">
             {fragrance.description}
           </p>
-          <div className="pt-1">
-            <span className="inline-block text-[10px] font-sans px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600 font-medium">
+          <div className="pt-2 flex items-center justify-between">
+            <span className="inline-block text-[10px] font-sans px-3 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium tracking-wide">
               {fragrance.type}
             </span>
           </div>
         </div>
 
-        {/* Size Selection */}
-        <div className="flex border border-black/5 rounded-2xl overflow-hidden mb-3">
-          {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size, idx) => {
-            const isSelected = selectedSize === size;
-            const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
-            const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || sizeStock === 0;
-            
-            return (
-              <button
-                key={size}
-                disabled={isSizeDisabled}
-                onClick={() => handleSizeChange(size)}
-                className={`flex-1 py-2 text-[10px] font-sans font-medium transition-colors ${
-                  idx !== 2 ? 'border-r border-black/5' : ''
-                } ${
-                  isSelected ? "bg-black text-white" : isSizeDisabled ? "text-black/40 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5"
-                }`}
-              >
-                {size.replace('ml Normal', ' (N)').replace('ml HQ', ' (HQ)')}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Quantity Selection */}
-        <div className="flex items-center justify-between border border-black/5 rounded-2xl px-3 py-1.5 mb-3 bg-stone-50/50">
-          <span className="text-[11px] font-sans text-neutral-600 font-medium">Quantity</span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setQuantity(q => Math.max(1, q - 1))}
-              disabled={isCurrentOutOfStock}
-              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/10 text-black font-sans text-xs disabled:opacity-30 transition-colors cursor-pointer"
-            >-</button>
-            <span className="w-5 text-center font-sans text-xs font-semibold text-black">{quantity}</span>
-            <button
-              onClick={() => setQuantity((q) => currentStock !== undefined ? Math.min(currentStock, q + 1) : q + 1)}
-              disabled={isCurrentOutOfStock}
-              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/10 text-black font-sans text-xs disabled:opacity-30 transition-colors cursor-pointer"
-            >+</button>
+        <div className="pt-2 border-t border-black/5">
+          {/* Size Selection */}
+          <div className="flex border border-black/10 rounded-xl overflow-hidden mb-3.5 bg-stone-50/50">
+            {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size, idx) => {
+              const isSelected = selectedSize === size;
+              const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
+              const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || sizeStock === 0;
+              
+              return (
+                <button
+                  key={size}
+                  disabled={isSizeDisabled}
+                  onClick={() => handleSizeChange(size)}
+                  className={`flex-1 py-1.5 text-[10px] font-sans font-medium transition-colors cursor-pointer ${
+                    idx !== 2 ? 'border-r border-black/10' : ''
+                  } ${
+                    isSelected ? "bg-black text-white" : isSizeDisabled ? "text-black/30 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5"
+                  }`}
+                >
+                  {size === "5ml Normal" ? "5ml" : size === "5ml HQ" ? "5ml (HQ)" : size}
+                </button>
+              );
+            })}
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2">
+          {/* Single Action Button: Add to cart */}
           <button
             disabled={isCurrentOutOfStock}
             onClick={handleAction}
-            className="py-2.5 border border-black/10 rounded-2xl text-[11px] font-sans font-medium text-black hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+            className="w-full py-3 bg-black text-white rounded-2xl text-xs font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm"
           >
-            {added ? <Check className="w-3.5 h-3.5" /> : null}
-            {added ? "Added" : isCurrentOutOfStock ? "Sold out" : "Add to Cart"}
+            {added ? <Check className="w-4 h-4" /> : null}
+            {added ? "Added to Cart" : isCurrentOutOfStock ? "Sold Out" : "Add to cart"}
           </button>
-          <button
-            disabled={isCurrentOutOfStock}
-            onClick={() => onBuyNow?.(fragrance, selectedSize, quantity)}
-            className="py-2.5 bg-black text-white rounded-2xl text-[11px] font-sans font-medium hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm"
-          >
-            Buy Now
-          </button>
-        </div>
 
-        {/* Price: small below the buy/add to cart */}
-        <div className="mt-2 text-center">
-          <span className="text-xs font-mono font-medium text-neutral-600">
-            ₹{price * quantity}
-            {quantity > 1 ? (
-              <span className="text-[10px] text-neutral-400 ml-1">
-                (₹{price} each)
-              </span>
-            ) : null}
-          </span>
+          {/* Price: clear below button */}
+          <div className="mt-2.5 text-center">
+            <span className="text-xs font-mono font-semibold text-neutral-700">
+              ₹{price}
+            </span>
+          </div>
         </div>
       </div>
     </motion.div>

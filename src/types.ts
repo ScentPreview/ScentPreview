@@ -67,7 +67,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 1221
     },
     color: "from-neutral-800 to-black",
-    glassStyle: "shadow-black/50"
+    glassStyle: "shadow-black/50",
+    image: "/images/perfumes/givenchy-gentleman.jpg"
   },
   {
     id: "la-uno-qaswa",
@@ -86,7 +87,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 388
     },
     color: "from-stone-700 to-stone-900",
-    glassStyle: "shadow-stone-800/50"
+    glassStyle: "shadow-stone-800/50",
+    image: "/images/perfumes/la-uno.jpg"
   },
   {
     id: "zara-for-him-black",
@@ -106,7 +108,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 504
     },
     color: "from-violet-950 to-neutral-900",
-    glassStyle: "shadow-purple-900/40"
+    glassStyle: "shadow-purple-900/40",
+    image: "/images/perfumes/for-him-black.jpg"
   },
   {
     id: "zara-seoul",
@@ -125,7 +128,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 428
     },
     color: "from-blue-600 to-blue-900",
-    glassStyle: "shadow-blue-700/50"
+    glassStyle: "shadow-blue-700/50",
+    image: "/images/perfumes/seoul.jpg"
   },
   {
     id: "zara-intense-dark",
@@ -144,7 +148,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 461
     },
     color: "from-stone-800 to-black",
-    glassStyle: "shadow-stone-900/50"
+    glassStyle: "shadow-stone-900/50",
+    image: "/images/perfumes/intense-dark.jpg"
   },
 
   // WOMEN'S COLLECTION
@@ -166,7 +171,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 538
     },
     color: "from-amber-600 to-amber-900",
-    glassStyle: "shadow-amber-700/50"
+    glassStyle: "shadow-amber-700/50",
+    image: "/images/perfumes/lattafa-khamrah.jpg"
   },
   {
     id: "zara-rich-warm-addictive",
@@ -185,7 +191,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 488
     },
     color: "from-amber-500 to-amber-800",
-    glassStyle: "shadow-amber-600/50"
+    glassStyle: "shadow-amber-600/50",
+    image: "/images/perfumes/rich-warm-addictive.jpg"
   },
   {
     id: "ck-one",
@@ -204,7 +211,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 582
     },
     color: "from-emerald-300 to-teal-500",
-    glassStyle: "shadow-emerald-400/40"
+    glassStyle: "shadow-emerald-400/40",
+    image: "/images/perfumes/ck-one.jpg"
   },
   {
     id: "ck2",
@@ -223,7 +231,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 721
     },
     color: "from-cyan-300 to-blue-400",
-    glassStyle: "shadow-cyan-400/40"
+    glassStyle: "shadow-cyan-400/40",
+    image: "/images/perfumes/ck2.jpg"
   },
   {
     id: "zara-sunrise",
@@ -243,7 +252,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 504
     },
     color: "from-orange-400 to-amber-600",
-    glassStyle: "shadow-orange-400/40"
+    glassStyle: "shadow-orange-400/40",
+    image: "/images/perfumes/sunrise.jpg"
   },
   {
     id: "zara-seoul-winter",
@@ -262,7 +272,8 @@ export const CATALOG_DATA: Fragrance[] = [
       "5ml HQ": 428
     },
     color: "from-blue-800 to-indigo-900",
-    glassStyle: "shadow-indigo-800/50"
+    glassStyle: "shadow-indigo-800/50",
+    image: "/images/perfumes/seoul-winter.jpg"
   }
 ];
 
