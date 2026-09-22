@@ -164,10 +164,11 @@ export default function ProductDetailPage({
                   <img
                     src={fragrance.image}
                     alt={fragrance.name}
-                    className="max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
+                    className="max-h-full max-w-full object-contain drop-shadow-md"
                     referrerPolicy="no-referrer"
                     loading="eager"
-                    decoding="async"
+                    decoding="sync"
+                    fetchPriority="high"
                   />
                 </div>
               )}

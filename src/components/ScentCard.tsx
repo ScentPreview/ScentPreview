@@ -72,10 +72,11 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
           <img 
             src={fragrance.image} 
             alt={fragrance.name} 
-            className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover/img:scale-105"
+            className="max-h-full max-w-full object-contain"
             referrerPolicy="no-referrer"
             loading="eager"
-            decoding="async"
+            decoding="sync"
+            fetchPriority="high"
           />
         </div>
       )}
