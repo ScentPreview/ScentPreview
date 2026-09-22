@@ -154,6 +154,27 @@ export const CATALOG_DATA: Fragrance[] = [
 
   // WOMEN'S COLLECTION
   {
+    id: "versace-crystal-noir",
+    name: "Versace Crystal Noir",
+    brand: "Versace",
+    isPremium: true,
+    gender: "Women",
+    isOutOfStock: false,
+    type: "PREMIUM / ELEGANT",
+    description: "Dark, mysterious, and sophisticated.",
+    notes: "Ginger / Cardamom / Pepper",
+    notesList: ["Ginger", "Cardamom", "Pepper"],
+    disabledSizes: ["10ml", "5ml HQ"],
+    prices: {
+      "10ml": 799,
+      "5ml Normal": 799,
+      "5ml HQ": 799
+    },
+    color: "from-purple-900 to-black",
+    glassStyle: "shadow-purple-900/50",
+    image: "/images/perfumes/versace-crystal-noir.jpg"
+  },
+  {
     id: "lattafa-khamrah",
     name: "Lattafa Khamrah",
     brand: "Lattafa",

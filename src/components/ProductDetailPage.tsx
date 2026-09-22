@@ -72,7 +72,7 @@ export default function ProductDetailPage({
     (currentStock !== undefined && currentStock === 0) ||
     fragrance.disabledSizes?.includes(selectedSize);
 
-  const price = fragrance.prices[selectedSize];
+  const price = (fragrance.prices && fragrance.prices[selectedSize]) ?? fragrance.prices?.["5ml Normal"] ?? 799;
   const totalPrice = price * quantity;
 
   const handleSizeChange = (size: SizeType) => {
@@ -164,8 +164,10 @@ export default function ProductDetailPage({
                   <img
                     src={fragrance.image}
                     alt={fragrance.name}
-                    className="max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-500 hover:scale-105"
+                    className="max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
                     referrerPolicy="no-referrer"
+                    loading="eager"
+                    decoding="async"
                   />
                 </div>
               )}

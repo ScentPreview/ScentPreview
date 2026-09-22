@@ -222,10 +222,30 @@ async function loadStockFromFirestore(): Promise<StockDB> {
     const docSnap = await getDoc(doc(firestoreDb, "stock", "current"));
     if (docSnap.exists()) {
       const stock = docSnap.data() as StockDB;
+      let needsSave = false;
       if (stock && stock.fragrances && stock.fragrances["lattafa-khamrah"] && stock.fragrances["lattafa-khamrah"]["10ml"] === 10) {
         console.log("[Stock] Old Firestore database detected. Overwriting with official user stock list...");
         await saveStockToFirestore(DEFAULT_STOCK);
         return DEFAULT_STOCK;
+      }
+      
+      // Ensure versace-crystal-noir is populated with 1 on 5ml Normal and 0 on other sizes
+      if (stock && stock.fragrances) {
+        if (!stock.fragrances["versace-crystal-noir"]) {
+          stock.fragrances["versace-crystal-noir"] = { "10ml": 0, "5ml Normal": 1, "5ml HQ": 0 };
+          needsSave = true;
+        } else {
+          // Explicitly ensure 10ml and 5ml HQ are 0, and 5ml Normal has stock of 1
+          if (stock.fragrances["versace-crystal-noir"]["10ml"] !== 0 || stock.fragrances["versace-crystal-noir"]["5ml HQ"] !== 0) {
+            stock.fragrances["versace-crystal-noir"]["10ml"] = 0;
+            stock.fragrances["versace-crystal-noir"]["5ml HQ"] = 0;
+            needsSave = true;
+          }
+        }
+      }
+
+      if (needsSave) {
+        await saveStockToFirestore(stock);
       }
       
       // Cache to disk
@@ -276,6 +296,7 @@ const DEFAULT_STOCK: StockDB = {
     "zara-intense-dark": { "10ml": 1, "5ml Normal": 5, "5ml HQ": 0 },
     "zara-rich-warm-addictive": { "10ml": 0, "5ml Normal": 16, "5ml HQ": 0 },
     "lattafa-khamrah": { "10ml": 0, "5ml Normal": 13, "5ml HQ": 0 },
+    "versace-crystal-noir": { "10ml": 0, "5ml Normal": 1, "5ml HQ": 0 },
     "zara-sunrise": { "10ml": 2, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-seoul-winter": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 1 },
     "zara-seoul": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 2 },

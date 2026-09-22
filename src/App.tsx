@@ -3110,10 +3110,10 @@ export default function App() {
             {filteredCatalog.filter(f => f.gender === "Men").length > 0 && (
               <div>
                 <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-8 flex items-center gap-4">
-                  <span>Men's Collection 0.2</span>
+                  <span>Men's Collection</span>
                   <div className="h-px bg-black/5 flex-1" />
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12 bg-transparent">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Men").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
                       <ScentCard
@@ -3134,10 +3134,10 @@ export default function App() {
             {filteredCatalog.filter(f => f.gender === "Women").length > 0 && (
               <div>
                 <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-8 flex items-center gap-4">
-                  <span>Women's Collection 0.2</span>
+                  <span>Women</span>
                   <div className="h-px bg-black/5 flex-1" />
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12 bg-transparent">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Women").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
                       <ScentCard

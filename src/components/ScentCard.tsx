@@ -13,16 +13,17 @@ interface ScentCardProps {
 }
 
 export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClick, onOpenDetails, fragranceStock }: ScentCardProps) {
+  const SIZES: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
+
   const [selectedSize, setSelectedSize] = useState<SizeType>(() => {
-    const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
-    for (const size of sizes) {
+    for (const size of SIZES) {
       const stock = fragranceStock ? fragranceStock[size] : undefined;
       const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock === 0;
       if (!isSizeDisabled) {
         return size;
       }
     }
-    return "10ml"; // Fallback if all are out of stock
+    return "5ml Normal"; // Fallback to 5ml Normal if 10ml is out of stock / disabled
   });
 
   useEffect(() => {
@@ -30,8 +31,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
     const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
     
     if (isCurrentOutOfStock) {
-      const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
-      for (const size of sizes) {
+      for (const size of SIZES) {
         const stock = fragranceStock ? fragranceStock[size] : undefined;
         const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock === 0;
         if (!isSizeDisabled) {
@@ -43,7 +43,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
   }, [fragranceStock, fragrance.disabledSizes, fragrance.isOutOfStock, selectedSize]);
   const [added, setAdded] = useState(false);
 
-  const price = fragrance.prices[selectedSize];
+  const price = fragrance.prices[selectedSize] ?? fragrance.prices["5ml Normal"] ?? 799;
   const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
   const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
 
@@ -59,10 +59,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-50px" }}
+    <div 
       className="flex flex-col h-full bg-[#FFFFFF] border border-black/10 shadow-sm rounded-3xl overflow-hidden p-0 relative transition-all hover:border-black/30 hover:shadow-md group"
     >
       {/* Fragrance Bottle Product Image Showcase */}
@@ -75,9 +72,10 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
           <img 
             src={fragrance.image} 
             alt={fragrance.name} 
-            className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover/img:scale-105"
+            className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover/img:scale-105"
             referrerPolicy="no-referrer"
-            loading="lazy"
+            loading="eager"
+            decoding="async"
           />
         </div>
       )}
@@ -85,9 +83,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
       <div className="p-6 sm:p-7 md:p-8 flex-1 flex flex-col justify-between">
         {/* Clickable Fragrance Details Area */}
         <div 
-          onClick={() => onOpenDetails?.(fragrance)}
-          className="cursor-pointer space-y-3 mb-6 group/detail"
-          title="Press to view full fragrance profile and options"
+          className="space-y-3 mb-6"
         >
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-xl font-sans font-semibold text-neutral-900 group-hover/detail:text-black group-hover/detail:underline decoration-neutral-300 underline-offset-4 leading-snug tracking-tight transition-colors">
@@ -114,7 +110,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
         <div className="pt-2 border-t border-black/5">
           {/* Size Selection */}
           <div className="flex border border-black/10 rounded-xl overflow-hidden mb-3.5 bg-stone-50/50">
-            {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size, idx) => {
+            {SIZES.map((size, idx, arr) => {
               const isSelected = selectedSize === size;
               const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
               const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || sizeStock === 0;
@@ -125,7 +121,7 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
                   disabled={isSizeDisabled}
                   onClick={() => handleSizeChange(size)}
                   className={`flex-1 py-1.5 text-[10px] font-sans font-medium transition-colors cursor-pointer ${
-                    idx !== 2 ? 'border-r border-black/10' : ''
+                    idx !== arr.length - 1 ? 'border-r border-black/10' : ''
                   } ${
                     isSelected ? "bg-black text-white" : isSizeDisabled ? "text-black/30 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5"
                   }`}
@@ -154,6 +150,6 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
