@@ -688,13 +688,100 @@ export default function App() {
     }
   }, [isCartOpen]);
 
+  // Helper to find a fragrance from hostname (subdomains) or pathname/search params
+  const resolveFragranceFromLocation = (): Fragrance | null => {
+    if (typeof window === "undefined") return null;
+    
+    // 1. Check Subdomain (e.g. scentpreviewgentlemangivenchy.onrender.com or givenchy-gentleman.scentpreview.com)
+    const hostname = window.location.hostname.toLowerCase();
+    
+    // Check direct matching against catalog IDs, explicit subdomainSlug, or slugified names
+    for (const f of CATALOG_DATA) {
+      const cleanSlug = f.id.replace(/-/g, ""); // e.g. givenchygentleman
+      const nameSlug = f.name.toLowerCase().replace(/[^a-z0-9]/g, ""); // e.g. givenchygentleman
+      const customSubdomain = f.subdomainSlug?.toLowerCase() || "";
+      
+      // Check if hostname begins with or contains the exact custom subdomain or perfume slug
+      if (
+        (customSubdomain && hostname.includes(customSubdomain)) ||
+        hostname.includes(`scentpreview${cleanSlug}`) ||
+        hostname.includes(`scentpreview${nameSlug}`) ||
+        hostname.startsWith(`${f.id}.`) ||
+        hostname.startsWith(`${nameSlug}.`) ||
+        hostname.startsWith(`${cleanSlug}.`)
+      ) {
+        return f;
+      }
+    }
+
+    // 2. Check Pathname (/perfume/:id, /p/:id, /:id)
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+    if (path) {
+      const segments = path.split("/");
+      const targetSlug = segments[segments.length - 1]; // last segment or /perfume/givenchy-gentleman
+      const match = CATALOG_DATA.find(
+        (f) => 
+          f.id === targetSlug || 
+          f.id === segments[0] || 
+          (f.subdomainSlug && f.subdomainSlug === targetSlug) ||
+          f.name.toLowerCase().replace(/[^a-z0-9]/g, "-") === targetSlug ||
+          f.name.toLowerCase().replace(/[^a-z0-9]/g, "") === targetSlug
+      );
+      if (match) return match;
+    }
+
+    // 3. Check Query parameter (?p=givenchy-gentleman or ?perfume=versace-crystal-noir)
+    const params = new URLSearchParams(window.location.search);
+    const queryPerfume = params.get("p") || params.get("perfume") || params.get("id");
+    if (queryPerfume) {
+      const queryClean = queryPerfume.toLowerCase().trim();
+      const match = CATALOG_DATA.find(
+        (f) => 
+          f.id === queryClean || 
+          (f.subdomainSlug && f.subdomainSlug === queryClean) ||
+          f.name.toLowerCase().replace(/[^a-z0-9]/g, "-") === queryClean ||
+          f.name.toLowerCase().replace(/[^a-z0-9]/g, "") === queryClean
+      );
+      if (match) return match;
+    }
+
+    return null;
+  };
+
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
-  const [selectedDetailFragrance, setSelectedDetailFragrance] = useState<Fragrance | null>(null);
+  const [selectedDetailFragrance, setSelectedDetailFragrance] = useState<Fragrance | null>(() => {
+    return resolveFragranceFromLocation();
+  });
 
   const handleOpenFragranceDetails = (fragrance: Fragrance) => {
     setSelectedDetailFragrance(fragrance);
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    
+    // Update browser URL so page reload or sharing keeps this perfume open permanently
+    try {
+      const newUrl = `${window.location.pathname}?perfume=${encodeURIComponent(fragrance.id)}`;
+      window.history.pushState({ perfumeId: fragrance.id }, "", newUrl);
+    } catch (e) {}
   };
+
+  const handleBackFromDetails = () => {
+    setSelectedDetailFragrance(null);
+    try {
+      const newUrl = window.location.pathname;
+      window.history.pushState({}, "", newUrl);
+    } catch (e) {}
+  };
+
+  // Listen to browser forward/back buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const resolved = resolveFragranceFromLocation();
+      setSelectedDetailFragrance(resolved);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const [policyModal, setPolicyModal] = useState<"terms" | "privacy" | "shipping" | "returns" | null>(null);
   const [isClaimFormOpen, setIsClaimFormOpen] = useState(false);
@@ -2382,9 +2469,7 @@ export default function App() {
       {selectedDetailFragrance ? (
         <ProductDetailPage
           fragrance={selectedDetailFragrance}
-          onBack={() => {
-            setSelectedDetailFragrance(null);
-          }}
+          onBack={handleBackFromDetails}
           onSelectFragrance={(f) => {
             handleOpenFragranceDetails(f);
           }}
@@ -2392,7 +2477,7 @@ export default function App() {
           onBuyNow={handleBuyNow}
           onNoteClick={(note) => {
             setSelectedNote(note);
-            setSelectedDetailFragrance(null);
+            handleBackFromDetails();
             setTimeout(() => {
               document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth" });
             }, 50);

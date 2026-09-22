@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   Droplets, 
   Truck, 
-  RotateCcw
+  RotateCcw,
+  Share2
 } from "lucide-react";
 import { Fragrance, SizeType } from "../types";
 import ScentCard from "./ScentCard";
@@ -39,6 +40,18 @@ export default function ProductDetailPage({
   const [selectedSize, setSelectedSize] = useState<SizeType>("10ml");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyDirectLink = () => {
+    try {
+      const subdomain = fragrance.subdomainSlug || `scentpreview${fragrance.id.replace(/-/g, "")}`;
+      // Direct URL with pathname parameter or subdomain
+      const url = `${window.location.origin}${window.location.pathname}?perfume=${encodeURIComponent(fragrance.id)}`;
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2200);
+    } catch (e) {}
+  };
 
   // Scroll to top immediately when opening or changing fragrance so user sees the selected perfume profile first
   useEffect(() => {
@@ -119,12 +132,32 @@ export default function ProductDetailPage({
             <span>Back to all perfumes</span>
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 text-[11px] font-sans text-neutral-500">
-            <span onClick={onBack} className="hover:text-black cursor-pointer">Archive</span>
-            <span>/</span>
-            <span>{fragrance.gender || "Unisex"} Collection</span>
-            <span>/</span>
-            <span className="text-neutral-900 font-medium">{fragrance.name}</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 text-[11px] font-sans text-neutral-500">
+              <span onClick={onBack} className="hover:text-black cursor-pointer">Archive</span>
+              <span>/</span>
+              <span>{fragrance.gender || "Unisex"} Collection</span>
+              <span>/</span>
+              <span className="text-neutral-900 font-medium">{fragrance.name}</span>
+            </div>
+            
+            <button
+              onClick={handleCopyDirectLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-black/10 hover:border-black text-[11px] font-sans text-neutral-800 transition-all cursor-pointer shadow-xs"
+              title="Copy permanent shareable link"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700 font-medium">Link Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5 text-neutral-600" />
+                  <span>Share / Direct Link</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

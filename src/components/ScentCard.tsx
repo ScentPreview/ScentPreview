@@ -84,7 +84,8 @@ export default function ScentCard({ fragrance, onAddToCart, onBuyNow, onNoteClic
       <div className="p-6 sm:p-7 md:p-8 flex-1 flex flex-col justify-between">
         {/* Clickable Fragrance Details Area */}
         <div 
-          className="space-y-3 mb-6"
+          onClick={() => onOpenDetails?.(fragrance)}
+          className="space-y-3 mb-6 cursor-pointer group/detail"
         >
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-xl font-sans font-semibold text-neutral-900 group-hover/detail:text-black group-hover/detail:underline decoration-neutral-300 underline-offset-4 leading-snug tracking-tight transition-colors">

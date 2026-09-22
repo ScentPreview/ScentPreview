@@ -4,6 +4,7 @@ export interface Fragrance {
   id: string;
   name: string;
   brand: string;
+  subdomainSlug?: string;
   isPremium: boolean;
   type?: string;
   description?: string;
@@ -53,6 +54,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "givenchy-gentleman",
     name: "Givenchy Gentleman",
     brand: "Givenchy",
+    subdomainSlug: "scentpreviewgentlemangivenchy",
     isPremium: true,
     gender: "Men",
     isOutOfStock: false,
@@ -74,6 +76,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "la-uno-qaswa",
     name: "La Uno Qaswa",
     brand: "La Uno",
+    subdomainSlug: "scentpreviewlaunoqaswa",
     isPremium: false,
     gender: "Men",
     isOutOfStock: false,
@@ -94,6 +97,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "zara-for-him-black",
     name: "Zara For Him Black",
     brand: "Zara",
+    subdomainSlug: "scentpreviewzaraforhimblack",
     isPremium: false,
     gender: "Men",
     isOutOfStock: false,
@@ -115,6 +119,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "zara-seoul",
     name: "Zara Seoul",
     brand: "Zara",
+    subdomainSlug: "scentpreviewzaraseoul",
     isPremium: false,
     gender: "Men",
     isOutOfStock: false,
@@ -135,6 +140,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "zara-intense-dark",
     name: "Zara Intense Dark",
     brand: "Zara",
+    subdomainSlug: "scentpreviewzaraintensedark",
     isPremium: false,
     gender: "Men",
     isOutOfStock: false,
@@ -157,6 +163,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "versace-crystal-noir",
     name: "Versace Crystal Noir",
     brand: "Versace",
+    subdomainSlug: "scentpreviewcrystalnoir",
     isPremium: true,
     gender: "Women",
     isOutOfStock: false,
@@ -178,6 +185,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "lattafa-khamrah",
     name: "Lattafa Khamrah",
     brand: "Lattafa",
+    subdomainSlug: "scentpreviewlattafakhamrah",
     isPremium: false,
     gender: "Women",
     isOutOfStock: false,
@@ -199,6 +207,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "zara-rich-warm-addictive",
     name: "Zara Rich Warm Addictive",
     brand: "Zara",
+    subdomainSlug: "scentpreviewrichwarmaddictive",
     isPremium: false,
     gender: "Women",
     isOutOfStock: false,
@@ -219,6 +228,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "ck-one",
     name: "Calvin Klein CK One",
     brand: "Calvin Klein",
+    subdomainSlug: "scentpreviewckone",
     isPremium: false,
     gender: "Women",
     isOutOfStock: false,
@@ -239,6 +249,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "ck2",
     name: "Calvin Klein CK2",
     brand: "Calvin Klein",
+    subdomainSlug: "scentpreviewck2",
     isPremium: false,
     gender: "Women",
     isOutOfStock: false,
@@ -259,6 +270,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "zara-sunrise",
     name: "Zara Sunrise",
     brand: "Zara",
+    subdomainSlug: "scentpreviewzarasunrise",
     isPremium: false,
     gender: "Women",
     isOutOfStock: false,
@@ -280,6 +292,7 @@ export const CATALOG_DATA: Fragrance[] = [
     id: "zara-seoul-winter",
     name: "Zara Seoul Winter",
     brand: "Zara",
+    subdomainSlug: "scentpreviewzaraseoulwinter",
     isPremium: false,
     gender: "Women",
     isOutOfStock: false,
