@@ -1,18 +1,48 @@
 {
+  "bundles": {
+    "spotlight-arabian": 6,
+    "bundle-cozy-winter": 0,
+    "bundle-master-vault": 0,
+    "bundle-marine-core": 0,
+    "bundle-office-rotation": 0,
+    "bundle-zara-classics": 0,
+    "bundle-rare-collector": 0,
+    "bundle-day-night": 0
+  },
   "fragrances": {
-    "lattafa-khamrah": {
+    "givenchy-gentleman": {
+      "10ml": 0,
+      "5ml Normal": 11,
+      "5ml HQ": 0
+    },
+    "zara-for-him-black": {
       "5ml HQ": 0,
       "10ml": 0,
-      "5ml Normal": 14
+      "5ml Normal": 5
+    },
+    "ck2": {
+      "10ml": 0,
+      "5ml Normal": 2,
+      "5ml HQ": 0
+    },
+    "zara-rich-warm-addictive": {
+      "5ml Normal": 16,
+      "5ml HQ": 0,
+      "10ml": 0
+    },
+    "zara-seoul": {
+      "5ml Normal": 0,
+      "10ml": 0,
+      "5ml HQ": 2
+    },
+    "zara-intense-dark": {
+      "5ml Normal": 5,
+      "10ml": 1,
+      "5ml HQ": 0
     },
     "ck-one": {
-      "10ml": 0,
+      "5ml HQ": 3,
       "5ml Normal": 7,
-      "5ml HQ": 3
-    },
-    "givenchy-gentleman": {
-      "5ml Normal": 11,
-      "5ml HQ": 0,
       "10ml": 0
     },
     "zara-seoul-winter": {
@@ -20,50 +50,20 @@
       "10ml": 0,
       "5ml HQ": 1
     },
+    "lattafa-khamrah": {
+      "5ml HQ": 0,
+      "10ml": 0,
+      "5ml Normal": 14
+    },
     "zara-sunrise": {
-      "10ml": 2,
       "5ml HQ": 0,
-      "5ml Normal": 0
-    },
-    "zara-for-him-black": {
-      "5ml HQ": 0,
-      "10ml": 0,
-      "5ml Normal": 5
-    },
-    "zara-rich-warm-addictive": {
-      "5ml HQ": 0,
-      "10ml": 0,
-      "5ml Normal": 16
-    },
-    "zara-seoul": {
-      "5ml HQ": 2,
       "5ml Normal": 0,
-      "10ml": 0
+      "10ml": 2
     },
     "la-uno-qaswa": {
+      "5ml HQ": 2,
       "5ml Normal": 11,
-      "10ml": 1,
-      "5ml HQ": 2
-    },
-    "ck2": {
-      "10ml": 0,
-      "5ml Normal": 2,
-      "5ml HQ": 0
-    },
-    "zara-intense-dark": {
-      "5ml HQ": 0,
-      "10ml": 1,
-      "5ml Normal": 5
+      "10ml": 1
     }
-  },
-  "bundles": {
-    "bundle-day-night": 0,
-    "bundle-marine-core": 0,
-    "bundle-master-vault": 0,
-    "bundle-zara-classics": 0,
-    "bundle-cozy-winter": 0,
-    "bundle-rare-collector": 0,
-    "bundle-office-rotation": 0,
-    "spotlight-arabian": 6
   }
 }
