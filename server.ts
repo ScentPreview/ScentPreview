@@ -621,17 +621,24 @@ async function startServer() {
 
 
 
-  // Load initial orders and stock from Firestore on startup
-  try {
-    console.log("[Startup] Initializing cache from Firestore...");
-    ordersDb = await fetchAllOrdersFromFirestore();
-    console.log(`[Startup] Loaded ${ordersDb.length} orders from database.`);
-    const currentStock = await loadStockFromFirestore();
-    console.log("[Startup] Successfully cached current stock level");
-  } catch (startupErr) {
-    console.error("[Startup Error] Failed to prime cache from Firestore:", startupErr);
-    ordersDb = loadOrdersFromDisk();
-  }
+  // Health check routes for Cloud Run deployment health checks
+  app.get(["/api/health", "/healthz", "/health"], (req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Non-blocking load of initial orders and stock from Firestore on startup
+  (async () => {
+    try {
+      console.log("[Startup] Initializing cache from Firestore in background...");
+      ordersDb = await fetchAllOrdersFromFirestore();
+      console.log(`[Startup] Loaded ${ordersDb.length} orders from database.`);
+      await loadStockFromFirestore();
+      console.log("[Startup] Successfully cached current stock level");
+    } catch (startupErr) {
+      console.error("[Startup Error] Failed to prime cache from Firestore:", startupErr);
+      ordersDb = loadOrdersFromDisk();
+    }
+  })();
 
   // Initialize Gemini client if API key is present
   const apiKey = process.env.GEMINI_API_KEY;

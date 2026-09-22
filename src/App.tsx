@@ -12,6 +12,7 @@ import AntiQuiz from "./components/AntiQuiz";
 import AestheticQuiz from "./components/AestheticQuiz";
 import ChordQuiz from "./components/ChordQuiz";
 import ScentBattle from "./components/ScentBattle";
+import LiquidBars from "./components/ui/liquid-bars";
 import { 
   ShoppingBag, 
   X, 
@@ -2283,67 +2284,95 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] text-black font-sans relative selection:bg-amber-100 selection:text-black">
-      {/* Organic Ambient Glows */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-amber-500/[0.03] blur-[100px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-stone-500/[0.03] blur-[120px] pointer-events-none z-0"></div>
-      
-      <div className="fixed bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] -full bg-[#0E0E0E]/5 blur-[150px] pointer-events-none z-0"></div>
-      <div className="fixed top-[30%] left-[50%] w-[40vw] h-[40vw] -full bg-[#0E0E0E]/5 blur-[150px] pointer-events-none z-0"></div>
-
-      
-      {/* Niche Perfumery Studio Lighting / Radial Gradients */}
-
-      {/* 2026 EDITION Floating Vertical Ticker */}
-      <div className="ticker hidden lg:block z-40 text-black  border-black/5">
-        RE-DEFINING THE DECANT EDITION 0.2
+      {/* Full-Screen Liquid Bars Background */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden bg-[#0a0c10]">
+        <LiquidBars
+          color="#eceff6"
+          speed={0.7}
+          barCount={7}
+          scale={0.42}
+          waveComplexity={2}
+          waveAmplitude={0.7}
+          reflectionFrequency={18}
+          metallicContrast={2.2}
+          streakIntensity={0.35}
+          highlightWarmth={0.35}
+          opacity={1}
+          className="w-full h-full"
+        />
       </div>
 
-      {/* Modern High-End Sticky Header Navigation with Search Bar on top */}
-      <header className="sticky top-0 bg-[#F4F4F2] z-40 border-b border-black/5">
-        <nav className="w-full flex items-stretch h-20 px-4 max-w-7xl mx-auto">
-          <div className="flex-1 flex items-center px-6">
+      {/* Modern High-End Sticky Header Navigation */}
+      <header className="sticky top-0 bg-[#F4F4F2]/95 backdrop-blur-md z-50 border-b border-black/10 shadow-xs">
+        <nav className="w-full flex items-center justify-between h-16 sm:h-18 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          {/* Brand Identity & Primary Links */}
+          <div className="flex items-center gap-6 sm:gap-8">
             <span 
               onClick={() => {
                 setSelectedDetailFragrance(null);
               }}
-              className="text-xl font-sans font-bold tracking-tight text-black flex items-center gap-1.5 cursor-pointer"
+              className="text-xl font-sans font-bold tracking-tight text-black flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             >
               <span>Scent Preview</span>
-              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-black/5 text-neutral-600">0.2</span>
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-black/5 text-neutral-600">0.2</span>
             </span>
-          </div>
-          <div className="hidden md:flex flex-1 items-center justify-center gap-10">
-            <button onClick={scrollToCatalog} className="text-[11px] font-sans tracking-[0.15em] text-black hover:text-amber-700 transition-colors uppercase cursor-pointer">Archive</button>
-            
-          </div>
-          <div className="flex-1 flex items-center justify-end px-6 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (e.target.value) {
-                  setSelectedDetailFragrance(null);
-                  document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-              }}
-              placeholder="SEARCH..."
-              className="w-full h-full bg-transparent px-6 text-[11px] font-sans tracking-[0.15em] text-black focus:outline-none placeholder:text-white"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-32 text-black font-mono text-sm px-2 cursor-pointer"
+            <div className="hidden md:flex items-center gap-6 pl-6 border-l border-black/10">
+              <button 
+                onClick={scrollToCatalog} 
+                className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
               >
-                ×
+                Archive
               </button>
-            )}
+              <button 
+                onClick={() => {
+                  document.getElementById("bundle-capsules")?.scrollIntoView({ behavior: "smooth" });
+                }} 
+                className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
+              >
+                Bundles
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar & Cart Button */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="relative flex items-center">
+              <div className="flex items-center bg-white/80 border border-black/10 rounded-full px-3.5 py-1.5 focus-within:border-black/30 focus-within:bg-white transition-all shadow-xs w-40 sm:w-56 md:w-64">
+                <Search className="w-3.5 h-3.5 text-neutral-400 mr-2 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value) {
+                      setSelectedDetailFragrance(null);
+                      document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
+                  placeholder="Search decants, notes..."
+                  className="w-full bg-transparent text-xs font-sans text-black focus:outline-none placeholder:text-neutral-400"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-neutral-400 hover:text-black font-mono text-xs px-1 cursor-pointer shrink-0"
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+
             <button
               onClick={() => setIsCartOpen(true)}
-              className="h-full px-6 flex items-center text-[11px] font-sans tracking-[0.15em] text-black hover:text-amber-700 transition-colors whitespace-nowrap cursor-pointer"
+              className="flex items-center gap-2 bg-stone-900 text-white hover:bg-black px-4 sm:px-5 py-2 rounded-full text-[11px] font-sans tracking-[0.12em] uppercase transition-all cursor-pointer font-medium shadow-xs shrink-0"
             >
-              Cart ({cart.reduce((sum, i) => sum + i.quantity, 0)})
+              <span>Cart</span>
+              <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none">
+                {cart.reduce((sum, i) => sum + i.quantity, 0)}
+              </span>
             </button>
           </div>
         </nav>
@@ -2374,31 +2403,47 @@ export default function App() {
         />
       ) : (
         <>
-          {/* Brutalist Hero Section */}
-      <section className="w-full max-w-7xl mx-auto flex flex-col md:flex-row min-h-[75vh] mt-4">
-        <div className="flex-1 flex flex-col justify-center p-8 md:p-16 relative z-10">
-          <div className="overflow-visible">
-            <span className="text-[10px] font-sans font-medium tracking-[0.18em] text-neutral-500 uppercase border border-black/5 rounded-full px-2.5 py-1 mb-6 inline-block">
-              Edition 0.2
-            </span>
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[92px] font-sans font-semibold text-black tracking-[-0.035em] leading-[0.92] mb-6">
-              Scent<br />Preview
-            </h1>
-          </div>
-          <div className="max-w-sm mt-12 md:mt-0">
-            <p className="text-xs font-sans text-black leading-relaxed mb-8">
-              Curated premium fragrance decants. Hand-poured, perfectly measured, and delivered directly to your door.
-            </p>
-            <button
-              onClick={scrollToCatalog}
-              className="border border-black/5 shadow-sm rounded-2xl px-6 py-4 text-[10px] font-sans tracking-[0.15em] text-black hover:bg-stone-900 hover:text-white transition-colors w-full sm:w-auto cursor-pointer"
-            >
-              Explore Catalog
-            </button>
-          </div>
-        </div>
+          {/* Hero Section */}
+          <div className="relative w-full overflow-hidden border-b border-black/10">
 
-      </section>
+            {/* Subtle organic ambient glow */}
+            <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-amber-500/[0.04] blur-[80px] pointer-events-none z-0" />
+
+            <section className="w-full max-w-7xl mx-auto flex flex-col md:flex-row px-4 sm:px-6 lg:px-8 relative z-10 items-center justify-between py-10 sm:py-12 md:py-14">
+              <div className="flex-1 flex flex-col justify-center py-2 sm:py-4 relative z-10 max-w-2xl">
+                <div className="overflow-visible mb-3">
+                  <span className="text-[10px] font-sans font-semibold tracking-[0.2em] text-neutral-200 uppercase border border-white/20 bg-black/40 backdrop-blur-md rounded-full px-3.5 py-1 mb-3 inline-block shadow-sm">
+                    Edition 0.2
+                  </span>
+                  <div className="block">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-sans font-bold text-white tracking-[-0.03em] leading-[0.96] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl sm:rounded-3xl px-6 py-3.5 sm:px-8 sm:py-4 shadow-lg">
+                      Scent<br className="hidden sm:inline" /> Preview
+                    </h1>
+                  </div>
+                </div>
+                <div className="max-w-md mt-1">
+                  <p className="text-xs sm:text-sm font-sans text-neutral-200 leading-relaxed mb-6 font-normal border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl px-5 py-3 shadow-sm inline-block">
+                    Curated premium fragrance decants. Hand-poured, perfectly measured, and delivered directly to your door.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <button
+                      onClick={scrollToCatalog}
+                      className="border border-white/20 bg-white text-black shadow-md rounded-full px-7 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase hover:bg-neutral-200 transition-all cursor-pointer font-bold"
+                    >
+                      Explore Catalog
+                    </button>
+                    <button
+                      onClick={() => setIsQuizListOpen(true)}
+                      className="border border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-black/60 hover:border-white/50 transition-all rounded-full px-6 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase cursor-pointer font-bold shadow-sm flex items-center gap-2"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Find your Scent</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
 
       <section id="buy-now-section" className="hidden">
         
@@ -2989,73 +3034,8 @@ export default function App() {
         </div>
       </section>
 
-      
-      {/* 1.5 Best Sellers Section */}
-      <section id="best-sellers" className="max-w-7xl mx-auto px-5 md:px-12 py-16 space-y-16">
-        <div>
-          <div className="border-b border-stone-200/60 pb-5 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <span className="text-[10px] font-mono tracking-[0.2em] text-amber-700 uppercase font-bold block mb-2">
-                Top Tier Men
-              </span>
-              <h2 className="text-3xl md:text-4xl font-serif text-black tracking-tight">
-                Men's Best Sellers
-              </h2>
-            </div>
-            <p className="text-black text-xs font-sans max-w-sm">
-              Our most sought-after masculine extractions. Verified crowd-pleasers with exceptional projection and longevity.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {CATALOG_DATA.filter(f => ["givenchy-gentleman", "zara-for-him-black"].includes(f.id)).map((fragrance) => (
-              <div key={fragrance.id} className="h-full">
-                <ScentCard
-                  fragrance={fragrance}
-                  onAddToCart={handleAddToCart}
-                  onBuyNow={handleBuyNow}
-                  onNoteClick={setSelectedNote}
-                  onOpenDetails={handleOpenFragranceDetails}
-                  fragranceStock={stock?.fragrances[fragrance.id]}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="border-b border-stone-200/60 pb-5 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <span className="text-[10px] font-mono tracking-[0.2em] text-amber-700 uppercase font-bold block mb-2">
-                Top Tier Women
-              </span>
-              <h2 className="text-3xl md:text-4xl font-serif text-black tracking-tight">
-                Women's Best Sellers
-              </h2>
-            </div>
-            <p className="text-black text-xs font-sans max-w-sm">
-              Our most sought-after feminine extractions. Verified crowd-pleasers with exceptional projection and longevity.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {CATALOG_DATA.filter(f => ["lattafa-khamrah", "ck-one"].includes(f.id)).map((fragrance) => (
-              <div key={fragrance.id} className="h-full">
-                <ScentCard
-                  fragrance={fragrance}
-                  onAddToCart={handleAddToCart}
-                  onBuyNow={handleBuyNow}
-                  onNoteClick={setSelectedNote}
-                  onOpenDetails={handleOpenFragranceDetails}
-                  fragranceStock={stock?.fragrances[fragrance.id]}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* 2. Interactive Scent Grid: The Kinetic Catalog */}
-
-      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-5 md:px-12 py-16 md:py-24">
+      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-5 md:px-12 pt-8 sm:pt-10 pb-16 md:pb-24">
         
         {/* Section Heading */}
         <div className="border-b border-stone-200/60 pb-5 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -3176,31 +3156,25 @@ export default function App() {
           </div>
         )}
 
-        {filteredCatalog.length === 0 && filteredBundles.length === 0 && (
-          <div className="text-center py-24 bg-white/40 border border-stone-200/50 ">
-            <span className="block font-sans font-bold text-black text-lg mb-2">
-              No matching decants or bundles found
-            </span>
-            <span className="text-[10px] font-mono text-black uppercase tracking-widest">
-              Try search parameters such as "cinnamon", "zara", or "duo"
-            </span>
-          </div>
-        )}
-
-                {/* Curated Capsule Bundles Subsection */}
+        {/* Curated Capsule Bundles Subsection - Below Main Perfumes */}
         {filteredBundles.length > 0 && (
-          <div className="mt-16">
+          <div id="bundle-capsules" className="mt-20 scroll-mt-24">
             {/* Subsection Heading */}
-            <div className="border-t border-black/5 py-4 mb-8">
-              <span className="text-[10px] font-sans tracking-[0.2em] text-black uppercase font-bold">
-                BUNDLE CAPSULES
-              </span>
-              <h3 className="text-4xl font-sans font-black text-black uppercase tracking-tighter mt-2">
-                UNIFIED DECANT SETS
-              </h3>
+            <div className="border-b border-black/10 pb-4 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-mono tracking-[0.2em] text-emerald-800 uppercase font-bold block mb-1">
+                  BUNDLE CAPSULES
+                </span>
+                <h3 className="text-3xl sm:text-4xl font-sans font-black text-black uppercase tracking-tight">
+                  UNIFIED DECANT SETS
+                </h3>
+              </div>
+              <p className="text-xs font-sans text-neutral-600 max-w-sm">
+                Curated multi-scent pairings hand-selected for synergy and exceptional value.
+              </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 bg-transparent">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 bg-transparent">
               {filteredBundles.map((bundle) => {
                 const selectedSize = "5ml Normal";
                 const isSpotlight = bundle.isSpotlight;
@@ -3212,20 +3186,20 @@ export default function App() {
                 return (
                   <div 
                     key={bundle.id}
-                    className={`bg-[#F4F4F2] p-6 flex flex-col justify-between ${isSpotlight ? 'md:col-span-2' : ''}`}
+                    className={`bg-white/95 backdrop-blur-sm p-6 sm:p-7 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow ${isSpotlight ? 'md:col-span-2' : ''}`}
                   >
                     <div>
                       <div className="flex items-center gap-2 mb-4">
-                        <span className="text-[9px] font-sans tracking-[0.15em] uppercase text-black tracking-widest border border-black/5 shadow-sm rounded-2xl px-1.5 py-0.5">
+                        <span className="text-[9px] font-sans tracking-[0.15em] uppercase text-black tracking-widest border border-black/5 shadow-xs rounded-full px-2 py-0.5 bg-black/5">
                           {isSpotlight ? "SPOTLIGHT" : "CURATED"}
                         </span>
                         {isBundleOutOfStock && (
-                          <span className="text-[9px] font-mono text-black tracking-widest uppercase">
+                          <span className="text-[9px] font-mono text-red-600 tracking-widest uppercase font-semibold">
                             [ SOLD OUT ]
                           </span>
                         )}
                       </div>
-                      <h3 className="text-xl font-sans font-semibold text-black tracking-tight mb-2">
+                      <h3 className="text-xl font-sans font-bold text-black tracking-tight mb-2">
                         {bundle.name}
                       </h3>
                       <p className="text-xs font-sans text-neutral-600 mb-4 leading-relaxed">
@@ -3240,12 +3214,12 @@ export default function App() {
                           handleAddBundleToCart(bundle, true);
                           setIsCartOpen(true);
                         }}
-                        className="w-full py-2.5 bg-black text-white rounded-2xl text-[11px] font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                        className="w-full py-2.5 bg-black text-white rounded-xl text-[11px] font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         {isBundleOutOfStock ? "Sold Out" : "Add to cart"}
                       </button>
                       <div className="text-center mt-1">
-                        <span className="font-mono text-xs font-medium text-neutral-600">
+                        <span className="font-mono text-xs font-semibold text-neutral-800">
                           ₹{price}
                         </span>
                         {originalPrice && (
@@ -3259,6 +3233,17 @@ export default function App() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {filteredCatalog.length === 0 && filteredBundles.length === 0 && (
+          <div className="text-center py-24 bg-white/40 border border-stone-200/50 ">
+            <span className="block font-sans font-bold text-black text-lg mb-2">
+              No matching decants or bundles found
+            </span>
+            <span className="text-[10px] font-mono text-black uppercase tracking-widest">
+              Try search parameters such as "cinnamon", "zara", or "duo"
+            </span>
           </div>
         )}
       </section>
@@ -5851,6 +5836,16 @@ export default function App() {
           })()
         }
       />
+
+        {/* Footer */}
+        <footer className="mt-auto border-t border-black/10 bg-[#F4F4F2] py-8 z-10 relative">
+          <div className="max-w-7xl mx-auto px-6 flex flex-wrap gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
+            <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
+            <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
+            <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
+            <button onClick={() => setIsAdminOpen(true)} className="hover:text-black transition-colors cursor-pointer ml-auto">Admin</button>
+          </div>
+        </footer>
       
     </div>
   );
