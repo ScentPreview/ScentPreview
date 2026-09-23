@@ -17,6 +17,8 @@ interface Order {
   orderNumber: string;
   items: { name: string; size: string; quantity: number }[];
   total: number;
+  subtotal?: number;
+  discount?: number;
   name: string;
   email: string;
   address: string;
@@ -538,6 +540,12 @@ async function sendNotificationEmail(order: Order) {
             ${shippingProtectionText}
           </td>
         </tr>
+        ${order.discount && order.discount > 0 ? `
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #047857;">Tier Discount Applied:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 15px; color: #047857;">-₹${order.discount}.00</td>
+        </tr>
+        ` : ""}
         <tr>
           <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Total Amount Paid:</td>
           <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 16px; color: #059669;">₹${order.total}.00</td>
@@ -557,7 +565,7 @@ Order Number: ${order.orderNumber}
 Perfume Variant: ${itemsList}
 Customer Name: ${order.name}
 Customer Address: ${order.address}, ${order.state || ""} ${order.pincode || ""}
-Shipping Protection: ${shippingProtectionText}
+Shipping Protection: ${shippingProtectionText}${order.discount && order.discount > 0 ? `\nTier Discount Applied: -₹${order.discount}.00` : ""}
 Total Amount Paid: ₹${order.total}.00
   `;
 
@@ -841,7 +849,7 @@ Your evaluation must fit this schema:
   // API Route: Create order (Pending state)
   app.post("/api/orders", async (req, res) => {
     try {
-      const { items, total, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
+      const { items, total, subtotal, discount, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
 
       if (!orderNumber || !items || !name || !address) {
         return res.status(400).json({ error: "Missing required checkout fields." });
@@ -874,6 +882,8 @@ Your evaluation must fit this schema:
         orderNumber,
         items,
         total,
+        subtotal: subtotal || undefined,
+        discount: discount || undefined,
         name,
         email,
         address,

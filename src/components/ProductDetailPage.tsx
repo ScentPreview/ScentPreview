@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Fragrance, SizeType } from "../types";
 import ScentCard from "./ScentCard";
+import RubberSegment from "./RubberSegment";
 
 interface ProductDetailPageProps {
   fragrance: Fragrance;
@@ -20,7 +21,6 @@ interface ProductDetailPageProps {
   onSelectFragrance: (fragrance: Fragrance) => void;
   onAddToCart: (fragrance: Fragrance, size: SizeType, quantity: number) => void;
   onBuyNow: (fragrance: Fragrance, size: SizeType, quantity: number) => void;
-  onNoteClick?: (note: string) => void;
   fragranceStock?: Record<string, number>;
   allFragrances: Fragrance[];
   stock?: any;
@@ -32,7 +32,6 @@ export default function ProductDetailPage({
   onSelectFragrance,
   onAddToCart,
   onBuyNow,
-  onNoteClick,
   fragranceStock,
   allFragrances,
   stock,
@@ -197,7 +196,9 @@ export default function ProductDetailPage({
                   <img
                     src={fragrance.image}
                     alt={fragrance.name}
-                    className="max-h-full max-w-full object-contain drop-shadow-md"
+                    width="400"
+                    height="400"
+                    className="h-full w-full object-contain drop-shadow-md"
                     referrerPolicy="no-referrer"
                     loading="eager"
                     decoding="sync"
@@ -221,27 +222,21 @@ export default function ProductDetailPage({
                 </p>
               </div>
 
-              {/* Notes Chords Interactive Chips */}
+              {/* Notes Chords Static Badges */}
               <div className="bg-stone-50/90 rounded-2xl p-5 border border-black/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-sans font-semibold text-neutral-900">
                     Chords & Notes Breakdown
                   </span>
-                  <span className="text-[10px] font-mono text-neutral-500">
-                    Tap to filter archive
-                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {fragrance.notesList.map((note) => (
-                    <button
+                    <span
                       key={note}
-                      type="button"
-                      onClick={() => onNoteClick?.(note)}
-                      className="text-xs font-sans font-medium px-3.5 py-1.5 rounded-full bg-white border border-black/10 text-neutral-800 hover:border-black hover:bg-black hover:text-white transition-all cursor-pointer shadow-xs"
-                      title={`Filter fragrances with ${note}`}
+                      className="text-xs font-sans font-medium px-3.5 py-1.5 rounded-full bg-white border border-black/10 text-neutral-800 shadow-xs"
                     >
                       {note}
-                    </button>
+                    </span>
                   ))}
                 </div>
                 <p className="text-[11px] font-sans text-neutral-500 pt-1">
@@ -290,6 +285,35 @@ export default function ProductDetailPage({
                 <p className="text-[11px] font-sans text-neutral-500 mt-1">
                   Inclusive of sterile packaging & fine-mist atomizer
                 </p>
+
+                {/* Tier Discount Callout - Sleek & Editorial */}
+                {totalPrice >= 2500 ? (
+                  <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono border-t border-black/5 pt-2 text-neutral-800">
+                    <span className="text-neutral-500">Tier Privilege:</span>
+                    <span className="font-semibold text-neutral-900 bg-black/5 px-2 py-0.5 rounded text-[10px]">
+                      25% OFF Unlocked
+                    </span>
+                  </div>
+                ) : totalPrice >= 1500 ? (
+                  <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono border-t border-black/5 pt-2 text-neutral-800">
+                    <span className="text-neutral-500">Tier Privilege:</span>
+                    <span className="font-semibold text-neutral-900 bg-black/5 px-2 py-0.5 rounded text-[10px]">
+                      20% OFF Unlocked
+                    </span>
+                  </div>
+                ) : totalPrice >= 999 ? (
+                  <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono border-t border-black/5 pt-2 text-neutral-800">
+                    <span className="text-neutral-500">Tier Privilege:</span>
+                    <span className="font-semibold text-neutral-900 bg-black/5 px-2 py-0.5 rounded text-[10px]">
+                      10% OFF Unlocked
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2.5 flex items-center justify-between text-[10.5px] font-mono text-neutral-500 border-t border-black/5 pt-2">
+                    <span>Next Tier:</span>
+                    <span>+₹{999 - totalPrice} for 10% OFF</span>
+                  </div>
+                )}
               </div>
 
               {/* Size Selector (Smaller & Sleeker) */}
@@ -302,44 +326,27 @@ export default function ProductDetailPage({
                     {selectedSize}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size) => {
-                    const isSelected = selectedSize === size;
-                    const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
-                    const isSizeDisabled =
-                      fragrance.disabledSizes?.includes(size) ||
-                      fragrance.isOutOfStock ||
-                      sizeStock === 0;
+                <RubberSegment
+                  items={(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size) => {
                     const itemPrice = fragrance.prices[size];
-
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        disabled={isSizeDisabled}
-                        onClick={() => handleSizeChange(size)}
-                        className={`py-1.5 px-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                          isSelected
-                            ? "border-black bg-black text-white shadow-xs"
-                            : isSizeDisabled
-                            ? "border-black/5 bg-neutral-50 text-neutral-300 cursor-not-allowed line-through"
-                            : "border-black/10 bg-white text-neutral-900 hover:border-black/30"
-                        }`}
-                      >
-                        <span className="text-[11px] font-sans font-semibold leading-tight">
-                          {size === "5ml Normal" ? "5ml" : size === "5ml HQ" ? "5ml (HQ)" : size}
-                        </span>
-                        <span
-                          className={`text-[10px] font-mono mt-0.5 font-medium ${
-                            isSelected ? "text-neutral-300" : "text-neutral-500"
-                          }`}
-                        >
-                          ₹{itemPrice}
-                        </span>
-                      </button>
-                    );
+                    const labelText = size === "5ml Normal" ? "5ml" : size === "5ml HQ" ? "5ml HQ" : size;
+                    return {
+                      value: size,
+                      label: `${labelText} · ₹${itemPrice}`
+                    };
                   })}
-                </div>
+                  value={selectedSize}
+                  onChange={(val) => handleSizeChange(val as SizeType)}
+                  trackColor="#f4f4f2"
+                  thumbColor="#111111"
+                  textColor="#525252"
+                  activeTextColor="#ffffff"
+                  size="md"
+                  radius={12}
+                  inset={3}
+                  equalSlots
+                  className="w-full"
+                />
               </div>
 
               {/* Quantity Stepper (Active here on details view!) */}
@@ -362,7 +369,7 @@ export default function ProductDetailPage({
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={isCurrentOutOfStock || quantity <= 1}
-                    className="w-9 h-9 rounded-full border border-black/10 bg-white flex items-center justify-center text-black hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-semibold"
+                    className="w-10 h-10 rounded-full border border-black/10 bg-white flex items-center justify-center text-black hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-semibold text-base select-none active:scale-95"
                   >
                     -
                   </button>
@@ -380,7 +387,7 @@ export default function ProductDetailPage({
                       isCurrentOutOfStock ||
                       (currentStock !== undefined && quantity >= currentStock)
                     }
-                    className="w-9 h-9 rounded-full border border-black/10 bg-white flex items-center justify-center text-black hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-semibold"
+                    className="w-10 h-10 rounded-full border border-black/10 bg-white flex items-center justify-center text-black hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-semibold text-base select-none active:scale-95"
                   >
                     +
                   </button>
@@ -393,7 +400,7 @@ export default function ProductDetailPage({
                   type="button"
                   disabled={isCurrentOutOfStock}
                   onClick={handleAdd}
-                  className="w-full py-3.5 bg-black text-white rounded-2xl text-xs font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="w-full py-4 bg-black text-white rounded-2xl text-xs sm:text-sm font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm select-none"
                 >
                   {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
                   {added ? "Added to Cart" : isCurrentOutOfStock ? "Sold Out" : "Add to cart"}
@@ -403,7 +410,7 @@ export default function ProductDetailPage({
                   type="button"
                   disabled={isCurrentOutOfStock}
                   onClick={handleBuy}
-                  className="w-full py-3.5 border border-black/20 rounded-2xl text-xs font-sans font-medium text-black hover:bg-neutral-100 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full py-4 border border-black/20 hover:border-black bg-stone-50/50 hover:bg-stone-100 rounded-2xl text-xs sm:text-sm font-sans font-medium text-black active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer select-none"
                 >
                   Buy Now
                 </button>
@@ -449,7 +456,6 @@ export default function ProductDetailPage({
                 fragrance={otherFragrance}
                 onAddToCart={onAddToCart}
                 onBuyNow={onBuyNow}
-                onNoteClick={onNoteClick}
                 onOpenDetails={(f) => {
                   onSelectFragrance(f);
                 }}

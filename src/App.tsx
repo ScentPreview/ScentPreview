@@ -637,6 +637,14 @@ export default function App() {
     }
   };
 
+  const [activeTierBannerIndex, setActiveTierBannerIndex] = useState(0);
+  useEffect(() => {
+    const bannerTimer = setInterval(() => {
+      setActiveTierBannerIndex((prev) => (prev + 1) % 3);
+    }, 3200);
+    return () => clearInterval(bannerTimer);
+  }, []);
+
   useEffect(() => {
     fetchStock();
     syncAndRecoverPendingOrder();
@@ -806,6 +814,9 @@ export default function App() {
   const [paymentDetails, setPaymentDetails] = useState<{
     items: { name: string; size: string; quantity: number }[];
     total: number;
+    subtotal?: number;
+    discount?: number;
+    shippingProtection?: boolean;
     orderNumber: string;
     name: string;
     email: string;
@@ -1919,7 +1930,36 @@ export default function App() {
     setIsCheckoutOpen(true);
   };
 
+  const calculateTierDiscount = (subtotal: number): number => {
+    if (subtotal >= 2500) return 625;
+    if (subtotal >= 1500) return 300;
+    if (subtotal >= 999) return 100;
+    return 0;
+  };
+
+  const getTierPercentage = (subtotal: number): string | null => {
+    if (subtotal >= 2500) return "25%";
+    if (subtotal >= 1500) return "20%";
+    if (subtotal >= 999) return "10%";
+    return null;
+  };
+
+  const getNextDiscountTier = (subtotal: number): { nextGoal: number; discount: number; percent: string; amountNeeded: number } | null => {
+    if (subtotal < 999) {
+      return { nextGoal: 999, discount: 100, percent: "10%", amountNeeded: 999 - subtotal };
+    }
+    if (subtotal < 1500) {
+      return { nextGoal: 1500, discount: 300, percent: "20%", amountNeeded: 1500 - subtotal };
+    }
+    if (subtotal < 2500) {
+      return { nextGoal: 2500, discount: 625, percent: "25%", amountNeeded: 2500 - subtotal };
+    }
+    return null;
+  };
+
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const activeDiscount = calculateTierDiscount(cartTotal);
+  const nextTier = getNextDiscountTier(cartTotal);
 
   // Find the active selected product for "Buy Now"
   const selectedProduct = selectionType === "fragrance" 
@@ -1950,7 +1990,9 @@ export default function App() {
   }
 
   const shippingCost = 116;
-  const checkoutTotal = (buyItemPrice * buyQuantity) + shippingCost;
+  const buySubtotal = buyItemPrice * buyQuantity;
+  const buyDiscount = calculateTierDiscount(buySubtotal);
+  const checkoutTotal = Math.max(0, buySubtotal - buyDiscount) + shippingCost;
 
   // Express Buy checkout submit
   const handlePlaceOrder = async (e: React.FormEvent) => {
@@ -1964,11 +2006,14 @@ export default function App() {
       size: item.size,
       quantity: item.quantity
     }));
-    const total = cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0);
+    const discountAmount = calculateTierDiscount(cartTotal);
+    const total = Math.max(0, cartTotal - discountAmount) + 116 + (isShippingProtectionEnabled ? 150 : 0);
 
     const payload = {
       items,
       total,
+      subtotal: cartTotal,
+      discount: discountAmount,
       orderNumber: orderNum,
       name: checkoutName,
       email: checkoutEmail,
@@ -2138,7 +2183,13 @@ export default function App() {
                         const itemsSummary = paymentDetails.items
                           .map((item: any) => `- ${item.name} (${item.size}) x${item.quantity}`)
                           .join("\n");
-                        const message = `Hello ScentPreview Support!\n\nI would like to complete payment for my order.\n\n*Order Number:* ${orderNum}\n*Customer:* ${paymentDetails.name}\n*Phone:* ${paymentDetails.phone}\n*Address:* ${paymentDetails.address}, ${paymentDetails.state || ""} - ${paymentDetails.pincode || ""}\n\n*Items Ordered*:\n${itemsSummary}\n\n*Total Amount:* ₹${paymentDetails.total}.00\n\nPlease verify my payment and begin extraction. Thank you!`;
+                        const discountPercent = paymentDetails.subtotal
+                          ? getTierPercentage(paymentDetails.subtotal)
+                          : (paymentDetails.total >= 2500 ? "25%" : paymentDetails.total >= 1500 ? "20%" : paymentDetails.total >= 999 ? "10%" : "");
+                        const discountLine = paymentDetails.discount && paymentDetails.discount > 0
+                          ? `\n*Tier Discount (${discountPercent || "Tier"} OFF):* Applied`
+                          : "";
+                        const message = `Hello ScentPreview Support!\n\nI would like to complete payment for my order.\n\n*Order Number:* ${orderNum}\n*Customer:* ${paymentDetails.name}\n*Phone:* ${paymentDetails.phone}\n*Address:* ${paymentDetails.address}, ${paymentDetails.state || ""} - ${paymentDetails.pincode || ""}\n\n*Items Ordered*:\n${itemsSummary}${discountLine}\n\n*Total Amount:* ₹${paymentDetails.total}.00\n\nPlease verify my payment and begin extraction. Thank you!`;
                         
                         const whatsappUrl = `https://wa.me/919366110996?text=${encodeURIComponent(message)}`;
                         window.open(whatsappUrl, "_blank");
@@ -2184,10 +2235,26 @@ export default function App() {
                       </span>
                     </div>
                   ))}
+                  {paymentDetails.discount && paymentDetails.discount > 0 && (
+                    <div className="flex justify-between items-center text-xs font-mono text-neutral-800 py-1 border-t border-b border-stone-200/60 my-1">
+                      <span>
+                        Tier Discount ({paymentDetails.subtotal ? getTierPercentage(paymentDetails.subtotal) : (paymentDetails.total >= 2500 ? "25%" : paymentDetails.total >= 1500 ? "20%" : "10%")} OFF):
+                      </span>
+                      <span className="font-semibold text-neutral-900">
+                        {paymentDetails.subtotal ? getTierPercentage(paymentDetails.subtotal) : (paymentDetails.total >= 2500 ? "25%" : paymentDetails.total >= 1500 ? "20%" : "10%")} Applied
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-xs border-t border-dashed border-stone-200 pt-3 mt-3">
                     <span className="text-black font-mono">Courier standard dispatch:</span>
-                    <span className="font-mono text-black">₹90.00</span>
+                    <span className="font-mono text-black">₹116.00</span>
                   </div>
+                  {paymentDetails.shippingProtection && (
+                    <div className="flex justify-between items-center text-xs text-black font-mono">
+                      <span>Shipping Protection:</span>
+                      <span>₹150.00</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-sm border-t border-stone-200 pt-3">
                     <span className="text-black  font-sans font-bold font-medium">Total Balance Due:</span>
                     <span className="font-mono text-black font-bold text-base">₹{paymentDetails.total}.00</span>
@@ -2391,19 +2458,47 @@ export default function App() {
 
       {/* Modern High-End Sticky Header Navigation */}
       <header className="sticky top-0 bg-[#F4F4F2]/95 backdrop-blur-md z-50 border-b border-black/10 shadow-xs">
-        <nav className="w-full flex items-center justify-between h-16 sm:h-18 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {/* Tiered Discount Announcement Bar */}
+        <div className="bg-[#111111] text-[#E8E8E6] py-2 px-3 sm:px-6 text-center text-[10px] sm:text-[11px] font-mono tracking-wider flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b border-white/10">
+          <span className="text-neutral-400 font-sans uppercase text-[10px] tracking-widest shrink-0">
+            Complimentary Tier Privileges:
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px]">
+            {[
+              { threshold: "₹999+", discount: "10% OFF" },
+              { threshold: "₹1,500+", discount: "20% OFF" },
+              { threshold: "₹2,500+", discount: "25% OFF" }
+            ].map((tier, idx) => {
+              const isActive = activeTierBannerIndex === idx;
+              return (
+                <div 
+                  key={tier.threshold}
+                  className={`flex items-center gap-1.5 transition-all duration-500 ${
+                    isActive ? "text-white scale-105 font-bold underline decoration-white/60 underline-offset-4" : "text-neutral-400 opacity-60"
+                  }`}
+                >
+                  <span>{tier.threshold}</span>
+                  <span className={isActive ? "text-white" : "text-neutral-300"}>{tier.discount}</span>
+                  {idx < 2 && <span className="text-neutral-600 ml-1.5">/</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <nav className="w-full flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto gap-2">
           {/* Brand Identity & Primary Links */}
-          <div className="flex items-center gap-6 sm:gap-8">
+          <div className="flex items-center gap-4 sm:gap-8 min-w-0 shrink">
             <span 
               onClick={() => {
                 setSelectedDetailFragrance(null);
               }}
-              className="text-xl font-sans font-bold tracking-tight text-black flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+              className="text-lg sm:text-xl font-sans font-bold tracking-tight text-black flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity truncate"
             >
-              <span>Scent Preview</span>
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-black/5 text-neutral-600">0.2</span>
+              <span className="truncate">Scent Preview</span>
+              <span className="text-[10px] font-mono font-medium px-1.5 sm:px-2 py-0.5 rounded-full bg-black/5 text-neutral-600 shrink-0">0.2</span>
             </span>
-            <div className="hidden md:flex items-center gap-6 pl-6 border-l border-black/10">
+            <div className="hidden md:flex items-center gap-6 pl-6 border-l border-black/10 shrink-0">
               <button 
                 onClick={scrollToCatalog} 
                 className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
@@ -2422,10 +2517,10 @@ export default function App() {
           </div>
 
           {/* Search Bar & Cart Button */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <div className="relative flex items-center">
-              <div className="flex items-center bg-white/80 border border-black/10 rounded-full px-3.5 py-1.5 focus-within:border-black/30 focus-within:bg-white transition-all shadow-xs w-40 sm:w-56 md:w-64">
-                <Search className="w-3.5 h-3.5 text-neutral-400 mr-2 shrink-0" />
+              <div className="flex items-center bg-white/80 border border-black/10 rounded-full px-2.5 sm:px-3.5 py-1.5 focus-within:border-black/30 focus-within:bg-white transition-all shadow-xs w-32 xs:w-40 sm:w-56 md:w-64">
+                <Search className="w-3.5 h-3.5 text-neutral-400 mr-1.5 sm:mr-2 shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -2436,7 +2531,7 @@ export default function App() {
                       document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
                     }
                   }}
-                  placeholder="Search decants, notes..."
+                  placeholder="Search decants..."
                   className="w-full bg-transparent text-xs font-sans text-black focus:outline-none placeholder:text-neutral-400"
                 />
                 {searchQuery && (
@@ -2454,7 +2549,7 @@ export default function App() {
 
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-2 bg-stone-900 text-white hover:bg-black px-4 sm:px-5 py-2 rounded-full text-[11px] font-sans tracking-[0.12em] uppercase transition-all cursor-pointer font-medium shadow-xs shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 bg-stone-900 text-white hover:bg-black px-3 sm:px-5 py-2 rounded-full text-[10px] sm:text-[11px] font-sans tracking-[0.12em] uppercase transition-all cursor-pointer font-medium shadow-xs shrink-0 select-none active:scale-95"
             >
               <span>Cart</span>
               <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none">
@@ -2475,13 +2570,6 @@ export default function App() {
           }}
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
-          onNoteClick={(note) => {
-            setSelectedNote(note);
-            handleBackFromDetails();
-            setTimeout(() => {
-              document.getElementById("kinetic-catalog")?.scrollIntoView({ behavior: "smooth" });
-            }, 50);
-          }}
           fragranceStock={stock?.fragrances[selectedDetailFragrance.id]}
           allFragrances={CATALOG_DATA}
           stock={stock}
@@ -2720,11 +2808,26 @@ export default function App() {
                     </div>
 
                     {/* Cost Preview before checkout */}
-                    <div className="border-t border-black/5 pt-5 mt-4">
-                      <div className="flex justify-between items-center text-xs mb-4">
+                    <div className="border-t border-black/5 pt-5 mt-4 space-y-3">
+                      <div className="flex justify-between items-center text-xs">
                         <span className="text-black font-sans tracking-[0.15em] uppercase tracking-wider">Subtotal:</span>
-                        <span className="font-mono text-black  text-sm font-bold">₹{buyItemPrice * buyQuantity}.00</span>
+                        <span className="font-mono text-black text-sm font-bold">₹{buyItemPrice * buyQuantity}.00</span>
                       </div>
+
+                      {/* Tier Discount Callout if active */}
+                      {calculateTierDiscount(buyItemPrice * buyQuantity) > 0 ? (
+                        <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs font-mono">
+                          <span className="text-neutral-700">Tier Privilege ({getTierPercentage(buyItemPrice * buyQuantity)} OFF):</span>
+                          <span className="text-neutral-900 font-semibold">{getTierPercentage(buyItemPrice * buyQuantity)} Applied</span>
+                        </div>
+                      ) : (
+                        getNextDiscountTier(buyItemPrice * buyQuantity) && (
+                          <div className="text-[11px] font-mono text-neutral-500 flex items-center justify-between py-1">
+                            <span>Next Tier Privilege:</span>
+                            <span>+₹{getNextDiscountTier(buyItemPrice * buyQuantity)?.amountNeeded}.00 for {getNextDiscountTier(buyItemPrice * buyQuantity)?.percent} OFF</span>
+                          </div>
+                        )
+                      )}
                       
                       {(() => {
                         const maxStock = selectedProduct ? getProductStock(selectedProduct.id, selectedBuySize) : 0;
@@ -3045,6 +3148,15 @@ export default function App() {
                                 <span>Allocation Cost:</span>
                                 <span>₹{buyItemPrice * buyQuantity}.00</span>
                               </div>
+                              {calculateTierDiscount(buyItemPrice * buyQuantity) > 0 && (
+                                <div className="flex justify-between items-center text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md">
+                                  <span className="font-sans font-bold flex items-center gap-1">
+                                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                                    Tier Discount ({getTierPercentage(buyItemPrice * buyQuantity)} OFF):
+                                  </span>
+                                  <span className="font-bold">{getTierPercentage(buyItemPrice * buyQuantity)} Applied</span>
+                                </div>
+                              )}
                               <div className="flex justify-between text-xs font-mono text-black">
                                 <span>Sterile Courier:</span>
                                 <span>₹{shippingCost}.00</span>
@@ -3190,14 +3302,24 @@ export default function App() {
 
         {/* Brutalist Grid Layout - Categorized by Gender */}
         {filteredCatalog.length > 0 && (
-          <div className="space-y-16">
+          <div className="space-y-24">
             {/* Men's Collection */}
             {filteredCatalog.filter(f => f.gender === "Men").length > 0 && (
               <div>
-                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-8 flex items-center gap-4">
-                  <span>Men's Collection</span>
-                  <div className="h-px bg-black/5 flex-1" />
-                </h3>
+                <div className="mb-8">
+                  <span className="text-[10px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-2">
+                    MASCULINE PROFILE ARCHIVE
+                  </span>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl sm:rounded-3xl px-5 py-2.5 sm:px-7 sm:py-3 shadow-lg">
+                      Men's Collection
+                    </h3>
+                    <div className="h-px bg-black/10 flex-1 min-w-[24px]" />
+                  </div>
+                  <p className="text-xs font-sans text-neutral-500 mt-2">
+                    Woody, aromatic, leather, and intense amber formulations.
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Men").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
@@ -3218,10 +3340,20 @@ export default function App() {
             {/* Women's Collection */}
             {filteredCatalog.filter(f => f.gender === "Women").length > 0 && (
               <div>
-                <h3 className="text-xl md:text-2xl font-sans font-semibold text-black tracking-tight mb-8 flex items-center gap-4">
-                  <span>Women</span>
-                  <div className="h-px bg-black/5 flex-1" />
-                </h3>
+                <div className="mb-8">
+                  <span className="text-[10px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-2">
+                    FEMININE PROFILE ARCHIVE
+                  </span>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl sm:rounded-3xl px-5 py-2.5 sm:px-7 sm:py-3 shadow-lg">
+                      Women's Collection
+                    </h3>
+                    <div className="h-px bg-black/10 flex-1 min-w-[24px]" />
+                  </div>
+                  <p className="text-xs font-sans text-neutral-500 mt-2">
+                    Floral, sweet, vanilla, and sophisticated amber profiles.
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Women").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
@@ -3390,7 +3522,7 @@ export default function App() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 220, mass: 0.8 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white/85 -2xl shadow-[0_0_50px_rgba(0,0,0,0.15)] z-50 border-l border-stone-200 p-6 flex flex-col justify-between overflow-y-auto -l-3xl"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white/95 backdrop-blur-md shadow-[0_0_50px_rgba(0,0,0,0.15)] z-50 border-l border-stone-200 p-4 sm:p-6 flex flex-col justify-between overflow-y-auto sm:rounded-l-3xl"
             >
               {isCartSuccessOpen ? (
                 <div className="text-center py-12 flex flex-col items-center justify-center h-full my-auto animate-fade-in">
@@ -3437,12 +3569,37 @@ export default function App() {
                         </div>
 
                         {/* Order Cost summary card */}
-                        <div className="bg-transparent/85 border border-stone-100 p-4  mb-4">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] font-mono text-black uppercase font-bold">Total Allocation Billed</span>
-                            <span className="font-sans text-[11px] tracking-wider font-bold text-black ">₹{cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
+                        <div className="bg-stone-50 border border-stone-200 p-4 rounded-xl mb-4 space-y-2">
+                          <div className="flex justify-between items-center text-xs font-mono text-black">
+                            <span>Subtotal:</span>
+                            <span>₹{cartTotal}.00</span>
                           </div>
-                          <p className="text-[9px] text-black font-mono">
+                          {activeDiscount > 0 && (
+                            <div className="flex justify-between items-center text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md">
+                              <span className="font-sans font-bold flex items-center gap-1">
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                                Tier Discount ({getTierPercentage(cartTotal)} OFF):
+                              </span>
+                              <span className="font-bold">{getTierPercentage(cartTotal)} Applied</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center text-xs font-mono text-black">
+                            <span>Delivery Fee:</span>
+                            <span>₹116.00</span>
+                          </div>
+                          {isShippingProtectionEnabled && (
+                            <div className="flex justify-between items-center text-xs font-mono text-black">
+                              <span>Shipping Protection:</span>
+                              <span>₹150.00</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+                            <span className="text-[10px] font-mono text-black uppercase font-bold">Total Allocation Billed</span>
+                            <span className="font-sans text-sm tracking-wider font-bold text-black">
+                              ₹{Math.max(0, cartTotal - activeDiscount) + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00
+                            </span>
+                          </div>
+                          <p className="text-[9px] text-neutral-500 font-mono">
                             Includes Priority packaging, Delivery Fee ₹116.00 {isShippingProtectionEnabled ? "+ Protection" : ""}
                           </p>
                         </div>
@@ -3749,11 +3906,42 @@ export default function App() {
                       {/* Cart Footer */}
                       {cart.length > 0 && (
                         <div className="border-t border-stone-200 pt-6 mt-8">
+                          {/* Discount Progress / Congratulatory card - Sleek & Refined */}
+                          {activeDiscount > 0 ? (
+                            <div className="bg-stone-50 border border-stone-200/90 rounded-lg p-2.5 mb-4 flex items-center justify-between text-xs font-mono">
+                              <span className="text-neutral-700">
+                                Tier Privilege: <strong className="text-neutral-950">{getTierPercentage(cartTotal)} OFF</strong>
+                              </span>
+                              {nextTier ? (
+                                <span className="text-[10px] text-neutral-500">
+                                  +₹{nextTier.amountNeeded}.00 for {nextTier.percent} OFF
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                                  Max Tier Active
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            nextTier && (
+                              <div className="text-[11px] font-mono text-neutral-600 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 mb-4 flex items-center justify-between">
+                                <span>Tier Privilege:</span>
+                                <span className="text-neutral-900 font-medium">Add ₹{nextTier.amountNeeded}.00 for {nextTier.percent} OFF</span>
+                              </div>
+                            )
+                          )}
+
                           <div className="space-y-2 mb-6">
                             <div className="flex justify-between text-xs font-mono text-black">
                               <span>Allocation Subtotal:</span>
                               <span>₹{cartTotal}.00</span>
                             </div>
+                            {activeDiscount > 0 && (
+                              <div className="flex justify-between items-center text-xs font-mono text-neutral-800 py-0.5">
+                                <span>Tier Discount ({getTierPercentage(cartTotal)} OFF):</span>
+                                <span className="font-semibold text-neutral-950">{getTierPercentage(cartTotal)} Applied</span>
+                              </div>
+                            )}
                             <div className="flex justify-between text-xs font-mono text-black">
                               <span>Mandatory Delivery Fee:</span>
                               <span>₹116.00</span>
@@ -3774,7 +3962,9 @@ export default function App() {
                             </div>
                             <div className="flex justify-between text-sm font-mono text-black  font-bold pt-2">
                               <span>Total Billed:</span>
-                              <span className="text-black ">₹{cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
+                              <span className="text-black ">
+                                ₹{Math.max(0, cartTotal - activeDiscount) + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00
+                              </span>
                             </div>
                           </div>
 
@@ -3882,6 +4072,12 @@ export default function App() {
                       <span>Subtotal:</span>
                       <span>₹{cartTotal}.00</span>
                     </div>
+                    {activeDiscount > 0 && (
+                      <div className="flex justify-between items-center text-[11px] font-mono text-neutral-800">
+                        <span>Tier Discount ({getTierPercentage(cartTotal)} OFF):</span>
+                        <span className="font-semibold text-neutral-900">{getTierPercentage(cartTotal)} Applied</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-[11px] font-mono text-black">
                       <span>Delivery Priority:</span>
                       <span>₹116.00</span>
@@ -3902,7 +4098,7 @@ export default function App() {
                     </div>
                     <div className="flex justify-between text-xs font-mono text-black  font-bold pt-2">
                       <span>Total Billed:</span>
-                      <span>₹{cartTotal + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
+                      <span>₹{Math.max(0, cartTotal - activeDiscount) + 116 + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
                     </div>
                   </div>
                   <p className="text-[8px] text-black font-sans leading-relaxed">
