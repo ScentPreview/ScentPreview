@@ -29,6 +29,8 @@ interface Order {
   status: "pending" | "paid" | "deleted";
   createdAt: Date;
   stockReduced?: boolean;
+  ip?: string;
+  userAgent?: string;
 }
 
 interface Complaint {
@@ -41,8 +43,57 @@ interface Complaint {
   submittedAt: Date;
 }
 
+interface BlacklistData {
+  phones: string[];
+  emails: string[];
+  ips: string[];
+}
+
 const ORDERS_FILE_PATH = path.join(process.cwd(), "orders.json");
 const BACKUP_ORDERS_FILE_PATH = path.join(process.cwd(), "orders.backup.json");
+const BLACKLIST_FILE_PATH = path.join(process.cwd(), "blacklist.json");
+
+function loadBlacklist(): BlacklistData {
+  try {
+    if (fs.existsSync(BLACKLIST_FILE_PATH)) {
+      const data = fs.readFileSync(BLACKLIST_FILE_PATH, "utf-8").trim();
+      if (data) {
+        return JSON.parse(data);
+      }
+    }
+  } catch (err) {
+    console.error("[Blacklist] Error reading blacklist file:", err);
+  }
+  return { phones: ["+916395707450", "6395707450"], emails: ["uditrana69@gmail.com"], ips: [] };
+}
+
+function saveBlacklist(data: BlacklistData) {
+  try {
+    fs.writeFileSync(BLACKLIST_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[Blacklist] Error saving blacklist file:", err);
+  }
+}
+
+function isBlacklisted(phone?: string, email?: string, ip?: string): boolean {
+  const bl = loadBlacklist();
+  const cleanPhone = (phone || "").replace(/\D/g, "");
+  if (cleanPhone) {
+    const isPhoneBlocked = bl.phones.some((p) => {
+      const cleanP = p.replace(/\D/g, "");
+      return cleanP && (cleanPhone.endsWith(cleanP) || cleanP.endsWith(cleanPhone));
+    });
+    if (isPhoneBlocked) return true;
+  }
+  if (email) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (bl.emails.some((e) => e.trim().toLowerCase() === cleanEmail)) return true;
+  }
+  if (ip && ip !== "unknown" && ip !== "127.0.0.1" && ip !== "::1") {
+    if (bl.ips.some((bip) => bip === ip)) return true;
+  }
+  return false;
+}
 
 let ordersDb: Order[] = [];
 let complaintsDb: Complaint[] = [];
@@ -231,16 +282,11 @@ async function loadStockFromFirestore(): Promise<StockDB> {
         return DEFAULT_STOCK;
       }
       
-      // Ensure versace-crystal-noir is populated with 1 on 5ml Normal and 0 on other sizes
+      // Ensure all fragrances from DEFAULT_STOCK exist in the stock record without overwriting user adjustments
       if (stock && stock.fragrances) {
-        if (!stock.fragrances["versace-crystal-noir"]) {
-          stock.fragrances["versace-crystal-noir"] = { "10ml": 0, "5ml Normal": 1, "5ml HQ": 0 };
-          needsSave = true;
-        } else {
-          // Explicitly ensure 10ml and 5ml HQ are 0, and 5ml Normal has stock of 1
-          if (stock.fragrances["versace-crystal-noir"]["10ml"] !== 0 || stock.fragrances["versace-crystal-noir"]["5ml HQ"] !== 0) {
-            stock.fragrances["versace-crystal-noir"]["10ml"] = 0;
-            stock.fragrances["versace-crystal-noir"]["5ml HQ"] = 0;
+        for (const [fragId, defaultObj] of Object.entries(DEFAULT_STOCK.fragrances)) {
+          if (!stock.fragrances[fragId]) {
+            stock.fragrances[fragId] = { ...defaultObj };
             needsSave = true;
           }
         }
@@ -300,7 +346,7 @@ const DEFAULT_STOCK: StockDB = {
     "lattafa-khamrah": { "10ml": 0, "5ml Normal": 13, "5ml HQ": 0 },
     "versace-crystal-noir": { "10ml": 0, "5ml Normal": 1, "5ml HQ": 0 },
     "zara-sunrise": { "10ml": 2, "5ml Normal": 0, "5ml HQ": 0 },
-    "zara-seoul-winter": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 1 },
+    "zara-seoul-winter": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-seoul": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 2 },
     "ck2": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 0 }
   },
@@ -362,7 +408,8 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
     { id: "ck2", names: ["calvinkleinck2", "ck2"] },
     { id: "zara-rich-warm-addictive", names: ["zararichwarmaddictive", "richwarmaddictive", "richwarm"] },
     { id: "zara-seoul", names: ["zaraseoul", "seoul", "seouloriginal", "originalseoul"] },
-    { id: "givenchy-gentleman", names: ["givenchygentleman", "gentleman", "givenchy"] }
+    { id: "givenchy-gentleman", names: ["givenchygentleman", "gentleman", "givenchy"] },
+    { id: "versace-crystal-noir", names: ["versacecrystalnoir", "crystalnoir", "versace", "crystal"] }
   ];
 
   const bundles = [
@@ -878,6 +925,15 @@ Your evaluation must fit this schema:
         return res.json({ success: true, order: existingOrder });
       }
 
+      const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+      const userAgent = (req.headers["user-agent"] as string) || "unknown";
+
+      // Security Check: Block banned IP, Phone, or Email
+      if (isBlacklisted(phone, email, clientIp)) {
+        console.warn(`[Security Alert] Blocked suspicious order submission attempt: Phone=${phone}, Email=${email}, IP=${clientIp}`);
+        return res.status(403).json({ error: "Order submission rejected. This device or account has been restricted by security." });
+      }
+
       const newOrder: Order = {
         orderNumber,
         items,
@@ -894,6 +950,8 @@ Your evaluation must fit this schema:
         status: "pending",
         createdAt: new Date(),
         stockReduced: false,
+        ip: clientIp,
+        userAgent: userAgent,
       };
 
       // Validate stock before creating order unless skipped
@@ -904,26 +962,33 @@ Your evaluation must fit this schema:
           if (match) {
             if (match.type === "fragrance") {
               const fStock = stock.fragrances[match.id];
-              if (fStock) {
-                const current = fStock[item.size] || 0;
-                if (current < item.quantity) {
-                  return res.status(400).json({ error: `Insufficient stock for ${item.name} (${item.size}).` });
-                }
+              if (!fStock) {
+                return res.status(400).json({ error: `Item "${item.name}" is currently out of stock.` });
+              }
+              const current = fStock[item.size] !== undefined ? Number(fStock[item.size]) || 0 : 0;
+              const totalFragStock = Object.values(fStock).reduce((a, b) => a + (Number(b) || 0), 0);
+              if (totalFragStock <= 0 || current <= 0 || current < item.quantity) {
+                return res.status(400).json({ error: `"${item.name}" (${item.size || "Standard"}) is currently out of stock.` });
               }
             } else {
-              const current = stock.bundles[match.id] || 0;
-              if (current < item.quantity) {
-                return res.status(400).json({ error: `Insufficient stock for bundle ${item.name}.` });
+              const current = stock.bundles[match.id] !== undefined ? Number(stock.bundles[match.id]) || 0 : 0;
+              if (current <= 0 || current < item.quantity) {
+                return res.status(400).json({ error: `Bundle "${item.name}" is currently out of stock.` });
               }
               const constituentFragranceIds = getBundleConstituents(match.id);
               for (const fragId of constituentFragranceIds) {
                 const fStock = stock.fragrances[fragId];
-                if (fStock) {
-                  const sizeToReduce = item.size || "5ml Normal";
-                  const curFragStock = fStock[sizeToReduce] || 0;
-                  if (curFragStock < item.quantity) {
-                    return res.status(400).json({ error: `Insufficient stock for constituent ${fragId} in bundle ${item.name}.` });
-                  }
+                if (!fStock) {
+                  return res.status(400).json({ error: `Bundle "${item.name}" cannot be fulfilled: constituent is out of stock.` });
+                }
+                const totalFragStock = Object.values(fStock).reduce((a, b) => a + (Number(b) || 0), 0);
+                if (totalFragStock <= 0) {
+                  return res.status(400).json({ error: `Bundle "${item.name}" cannot be fulfilled: constituent is out of stock.` });
+                }
+                const sizeToReduce = item.size || "5ml Normal";
+                const curFragStock = fStock[sizeToReduce] !== undefined ? Number(fStock[sizeToReduce]) || 0 : 0;
+                if (curFragStock < item.quantity) {
+                  return res.status(400).json({ error: `Insufficient stock for bundle "${item.name}".` });
                 }
               }
             }
@@ -1113,6 +1178,74 @@ Your evaluation must fit this schema:
     } catch (error: any) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ error: "Failed to fetch orders." });
+    }
+  });
+
+  // API Route: Get Blacklist registry (Admin only)
+  app.get("/api/admin/blacklist", authenticateAdmin, (req, res) => {
+    try {
+      const blacklist = loadBlacklist();
+      res.json({ success: true, blacklist });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to load blacklist." });
+    }
+  });
+
+  // API Route: Add device/identity to Blacklist (Admin only)
+  app.post("/api/admin/blacklist", authenticateAdmin, (req, res) => {
+    try {
+      const { phone, email, ip } = req.body;
+      const bl = loadBlacklist();
+      let updated = false;
+
+      if (phone) {
+        const cleanPhone = phone.trim();
+        if (!bl.phones.includes(cleanPhone)) {
+          bl.phones.push(cleanPhone);
+          updated = true;
+        }
+      }
+      if (email) {
+        const cleanEmail = email.trim().toLowerCase();
+        if (!bl.emails.includes(cleanEmail)) {
+          bl.emails.push(cleanEmail);
+          updated = true;
+        }
+      }
+      if (ip && ip !== "unknown" && ip !== "127.0.0.1" && ip !== "::1") {
+        const cleanIp = ip.trim();
+        if (!bl.ips.includes(cleanIp)) {
+          bl.ips.push(cleanIp);
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        saveBlacklist(bl);
+      }
+      console.log(`[Blacklist] Device/user flagged and banned: Phone=${phone}, Email=${email}, IP=${ip}`);
+      res.json({ success: true, message: "Device & identity permanently blacklisted.", blacklist: bl });
+    } catch (error: any) {
+      console.error("Error adding to blacklist:", error);
+      res.status(500).json({ error: "Failed to update blacklist." });
+    }
+  });
+
+  // API Route: Remove from Blacklist (Admin only)
+  app.delete("/api/admin/blacklist", authenticateAdmin, (req, res) => {
+    try {
+      const { phone, email, ip } = req.body;
+      const bl = loadBlacklist();
+
+      if (phone) bl.phones = bl.phones.filter((p) => p !== phone);
+      if (email) bl.emails = bl.emails.filter((e) => e !== email.toLowerCase());
+      if (ip) bl.ips = bl.ips.filter((i) => i !== ip);
+
+      saveBlacklist(bl);
+      res.json({ success: true, message: "Entry removed from blacklist.", blacklist: bl });
+    } catch (error: any) {
+      console.error("Error removing from blacklist:", error);
+      res.status(500).json({ error: "Failed to remove from blacklist." });
     }
   });
 

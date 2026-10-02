@@ -15,44 +15,49 @@ interface ScentCardProps {
 function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onOpenDetails, fragranceStock }: ScentCardProps) {
   const SIZES: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
 
+  // Check if all sizes are 0 or out of stock
+  const isAllSizesOutOfStock = fragrance.isOutOfStock || (
+    fragranceStock ? Object.values(fragranceStock).every(v => (Number(v) || 0) <= 0) : false
+  );
+
   const [selectedSize, setSelectedSize] = useState<SizeType>(() => {
     for (const size of SIZES) {
       const stock = fragranceStock ? fragranceStock[size] : undefined;
-      const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock === 0;
+      const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || (stock !== undefined && stock <= 0);
       if (!isSizeDisabled) {
         return size;
       }
     }
-    return "5ml Normal"; // Fallback to 5ml Normal if 10ml is out of stock / disabled
+    return "5ml Normal"; // Fallback to 5ml Normal
   });
 
   useEffect(() => {
     const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
-    const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
+    const isCurrentOutOfStock = isAllSizesOutOfStock || fragrance.isOutOfStock || (currentStock !== undefined && currentStock <= 0) || fragrance.disabledSizes?.includes(selectedSize);
     
-    if (isCurrentOutOfStock) {
+    if (isCurrentOutOfStock && !isAllSizesOutOfStock) {
       for (const size of SIZES) {
         const stock = fragranceStock ? fragranceStock[size] : undefined;
-        const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock === 0;
+        const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || (stock !== undefined && stock <= 0);
         if (!isSizeDisabled) {
           setSelectedSize(size);
           return;
         }
       }
     }
-  }, [fragranceStock, fragrance.disabledSizes, fragrance.isOutOfStock, selectedSize]);
+  }, [fragranceStock, fragrance.disabledSizes, fragrance.isOutOfStock, selectedSize, isAllSizesOutOfStock]);
   const [added, setAdded] = useState(false);
 
   const price = fragrance.prices[selectedSize] ?? fragrance.prices["5ml Normal"] ?? 799;
   const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
-  const isCurrentOutOfStock = fragrance.isOutOfStock || (currentStock !== undefined && currentStock === 0) || fragrance.disabledSizes?.includes(selectedSize);
+  const isCurrentOutOfStock = isAllSizesOutOfStock || fragrance.isOutOfStock || (currentStock !== undefined && currentStock <= 0) || fragrance.disabledSizes?.includes(selectedSize);
 
   const handleSizeChange = (size: SizeType) => {
     setSelectedSize(size);
   };
 
   const handleAction = () => {
-    if (isCurrentOutOfStock) return;
+    if (isCurrentOutOfStock || isAllSizesOutOfStock) return;
     onAddToCart?.(fragrance, selectedSize, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -117,7 +122,7 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
             {SIZES.map((size, idx, arr) => {
               const isSelected = selectedSize === size;
               const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
-              const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || sizeStock === 0;
+              const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || (sizeStock !== undefined && sizeStock <= 0);
               
               return (
                 <button
@@ -138,12 +143,12 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
 
           {/* Single Action Button: Add to cart */}
           <button
-            disabled={isCurrentOutOfStock}
+            disabled={isCurrentOutOfStock || isAllSizesOutOfStock}
             onClick={handleAction}
             className="w-full py-3.5 sm:py-4 bg-black text-white rounded-2xl text-xs sm:text-sm font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm select-none"
           >
             {added ? <Check className="w-4 h-4" /> : null}
-            {added ? "Added to Cart" : isCurrentOutOfStock ? "Sold Out" : "Add to cart"}
+            {added ? "Added to Cart" : (isCurrentOutOfStock || isAllSizesOutOfStock) ? "Sold Out" : "Add to cart"}
           </button>
 
           {/* Price: clear below button */}

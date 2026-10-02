@@ -295,7 +295,7 @@ export const CATALOG_DATA: Fragrance[] = [
     subdomainSlug: "scentpreviewzaraseoulwinter",
     isPremium: false,
     gender: "Women",
-    isOutOfStock: false,
+    isOutOfStock: true,
     type: "CASUAL / FRUITY",
     description: "Crisp apple and mandarin over a sweet amber finish.",
     notes: "Tangerine / Apple / Amber",

@@ -153,14 +153,15 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     if (!originalFrag) return true;
     if (originalFrag.isOutOfStock) return true;
 
-    if (stock?.fragrances) {
-      const fragStock = stock.fragrances[fragId];
-      if (fragStock) {
-        if (fragStock[size] === 0) return true;
-        if (Object.values(fragStock).every((qty) => qty === 0)) return true;
-      }
-    }
-    return false;
+    if (!stock?.fragrances) return false;
+    const fragStock = stock.fragrances[fragId];
+    if (!fragStock) return true;
+
+    const totalStock = Object.values(fragStock).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
+    if (totalStock <= 0) return true;
+
+    const current = fragStock[size];
+    return current === undefined || current <= 0;
   };
 
   // Helper to determine if the vault bundle is out of stock

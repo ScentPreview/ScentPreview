@@ -53,7 +53,7 @@ const DEFAULT_FALLBACK_STOCK = {
     "givenchy-gentleman": { "5ml Normal": 11, "5ml HQ": 0, "10ml": 0 },
     "zara-for-him-black": { "5ml Normal": 5, "5ml HQ": 0, "10ml": 0 },
     "zara-sunrise": { "5ml Normal": 0, "5ml HQ": 0, "10ml": 2 },
-    "zara-seoul-winter": { "5ml Normal": 0, "5ml HQ": 1, "10ml": 0 },
+    "zara-seoul-winter": { "5ml Normal": 0, "5ml HQ": 0, "10ml": 0 },
     "zara-seoul": { "5ml Normal": 0, "5ml HQ": 2, "10ml": 0 },
     "zara-intense-dark": { "5ml Normal": 5, "5ml HQ": 0, "10ml": 1 },
     "zara-rich-warm-addictive": { "5ml Normal": 16, "5ml HQ": 0, "10ml": 0 },
@@ -951,6 +951,7 @@ export default function App() {
     }
   }, [crossSellRecommendation.isOpen]);
 
+  const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
   // Anti Quiz State
   const [isAntiQuizOpen, setIsAntiQuizOpen] = useState<boolean>(false);
   const [isAestheticQuizOpen, setIsAestheticQuizOpen] = useState<boolean>(false);
@@ -1430,6 +1431,36 @@ export default function App() {
     }
   };
 
+  const [banningOrderNum, setBanningOrderNum] = useState<string | null>(null);
+
+  const handleBanOrder = async (order: any) => {
+    try {
+      const token = localStorage.getItem("scent_admin_token") || "";
+      const response = await safeFetch("/api/admin/blacklist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          phone: order.phone,
+          email: order.email,
+          ip: order.ip
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAdminStatusMessage({ type: "success", text: `Device / Account for order ${order.orderNumber} successfully blacklisted & banned.` });
+        setBanningOrderNum(null);
+      } else {
+        throw new Error(data.error || "Failed to blacklist device");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAdminStatusMessage({ type: "error", text: err.message || "Failed to ban device." });
+    }
+  };
+
   const [isSavingStock, setIsSavingStock] = useState<boolean>(false);
   const stockDebounceRef = useRef<any>(null);
   const isStockDirtyRef = useRef<boolean>(false);
@@ -1565,6 +1596,59 @@ export default function App() {
     }, 1000);
   };
 
+  const handleZeroOutFragrance = (itemId: string) => {
+    if (!stock) return;
+    const updatedStock = JSON.parse(JSON.stringify(stock));
+    if (!updatedStock.fragrances[itemId]) {
+      updatedStock.fragrances[itemId] = {};
+    }
+    // Set all variants to exactly 0
+    updatedStock.fragrances[itemId]["5ml Normal"] = 0;
+    updatedStock.fragrances[itemId]["5ml HQ"] = 0;
+    updatedStock.fragrances[itemId]["10ml"] = 0;
+    setStock(updatedStock);
+
+    isStockDirtyRef.current = true;
+    latestStockRef.current = updatedStock;
+
+    if (stockDebounceRef.current) {
+      clearTimeout(stockDebounceRef.current);
+    }
+
+    const frag = CATALOG_DATA.find((f) => f.id === itemId);
+    setAdminStatusMessage({
+      type: "success",
+      text: `${frag?.name || itemId} stock zeroed out across all sizes. Auto-saving...`
+    });
+
+    stockDebounceRef.current = setTimeout(async () => {
+      setIsSavingStock(true);
+      try {
+        const res = await safeFetch("/api/stock", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("scent_admin_token") || ""}`
+          },
+          body: JSON.stringify(updatedStock)
+        });
+        const data = await res.json();
+        if (data.success) {
+          setStock(data.stock);
+          isStockDirtyRef.current = false;
+          setAdminStatusMessage({
+            type: "success",
+            text: `${frag?.name || itemId} is now 0 (Out of stock as a whole across site).`
+          });
+        }
+      } catch (err) {
+        console.error("Error auto-saving zeroed stock:", err);
+      } finally {
+        setIsSavingStock(false);
+      }
+    }, 500);
+  };
+
   const saveUpdatedStock = async () => {
     if (!stock) return;
     setIsSavingStock(true);
@@ -1658,12 +1742,19 @@ export default function App() {
 
   // Cart Handlers
   const getProductStock = (id: string, size: string): number => {
-    if (!stock) return 10;
+    // Check catalog flag first
+    const catItem = CATALOG_DATA.find(f => f.id === id);
+    if (catItem?.isOutOfStock) return 0;
+    if (catItem?.disabledSizes?.includes(size)) return 0;
+
+    const bundleItem = BUNDLE_DATA.find(b => b.id === id);
+    if (bundleItem?.isOutOfStock) return 0;
+
+    if (!stock) return 0;
     
-    // Check if it's a bundle first
-    const isBundle = BUNDLE_DATA.some(b => b.id === id);
-    if (isBundle) {
-      const bundleStock = stock.bundles[id] !== undefined ? stock.bundles[id] : 10;
+    // Check if it's a bundle
+    if (bundleItem || BUNDLE_DATA.some(b => b.id === id)) {
+      const bundleStock = stock.bundles[id] !== undefined ? Number(stock.bundles[id]) || 0 : 0;
       let minStock = bundleStock;
       
       // Get constituents
@@ -1679,26 +1770,29 @@ export default function App() {
         case "bundle-zara-classics": constituents = ["zara-sunrise", "zara-seoul-winter", "zara-for-him-black", "zara-intense-dark"]; break;
       }
       
-      // Assume "5ml Normal" size is required for bundles
       const checkSize = "5ml Normal";
       for (const cid of constituents) {
-        const cStock = stock.fragrances[cid]?.[checkSize];
-        if (cStock !== undefined) {
-          minStock = Math.min(minStock, cStock);
-        } else {
-          // If a constituent is completely missing from stock, it's 0
-          minStock = 0;
-        }
+        const cCat = CATALOG_DATA.find(f => f.id === cid);
+        if (cCat?.isOutOfStock) return 0;
+        const cStockObj = stock.fragrances[cid];
+        if (!cStockObj) return 0;
+        const totalCStock = Object.values(cStockObj).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+        if (totalCStock <= 0) return 0;
+        const cStock = cStockObj[checkSize] !== undefined ? Number(cStockObj[checkSize]) || 0 : 0;
+        minStock = Math.min(minStock, cStock);
       }
       
-      return minStock;
+      return Math.max(0, minStock);
     }
 
     const fragStock = stock.fragrances[id];
     if (fragStock) {
-      return fragStock[size] !== undefined ? fragStock[size] : 10;
+      const totalUnits = Object.values(fragStock).reduce((a: number, b: any) => a + (Number(b) || 0), 0);
+      if (totalUnits <= 0) return 0;
+      const sizeQty = fragStock[size] !== undefined ? Number(fragStock[size]) || 0 : 0;
+      return Math.max(0, sizeQty);
     }
-    return 10;
+    return 0;
   };
 
   const getOutOfStockItems = () => {
@@ -1878,6 +1972,10 @@ export default function App() {
   };
 
   const handleBuyNow = (fragrance: Fragrance, size: "10ml" | "5ml Normal" | "5ml HQ", quantityToAdd: number = 1) => {
+    const availableStock = getProductStock(fragrance.id, size);
+    if (availableStock <= 0 || fragrance.isOutOfStock) {
+      return;
+    }
     handleAddToCart(fragrance, size, quantityToAdd);
     setSelectionType("fragrance");
     setSelectedBuyId(fragrance.id);
@@ -1899,6 +1997,7 @@ export default function App() {
     }
 
     const availableStock = getProductStock(bundle.id, sizeLabel);
+    if (availableStock <= 0) return;
 
     setCart((prev) => {
       const existingIndex = prev.findIndex(
@@ -1998,6 +2097,18 @@ export default function App() {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
+    setCheckoutErrorMessage(null);
+
+    // Strict validation: Ensure every item in cart has sufficient active stock
+    for (const item of cart) {
+      const available = getProductStock(item.id, item.size);
+      if (available <= 0 || available < item.quantity) {
+        setCheckoutErrorMessage(`"${item.name}" (${item.size}) is currently out of stock. Please remove it from your cart before proceeding.`);
+        fetchStock();
+        return;
+      }
+    }
+
     setIsProcessingOrder(true);
     
     const orderNum = `SP-2026-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -2031,22 +2142,32 @@ export default function App() {
         body: JSON.stringify(payload)
       });
       const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        setIsProcessingOrder(false);
+        setCheckoutErrorMessage(data.error || "Unable to place order: One or more items are currently out of stock.");
+        fetchStock();
+        return;
+      }
+
       if (data.success && data.order) {
         addOrderToLocalStorageBackup(data.order);
       }
       fetchStock();
-    } catch (err) {
-      console.error("Failed to register order on backend:", err);
-    }
 
-    setPaymentDetails(payload);
-    setIsProcessingOrder(false);
-    setIsPaymentConfirmed(false);
-    setShowPaymentPage(true);
-    setIsCheckoutOpen(false);
-    setIsCartOpen(false);
-    setIsCartCheckoutVisible(false);
-    setCart([]);
+      setPaymentDetails(payload);
+      setIsProcessingOrder(false);
+      setIsPaymentConfirmed(false);
+      setShowPaymentPage(true);
+      setIsCheckoutOpen(false);
+      setIsCartOpen(false);
+      setIsCartCheckoutVisible(false);
+      setCart([]);
+    } catch (err: any) {
+      console.error("Failed to register order on backend:", err);
+      setIsProcessingOrder(false);
+      setCheckoutErrorMessage("Network error during order creation. Please check your connection and try again.");
+    }
   };
 
   // Filter catalog based on search query
@@ -2379,7 +2500,40 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="border-t border-stone-200 mb-8" />
+              <div className="border-t border-stone-200 mb-6" />
+
+              {/* VELYX Priority Invitation Card (Guaranteed Sign-Ups) */}
+              <div className="my-6 p-5 sm:p-6 bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white rounded-xl border-2 border-amber-400/80 shadow-2xl relative overflow-hidden text-left">
+                {/* Ambient glow accent */}
+                <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-[9px] font-mono tracking-widest uppercase text-amber-300 font-bold">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Patron Privilege</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-amber-200/70 tracking-widest uppercase font-semibold">
+                    Private Access
+                  </span>
+                </div>
+
+                <h4 className="text-2xl font-serif text-white tracking-wider mb-1.5">
+                  VELYX
+                </h4>
+                <p className="text-xs font-sans text-stone-300 leading-relaxed mb-4">
+                  As a valued patron, you have unlocked priority invitation to <strong>VELYX</strong>. Join the private waitlist now for limited archive drops, secret scent vaults, and member-only luxury releases before public unveil.
+                </p>
+
+                <a
+                  href="https://velyx-waitlist.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-mono font-bold tracking-[0.16em] uppercase transition-all shadow-md hover:shadow-amber-400/25 active:scale-[0.98] cursor-pointer"
+                >
+                  <span>Join VELYX Waitlist</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
 
               <button
                 type="button"
@@ -2425,9 +2579,10 @@ export default function App() {
                   localStorage.removeItem("scent_showPaymentPage");
                   localStorage.removeItem("scent_isPaymentConfirmed");
                 }}
-                className="w-full bg-[#276152] text-black  hover:bg-[#0D3A35] py-3.5  text-xs font-mono font-bold tracking-widest uppercase transition-colors cursor-pointer"
+                className="w-full bg-stone-900 hover:bg-black text-white py-3.5 text-xs font-mono font-bold tracking-widest uppercase transition-colors cursor-pointer flex items-center justify-center gap-2 rounded-lg"
               >
-                Continue
+                <ShoppingBag className="w-4 h-4" />
+                <span>Buy More / Return to Studio</span>
               </button>
             </div>
           )}
@@ -2513,6 +2668,16 @@ export default function App() {
               >
                 Bundles
               </button>
+              <a 
+                href="https://velyx-waitlist.vercel.app" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[11px] font-sans tracking-[0.15em] text-amber-850 hover:text-black transition-colors uppercase font-bold flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30"
+                title="Exclusive VELYX Waitlist"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>VELYX</span>
+              </a>
             </div>
           </div>
 
@@ -2723,16 +2888,24 @@ export default function App() {
                         className="w-full bg-[#FFFFFF] border border-stone-200  px-4 py-3 text-xs font-sans text-black  focus:outline-none focus:border-amber-gold"
                       >
                         {selectionType === "fragrance"
-                          ? CATALOG_DATA.map((f) => (
-                              <option key={f.id} value={f.id}>
-                                {f.brand} — {f.name}
-                              </option>
-                            ))
-                          : BUNDLE_DATA.map((b) => (
-                              <option key={b.id} value={b.id}>
-                                ScentPreview Curated — {b.name}
-                              </option>
-                            ))}
+                          ? CATALOG_DATA.map((f) => {
+                              const fStock = stock?.fragrances[f.id];
+                              const isOOS = f.isOutOfStock || (fStock ? Object.values(fStock).every(q => (Number(q) || 0) <= 0) : false);
+                              return (
+                                <option key={f.id} value={f.id}>
+                                  {f.brand} — {f.name} {isOOS ? "(Sold Out)" : ""}
+                                </option>
+                              );
+                            })
+                          : BUNDLE_DATA.map((b) => {
+                              const bStock = getProductStock(b.id, "5ml Normal");
+                              const isOOS = b.isOutOfStock || bStock <= 0;
+                              return (
+                                <option key={b.id} value={b.id}>
+                                  ScentPreview Curated — {b.name} {isOOS ? "(Sold Out)" : ""}
+                                </option>
+                              );
+                            })}
                       </select>
                     </div>
 
@@ -2753,24 +2926,31 @@ export default function App() {
                           02 / Volume Segment
                         </span>
                         <div className="grid grid-cols-3 gap-1 p-1 bg-[#FFFFFF]  border border-stone-200">
-                          {(["10ml", "5ml Normal", "5ml HQ"] as const).map((size) => (
-                            <button
-                              key={size}
-                              type="button"
-                              onClick={() => {
-                                setSelectedBuySize(size);
-                                const maxStock = getProductStock(selectedBuyId, size);
-                                setBuyQuantity((q) => Math.max(1, Math.min(maxStock, q)));
-                              }}
-                              className={`py-2 text-[10px] font-mono  transition-all cursor-pointer ${
-                                selectedBuySize === size
-                                  ? "bg-black text-white font-bold"
-                                  : "text-white hover:text-black "
-                              }`}
-                            >
-                              {size}
-                            </button>
-                          ))}
+                          {(["10ml", "5ml Normal", "5ml HQ"] as const).map((size) => {
+                            const sizeStock = getProductStock(selectedBuyId, size);
+                            const isSizeOOS = sizeStock <= 0;
+                            return (
+                              <button
+                                key={size}
+                                type="button"
+                                disabled={isSizeOOS}
+                                onClick={() => {
+                                  if (isSizeOOS) return;
+                                  setSelectedBuySize(size);
+                                  setBuyQuantity((q) => Math.max(1, Math.min(sizeStock, q)));
+                                }}
+                                className={`py-2 text-[10px] font-mono transition-all cursor-pointer ${
+                                  selectedBuySize === size
+                                    ? "bg-black text-white font-bold"
+                                    : isSizeOOS
+                                    ? "text-stone-400 line-through cursor-not-allowed bg-stone-100"
+                                    : "text-stone-800 hover:text-black"
+                                }`}
+                              >
+                                {size} {isSizeOOS ? "(0)" : ""}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -3208,22 +3388,59 @@ export default function App() {
                 key="success-screen"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-24 bg-white border border-stone-200  max-w-xl mx-auto"
+                className="text-center py-16 px-6 bg-white border border-stone-200 rounded-xl max-w-xl mx-auto shadow-sm"
               >
-                <div className="w-16 h-16 -full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle className="w-8 h-8 text-emerald-600" />
                 </div>
                 <span className="text-[10px] font-mono text-black uppercase tracking-[0.2em] font-semibold block mb-2">
                   Order Authorized
                 </span>
-                <h3 className="text-3xl font-serif text-black mb-4 ">
+                <h3 className="text-3xl font-serif text-black mb-3">
                   Pouring Sequence Commenced
                 </h3>
-                <p className="text-black text-sm font-sans mb-8 px-6">
+                <p className="text-black text-sm font-sans mb-6 px-4">
                   Thank you for your acquisition. The sterile extraction process has begun.
                 </p>
-                <button onClick={() => { setIsOrderPlaced(false);  }} className="bg-stone-900 hover:bg-black text-white py-3 px-8  text-[10px] font-sans tracking-[0.15em] uppercase tracking-widest transition-colors cursor-pointer">
-                  Return to Studio
+
+                {/* VELYX Priority Invitation Card (Guaranteed Sign-Ups) */}
+                <div className="my-6 p-5 sm:p-6 bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white rounded-xl border-2 border-amber-400/80 shadow-2xl relative overflow-hidden text-left">
+                  <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-[9px] font-mono tracking-widest uppercase text-amber-300 font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Patron Privilege</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-amber-200/70 tracking-widest uppercase font-semibold">
+                      Early Access
+                    </span>
+                  </div>
+
+                  <h4 className="text-2xl font-serif text-white tracking-wider mb-1.5">
+                    VELYX
+                  </h4>
+                  <p className="text-xs font-sans text-stone-300 leading-relaxed mb-4">
+                    As a valued patron, you have unlocked priority invitation to <strong>VELYX</strong>. Join the private waitlist now for limited archive drops, secret scent vaults, and member-only luxury releases before public unveil.
+                  </p>
+
+                  <a
+                    href="https://velyx-waitlist.vercel.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-mono font-bold tracking-[0.16em] uppercase transition-all shadow-md hover:shadow-amber-400/25 active:scale-[0.98] cursor-pointer"
+                  >
+                    <span>Join VELYX Waitlist</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                <button 
+                  onClick={() => { setIsOrderPlaced(false); }} 
+                  className="bg-stone-900 hover:bg-black text-white py-3.5 px-8 rounded-lg text-xs font-mono tracking-wider uppercase font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 mx-auto"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Buy More / Return to Studio</span>
                 </button>
               </motion.div>
             )}
@@ -3525,28 +3742,60 @@ export default function App() {
               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white/95 backdrop-blur-md shadow-[0_0_50px_rgba(0,0,0,0.15)] z-50 border-l border-stone-200 p-4 sm:p-6 flex flex-col justify-between overflow-y-auto sm:rounded-l-3xl"
             >
               {isCartSuccessOpen ? (
-                <div className="text-center py-12 flex flex-col items-center justify-center h-full my-auto animate-fade-in">
-                  <div className="w-16 h-16 -full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-6 shadow-xs">
+                <div className="text-center py-8 flex flex-col items-center justify-center h-full my-auto animate-fade-in">
+                  <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4 shadow-xs">
                     <CheckCircle className="w-8 h-8 text-emerald-600" />
                   </div>
-                  <span className="text-[10px] font-mono text-black uppercase tracking-[0.2em] font-semibold block mb-2">
+                  <span className="text-[10px] font-mono text-black uppercase tracking-[0.2em] font-semibold block mb-1">
                     Acquisition Dispatched
                   </span>
-                  <h3 className="text-2xl font-serif text-black  mb-4">
+                  <h3 className="text-2xl font-serif text-black mb-2">
                     Extraction Initiated
                   </h3>
-                  <p className="text-xs text-black max-w-xs leading-relaxed mb-8">
+                  <p className="text-xs text-black max-w-xs leading-relaxed mb-4">
                     Your luxury decanting acquisition has been successfully dispatched.
                   </p>
+
+                  {/* VELYX Priority Invitation Card (Guaranteed Sign-Ups) */}
+                  <div className="w-full my-4 p-5 bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white rounded-xl border-2 border-amber-400/80 shadow-2xl relative overflow-hidden text-left">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[9px] font-mono tracking-widest uppercase text-amber-300 font-bold">
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Patron Privilege</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-amber-200/70 tracking-widest uppercase font-semibold">
+                        Early Access
+                      </span>
+                    </div>
+
+                    <h4 className="text-xl font-serif text-white tracking-wider mb-1">
+                      VELYX
+                    </h4>
+                    <p className="text-[11px] font-sans text-stone-300 leading-relaxed mb-3">
+                      As a verified patron, join the private <strong>VELYX</strong> waitlist to unlock secret vaults, priority releases, and luxury member decants before public unveil.
+                    </p>
+
+                    <a
+                      href="https://velyx-waitlist.vercel.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-mono font-bold tracking-[0.16em] uppercase transition-all shadow-md hover:shadow-amber-400/25 active:scale-[0.98] cursor-pointer"
+                    >
+                      <span>Join VELYX Waitlist</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
                       setIsCartSuccessOpen(false);
                       setIsCartOpen(false);
                     }}
-                    className="w-full bg-[#FFFFFF] hover:bg-stone-900 hover:text-white text-black  text-xs font-sans tracking-[0.2em] uppercase py-4 px-6  cursor-pointer font-bold "
+                    className="w-full bg-stone-900 hover:bg-black text-white text-xs font-mono tracking-widest uppercase py-3.5 px-6 rounded-lg cursor-pointer font-bold flex items-center justify-center gap-2"
                   >
-                    Acknowledge & Close
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Buy More / Return to Studio</span>
                   </button>
                 </div>
               ) : (
@@ -3875,7 +4124,11 @@ export default function App() {
                                           +
                                         </button>
                                       </div>
-                                      {item.quantity >= getProductStock(item.id, item.size) && (
+                                      {getProductStock(item.id, item.size) <= 0 ? (
+                                        <span className="text-[8px] font-mono text-red-600 uppercase tracking-wider font-bold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                                          Out of Stock
+                                        </span>
+                                      ) : item.quantity >= getProductStock(item.id, item.size) && (
                                         <span className="text-[8px] font-mono text-amber-600 uppercase tracking-wider font-semibold">
                                           Max Stock
                                         </span>
@@ -3972,23 +4225,32 @@ export default function App() {
                             *Each ScentPreview decant is precision-poured within our cleanroom laboratory to safeguard authentic olfactory complexity.
                           </p>
 
+                          {/* Out of Stock Notice in Cart */}
+                          {cart.some(item => getProductStock(item.id, item.size) < item.quantity) && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[10px] font-mono font-bold">
+                              Some items in your bag are currently out of stock. Please remove them to proceed.
+                            </div>
+                          )}
+
                           <div className="grid grid-cols-2 gap-3">
                             <button
                               type="button"
+                              disabled={cart.some(item => getProductStock(item.id, item.size) < item.quantity)}
                               onClick={() => {
                                 setIsCartCheckoutVisible(true);
                               }}
-                              className="w-full bg-[#276152] hover:bg-[#0D3A35] border border-[#276152] py-4  text-xs font-mono text-black  tracking-wider uppercase font-bold cursor-pointer transition-all"
+                              className="w-full bg-[#276152] hover:bg-[#0D3A35] border border-[#276152] py-4  text-xs font-mono text-black  tracking-wider uppercase font-bold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Checkout Here
                             </button>
                             <button
                               type="button"
+                              disabled={cart.some(item => getProductStock(item.id, item.size) < item.quantity)}
                               onClick={() => {
                                 setIsCartOpen(false);
                                 setIsCheckoutOpen(true);
                               }}
-                              className="w-full bg-[#FFFFFF] hover:bg-black py-4  text-xs font-mono text-black hover:text-white tracking-widest uppercase font-bold cursor-pointer "
+                              className="w-full bg-[#FFFFFF] hover:bg-black py-4  text-xs font-mono text-black hover:text-white tracking-widest uppercase font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               Overlay Modal
                             </button>
@@ -4056,6 +4318,11 @@ export default function App() {
                           <span className="block text-[9px] font-mono text-black mt-0.5">
                             Qty: {item.quantity} × {item.size}
                           </span>
+                          {getProductStock(item.id, item.size) < item.quantity && (
+                            <span className="inline-block text-[8px] font-mono font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 mt-1 rounded uppercase">
+                              {getProductStock(item.id, item.size) <= 0 ? "Out of Stock" : `Only ${getProductStock(item.id, item.size)} left`}
+                            </span>
+                          )}
                         </div>
                         <span className="font-sans text-[11px] tracking-wider text-black font-semibold shrink-0">
                           ₹{item.price * item.quantity}.00
@@ -4288,6 +4555,13 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Out of Stock / Order Error Alert */}
+                    {checkoutErrorMessage && (
+                      <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-mono rounded">
+                        {checkoutErrorMessage}
+                      </div>
+                    )}
+
                     {/* Checkout CTA */}
                     <div className="pt-4 border-t border-stone-200 flex gap-3">
                       <button
@@ -4298,6 +4572,7 @@ export default function App() {
                           setCheckoutEmail("");
                           setCheckoutAddress("");
                           setCheckoutPhone("");
+                          setCheckoutErrorMessage(null);
                         }}
                         className="w-1/3 bg-transparent border border-stone-200 hover:bg-white text-black py-3  text-xs font-mono tracking-wider uppercase transition-all cursor-pointer"
                       >
@@ -4305,14 +4580,16 @@ export default function App() {
                       </button>
                       <button
                         type="submit"
-                        disabled={isProcessingOrder}
-                        className="w-2/3 bg-[#FFFFFF] hover:bg-stone-900 hover:text-white text-black  font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-3 px-6 transition-all  cursor-pointer flex items-center justify-center gap-2"
+                        disabled={isProcessingOrder || cart.some(item => getProductStock(item.id, item.size) < item.quantity)}
+                        className="w-2/3 bg-[#FFFFFF] hover:bg-stone-900 hover:text-white text-black  font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-3 px-6 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {isProcessingOrder ? (
                           <>
                             <RefreshCw className="w-3 h-3 animate-spin" />
                             <span>Processing...</span>
                           </>
+                        ) : cart.some(item => getProductStock(item.id, item.size) < item.quantity) ? (
+                          <span>Contains Sold Out Items</span>
                         ) : (
                           <>
                             <CreditCard className="w-3.5 h-3.5" />
@@ -4716,12 +4993,17 @@ export default function App() {
                                             {order.state || ""}{order.pincode ? ` - ${order.pincode}` : ""}
                                           </span>
                                         )}
+                                        {order.ip && (
+                                          <span className="block text-[9px] font-mono text-stone-600 mt-1">
+                                            Client IP: <span className="text-black font-semibold">{order.ip}</span>
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
 
                                   {/* Right details */}
-                                  <div className="md:text-right flex md:flex-col justify-between items-center md:items-end gap-3 pt-3 md:pt-0 md:border-l md:border-stone-200 md:pl-5 min-w-[140px]">
+                                  <div className="md:text-right flex md:flex-col justify-between items-center md:items-end gap-3 pt-3 md:pt-0 md:border-l md:border-stone-200 md:pl-5 min-w-[150px]">
                                     <div>
                                       <span className="block text-[8px] font-sans tracking-[0.15em] uppercase tracking-wider text-black font-semibold">
                                         Shipping Protection
@@ -4742,21 +5024,52 @@ export default function App() {
                                       </span>
                                     </div>
 
-                                    {/* Delete Order Action */}
-                                    <div className="pt-2 w-full md:w-auto">
+                                    {/* Actions: Ban Device & Delete */}
+                                    <div className="pt-2 flex items-center gap-2 flex-wrap justify-end">
+                                      {/* Flag & Ban Button */}
+                                      {banningOrderNum === order.orderNumber ? (
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => handleBanOrder(order)}
+                                            className="px-2 py-1 bg-red-700 hover:bg-red-800 text-white text-[9px] font-mono uppercase font-bold tracking-wider cursor-pointer"
+                                          >
+                                            Confirm Ban
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setBanningOrderNum(null)}
+                                            className="px-2 py-1 bg-stone-700 text-white text-[9px] font-mono cursor-pointer"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          title="Permanently block this IP, phone, and email from making future orders"
+                                          onClick={() => setBanningOrderNum(order.orderNumber)}
+                                          className="text-[10px] font-mono text-rose-700 hover:text-rose-900 uppercase tracking-wider flex items-center gap-1 bg-rose-50 hover:bg-rose-100 px-2 py-1 border border-rose-200 cursor-pointer"
+                                        >
+                                          <ShieldAlert className="w-3 h-3 text-rose-600" />
+                                          Flag & Ban
+                                        </button>
+                                      )}
+
+                                      {/* Delete Button */}
                                       {orderDeletingNum === order.orderNumber ? (
-                                        <div className="flex items-center gap-2 justify-end">
+                                        <div className="flex items-center gap-1">
                                           <button
                                             type="button"
                                             onClick={() => handleDeleteOrder(order.orderNumber)}
-                                            className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-black   text-[10px] font-sans tracking-[0.15em] uppercase tracking-wider font-bold transition-all cursor-pointer"
+                                            className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-mono uppercase tracking-wider font-bold transition-all cursor-pointer"
                                           >
                                             Confirm
                                           </button>
                                           <button
                                             type="button"
                                             onClick={() => setOrderDeletingNum(null)}
-                                            className="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-white  text-[10px] font-sans tracking-[0.15em] uppercase tracking-wider transition-all cursor-pointer"
+                                            className="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-white text-[10px] font-mono transition-all cursor-pointer"
                                           >
                                             Cancel
                                           </button>
@@ -4765,7 +5078,7 @@ export default function App() {
                                         <button
                                           type="button"
                                           onClick={() => setOrderDeletingNum(order.orderNumber)}
-                                          className="text-[10px] font-mono text-black hover:text-rose-450 uppercase tracking-widest transition-colors flex items-center gap-1.5 bg-stone-50 hover:bg-rose-950/10 px-2 py-1  border border-stone-200 hover:border-rose-900/20 cursor-pointer w-full md:w-auto justify-center"
+                                          className="text-[10px] font-mono text-black hover:text-rose-600 uppercase tracking-widest transition-colors flex items-center gap-1 bg-stone-50 hover:bg-rose-50 px-2 py-1 border border-stone-200 hover:border-rose-200 cursor-pointer"
                                         >
                                           <Trash2 className="w-3 h-3 text-rose-700" />
                                           Delete
@@ -5065,12 +5378,45 @@ export default function App() {
 
                                 <div className="flex-1 space-y-3">
                                   <div>
-                                    <h4 className="font-sans font-bold text-black  text-sm leading-snug">
-                                      {fragrance.name}
-                                    </h4>
-                                    <span className="text-[9px] font-sans tracking-[0.15em] uppercase tracking-widest text-black block mt-0.5">
-                                      {fragrance.brand} • {fragrance.notes.split(" / ").slice(0, 2).join(" & ")}
-                                    </span>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <h4 className="font-sans font-bold text-black text-sm leading-snug">
+                                          {fragrance.name}
+                                        </h4>
+                                        <span className="text-[9px] font-sans tracking-[0.15em] uppercase tracking-widest text-black block mt-0.5">
+                                          {fragrance.brand} • {fragrance.notes.split(" / ").slice(0, 2).join(" & ")}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {(() => {
+                                          const totalUnits = Object.values(fragStock).reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
+                                          return totalUnits <= 0 ? (
+                                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded bg-red-100 text-red-700 border border-red-200">
+                                              0 Stock (Sold Out)
+                                            </span>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleZeroOutFragrance(fragrance.id)}
+                                              className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider rounded bg-stone-100 hover:bg-red-600 hover:text-white border border-stone-300 text-stone-700 transition-colors cursor-pointer font-bold"
+                                              title="Set entire perfume to 0 stock across all sizes"
+                                            >
+                                              Zero Out (Set to 0)
+                                            </button>
+                                          );
+                                        })()}
+                                      </div>
+                                    </div>
+                                    <div className="mt-1 flex items-center justify-between text-[10px] font-mono">
+                                      {(() => {
+                                        const totalUnits = Object.values(fragStock).reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
+                                        return (
+                                          <span className={totalUnits <= 0 ? "text-red-600 font-bold" : "text-stone-500"}>
+                                            Total: {totalUnits} units {totalUnits <= 0 ? "• Cannot be bought" : ""}
+                                          </span>
+                                        );
+                                      })()}
+                                    </div>
                                   </div>
 
                                   {/* Stock selectors for each size */}
@@ -6120,10 +6466,19 @@ export default function App() {
 
         {/* Footer */}
         <footer className="mt-auto border-t border-black/10 bg-[#F4F4F2] py-8 z-10 relative">
-          <div className="max-w-7xl mx-auto px-6 flex flex-wrap gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
+          <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
             <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
             <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
             <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
+            <a 
+              href="https://velyx-waitlist.vercel.app" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-amber-850 hover:text-black font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3 h-3 text-amber-600" />
+              <span>VELYX Waitlist</span>
+            </a>
             <button onClick={() => setIsAdminOpen(true)} className="hover:text-black transition-colors cursor-pointer ml-auto">Admin</button>
           </div>
         </footer>

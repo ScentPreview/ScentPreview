@@ -61,13 +61,18 @@ export default function ProductDetailPage({
     }
   }, [fragrance.id]);
 
+  // Check if all sizes are 0 or out of stock
+  const isAllSizesOutOfStock = fragrance.isOutOfStock || (
+    fragranceStock ? Object.values(fragranceStock).every(v => (Number(v) || 0) <= 0) : false
+  );
+
   // Initialize selected size to first in-stock size when fragrance changes
   useEffect(() => {
     const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
     for (const size of sizes) {
       const stockVal = fragranceStock ? fragranceStock[size] : undefined;
       const isSizeDisabled =
-        fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stockVal === 0;
+        fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || (stockVal !== undefined && stockVal <= 0);
       if (!isSizeDisabled) {
         setSelectedSize(size);
         setQuantity(1);
@@ -76,12 +81,13 @@ export default function ProductDetailPage({
     }
     setSelectedSize("10ml");
     setQuantity(1);
-  }, [fragrance.id, fragranceStock]);
+  }, [fragrance.id, fragranceStock, isAllSizesOutOfStock]);
 
   const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
   const isCurrentOutOfStock =
+    isAllSizesOutOfStock ||
     fragrance.isOutOfStock ||
-    (currentStock !== undefined && currentStock === 0) ||
+    (currentStock !== undefined && currentStock <= 0) ||
     fragrance.disabledSizes?.includes(selectedSize);
 
   const price = (fragrance.prices && fragrance.prices[selectedSize]) ?? fragrance.prices?.["5ml Normal"] ?? 799;
@@ -93,7 +99,7 @@ export default function ProductDetailPage({
   };
 
   const handleAdd = () => {
-    if (isCurrentOutOfStock) return;
+    if (isCurrentOutOfStock || isAllSizesOutOfStock) return;
     onAddToCart(fragrance, selectedSize, quantity);
     setAdded(true);
     setTimeout(() => {
@@ -102,7 +108,7 @@ export default function ProductDetailPage({
   };
 
   const handleBuy = () => {
-    if (isCurrentOutOfStock) return;
+    if (isCurrentOutOfStock || isAllSizesOutOfStock) return;
     onBuyNow(fragrance, selectedSize, quantity);
   };
 
@@ -329,10 +335,12 @@ export default function ProductDetailPage({
                 <RubberSegment
                   items={(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size) => {
                     const itemPrice = fragrance.prices[size];
+                    const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
+                    const isSizeOOS = isAllSizesOutOfStock || fragrance.disabledSizes?.includes(size) || (sizeStock !== undefined && sizeStock <= 0);
                     const labelText = size === "5ml Normal" ? "5ml" : size === "5ml HQ" ? "5ml HQ" : size;
                     return {
                       value: size,
-                      label: `${labelText} · ₹${itemPrice}`
+                      label: isSizeOOS ? `${labelText} (Sold Out)` : `${labelText} · ₹${itemPrice}`
                     };
                   })}
                   value={selectedSize}
@@ -398,21 +406,21 @@ export default function ProductDetailPage({
               <div className="space-y-3 pt-2">
                 <button
                   type="button"
-                  disabled={isCurrentOutOfStock}
+                  disabled={isCurrentOutOfStock || isAllSizesOutOfStock}
                   onClick={handleAdd}
                   className="w-full py-4 bg-black text-white rounded-2xl text-xs sm:text-sm font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm select-none"
                 >
                   {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                  {added ? "Added to Cart" : isCurrentOutOfStock ? "Sold Out" : "Add to cart"}
+                  {added ? "Added to Cart" : (isCurrentOutOfStock || isAllSizesOutOfStock) ? "Sold Out" : "Add to cart"}
                 </button>
 
                 <button
                   type="button"
-                  disabled={isCurrentOutOfStock}
+                  disabled={isCurrentOutOfStock || isAllSizesOutOfStock}
                   onClick={handleBuy}
                   className="w-full py-4 border border-black/20 hover:border-black bg-stone-50/50 hover:bg-stone-100 rounded-2xl text-xs sm:text-sm font-sans font-medium text-black active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer select-none"
                 >
-                  Buy Now
+                  {(isCurrentOutOfStock || isAllSizesOutOfStock) ? "Sold Out / Unavailable" : "Buy Now"}
                 </button>
               </div>
 
