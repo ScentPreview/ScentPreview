@@ -561,7 +561,17 @@ export default function App() {
 
   const scrollToBuyNow = () => {
     if (cart.length === 0 && CATALOG_DATA.length > 0) {
-      handleAddToCart(CATALOG_DATA[0], "10ml");
+      const firstInStock = CATALOG_DATA.find((f) => {
+        if (f.isOutOfStock) return false;
+        const fStock = stock?.fragrances[f.id];
+        return fStock && Object.values(fStock).some((v) => (Number(v) || 0) > 0);
+      });
+      if (firstInStock) {
+        const availSize = (["10ml", "5ml Normal", "5ml HQ"] as const).find(
+          (s) => !firstInStock.disabledSizes?.includes(s) && (Number(stock?.fragrances[firstInStock.id]?.[s]) || 0) > 0
+        ) || "5ml Normal";
+        handleAddToCart(firstInStock, availSize);
+      }
     }
     setIsCheckoutOpen(true);
   };
@@ -573,11 +583,12 @@ export default function App() {
   }>(DEFAULT_FALLBACK_STOCK);
 
   const fetchStock = async () => {
+    if (isStockDirtyRef.current) return;
     try {
       const res = await safeFetch("/api/stock");
       if (!res.ok) return;
       const data = await res.json();
-      if (data && data.success && data.stock) {
+      if (data && data.success && data.stock && !isStockDirtyRef.current) {
         setStock(data.stock);
       }
     } catch (e) {
@@ -1293,7 +1304,7 @@ export default function App() {
       state: finalState,
       pincode: finalPincode,
       shippingProtection: adminManualShippingProtection,
-      skipStockReduction: false // Force stock reduction to always happen
+      skipStockReduction: true // Manual orders never auto-deduct stock; show reminder instead
     };
 
     try {
@@ -1344,7 +1355,7 @@ export default function App() {
 
             setAdminStatusMessage({ 
               type: "success", 
-              text: `Successfully dispatched Order ${orderNum}! Status updated to 'paid' in database.` 
+              text: `Order ${orderNum} dispatched! REMINDER: Stock was NOT auto-deducted — please manually reduce stock for ${adminManualVariantQty}x ${adminManualVariantName} (${adminManualVariantSize}) in the Stock Levels tab.` 
             });
           } else {
             throw new Error("Failed to confirm payment");
@@ -1358,7 +1369,7 @@ export default function App() {
           });
           setAdminStatusMessage({ 
             type: "success", 
-            text: `Order ${orderNum} dispatched locally (Offline Mode). It will automatically sync to the server when connection returns!` 
+            text: `Order ${orderNum} dispatched locally! REMINDER: Please manually reduce stock for ${adminManualVariantQty}x ${adminManualVariantName} (${adminManualVariantSize}) in the Stock Levels tab.` 
           });
         }
       } else {
@@ -1370,7 +1381,7 @@ export default function App() {
         });
         setAdminStatusMessage({ 
           type: "success", 
-          text: `Order ${orderNum} created locally in offline backup. It will automatically synchronize once connection is restored!` 
+          text: `Order ${orderNum} created locally! REMINDER: Please manually reduce stock for ${adminManualVariantQty}x ${adminManualVariantName} (${adminManualVariantSize}) in the Stock Levels tab.` 
         });
       }
       
@@ -1733,12 +1744,30 @@ export default function App() {
     setSelectedBundleSizes(initialSizes);
   }, []);
 
-  // Set default buy product ID once catalog is loaded
+  // Set default buy product ID once catalog is loaded (only in-stock fragrances)
   useEffect(() => {
-    if (CATALOG_DATA.length > 0) {
-      setSelectedBuyId(CATALOG_DATA[0].id);
+    const inStockFrags = CATALOG_DATA.filter((f) => {
+      if (f.isOutOfStock) return false;
+      const fStock = stock?.fragrances[f.id];
+      return fStock ? Object.values(fStock).some((v) => (Number(v) || 0) > 0) : false;
+    });
+    if (inStockFrags.length > 0) {
+      const currentValid = inStockFrags.some((f) => f.id === selectedBuyId);
+      const targetFrag = currentValid ? inStockFrags.find((f) => f.id === selectedBuyId)! : inStockFrags[0];
+      if (!currentValid) {
+        setSelectedBuyId(targetFrag.id);
+      }
+      const fStock = stock?.fragrances[targetFrag.id];
+      if (fStock && (Number(fStock[selectedBuySize]) || 0) <= 0) {
+        const firstAvailSize = (["10ml", "5ml Normal", "5ml HQ"] as const).find(
+          (s) => !targetFrag.disabledSizes?.includes(s) && (Number(fStock[s]) || 0) > 0
+        );
+        if (firstAvailSize) {
+          setSelectedBuySize(firstAvailSize);
+        }
+      }
     }
-  }, []);
+  }, [stock]);
 
   // Cart Handlers
   const getProductStock = (id: string, size: string): number => {
@@ -1872,10 +1901,10 @@ export default function App() {
         if (f.id === fragrance.id) return false;
         
         // Solid check if fragrance f is out of stock in state or catalog
-        const isOOS = f.isOutOfStock || (stock?.fragrances[f.id] && Object.values(stock.fragrances[f.id]).every((qty: any) => qty === 0));
+        const isOOS = f.isOutOfStock || !stock?.fragrances[f.id] || Object.values(stock.fragrances[f.id]).every((qty: any) => (Number(qty) || 0) <= 0);
         if (isOOS) return false;
 
-        return false;
+        return true;
       }).slice(0, 6);
 
       setCrossSellRecommendation({
@@ -1931,9 +1960,9 @@ export default function App() {
     if (!skipRecommendationUpdate) {
       // Recommend other in-stock perfumes
       const otherPerfumes = CATALOG_DATA.filter((f) => {
-        const isOOS = f.isOutOfStock || (stock?.fragrances[f.id] && Object.values(stock.fragrances[f.id]).every((qty: any) => qty === 0));
+        const isOOS = f.isOutOfStock || !stock?.fragrances[f.id] || Object.values(stock.fragrances[f.id]).every((qty: any) => (Number(qty) || 0) <= 0);
         if (isOOS) return false;
-        return false;
+        return true;
       }).slice(0, 6);
 
       setCrossSellRecommendation({
@@ -2388,14 +2417,6 @@ export default function App() {
                 <button
                   type="button"
                   disabled={isConfirmingPayment}
-                  onClick={() => setShowPaymentPage(false)}
-                  className="w-full sm:w-1/3 bg-transparent border border-stone-200 hover:bg-stone-850/40 text-black py-3  text-xs font-sans tracking-[0.2em] uppercase transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  Cancel Order
-                </button>
-                <button
-                  type="button"
-                  disabled={isConfirmingPayment}
                   onClick={async () => {
                     setIsConfirmingPayment(true);
                     try {
@@ -2420,7 +2441,7 @@ export default function App() {
                       fetchStock();
                     }
                   }}
-                  className={`w-full sm:w-2/3 bg-black hover:bg-amber-400 text-white font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-3 px-6 transition-all  cursor-pointer  flex items-center justify-center gap-2 ${isConfirmingPayment ? "opacity-80 cursor-not-allowed" : ""}`}
+                  className={`w-full bg-black hover:bg-amber-400 text-white font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-3 px-6 transition-all  cursor-pointer  flex items-center justify-center gap-2 ${isConfirmingPayment ? "opacity-80 cursor-not-allowed" : ""}`}
                 >
                   {isConfirmingPayment ? (
                     <>
@@ -2834,15 +2855,25 @@ export default function App() {
                         type="button"
                         onClick={() => {
                           setSelectionType("fragrance");
-                          if (CATALOG_DATA.length > 0) {
-                            setSelectedBuyId(CATALOG_DATA[0].id);
+                          const availFrags = CATALOG_DATA.filter((f) => {
+                            if (f.isOutOfStock) return false;
+                            const fStock = stock?.fragrances[f.id];
+                            return fStock ? Object.values(fStock).some((q) => (Number(q) || 0) > 0) : false;
+                          });
+                          if (availFrags.length > 0) {
+                            const firstFrag = availFrags[0];
+                            setSelectedBuyId(firstFrag.id);
+                            const fStock = stock?.fragrances[firstFrag.id];
+                            const firstSize = (["10ml", "5ml Normal", "5ml HQ"] as const).find(
+                              (s) => !firstFrag.disabledSizes?.includes(s) && (Number(fStock?.[s]) || 0) > 0
+                            ) || "5ml Normal";
+                            setSelectedBuySize(firstSize);
                           }
-                          setSelectedBuySize("10ml");
                         }}
                         className={`py-2.5 px-3 text-xs font-mono  border transition-all cursor-pointer ${
                           selectionType === "fragrance"
                             ? "bg-black text-white border-amber-gold font-bold"
-                            : "bg-transparent text-white border-stone-200 hover:text-black "
+                            : "bg-transparent text-black border-stone-200 hover:text-black "
                         }`}
                       >
                         Individual Scent
@@ -2851,22 +2882,23 @@ export default function App() {
                         type="button"
                         onClick={() => {
                           setSelectionType("bundle");
-                          if (BUNDLE_DATA.length > 0) {
-                            setSelectedBuyId(BUNDLE_DATA[0].id);
+                          const availBundles = BUNDLE_DATA.filter((b) => !b.isOutOfStock && getProductStock(b.id, "5ml Normal") > 0);
+                          if (availBundles.length > 0) {
+                            setSelectedBuyId(availBundles[0].id);
                           }
-                          setSelectedBuySize("10ml");
+                          setSelectedBuySize("5ml Normal");
                         }}
                         className={`py-2.5 px-3 text-xs font-mono  border transition-all cursor-pointer ${
                           selectionType === "bundle"
                             ? "bg-black text-white border-amber-gold font-bold"
-                            : "bg-transparent text-white border-stone-200 hover:text-black "
+                            : "bg-transparent text-black border-stone-200 hover:text-black "
                         }`}
                       >
                         Curated Bundle
                       </button>
                     </div>
 
-                    {/* Product Dropdown */}
+                    {/* Product Dropdown - Only In-Stock Buyable Options */}
                     <div className="mb-6">
                       <label className="block text-[9px] font-mono text-black uppercase tracking-wider mb-2">
                         Choose Blend or Set
@@ -2876,32 +2908,38 @@ export default function App() {
                         onChange={(e) => {
                           const newId = e.target.value;
                           setSelectedBuyId(newId);
-                          const defaultSize = selectionType === "fragrance" ? "10ml" : "5ml Normal";
-                          setSelectedBuySize(defaultSize);
-                          const maxStock = getProductStock(newId, defaultSize);
-                          setBuyQuantity((q) => Math.max(1, Math.min(maxStock, q)));
+                          if (selectionType === "fragrance") {
+                            const frag = CATALOG_DATA.find((f) => f.id === newId);
+                            const fStock = stock?.fragrances[newId];
+                            const firstSize = (["10ml", "5ml Normal", "5ml HQ"] as const).find(
+                              (s) => !frag?.disabledSizes?.includes(s) && (Number(fStock?.[s]) || 0) > 0
+                            ) || "5ml Normal";
+                            setSelectedBuySize(firstSize);
+                            const maxStock = getProductStock(newId, firstSize);
+                            setBuyQuantity((q) => Math.max(1, Math.min(maxStock, q)));
+                          } else {
+                            setSelectedBuySize("5ml Normal");
+                            const maxStock = getProductStock(newId, "5ml Normal");
+                            setBuyQuantity((q) => Math.max(1, Math.min(maxStock, q)));
+                          }
                         }}
                         className="w-full bg-[#FFFFFF] border border-stone-200  px-4 py-3 text-xs font-sans text-black  focus:outline-none focus:border-amber-gold"
                       >
                         {selectionType === "fragrance"
-                          ? CATALOG_DATA.map((f) => {
+                          ? CATALOG_DATA.filter((f) => {
+                              if (f.isOutOfStock) return false;
                               const fStock = stock?.fragrances[f.id];
-                              const isOOS = f.isOutOfStock || (fStock ? Object.values(fStock).every(q => (Number(q) || 0) <= 0) : false);
-                              return (
-                                <option key={f.id} value={f.id}>
-                                  {f.brand} — {f.name} {isOOS ? "(Sold Out)" : ""}
-                                </option>
-                              );
-                            })
-                          : BUNDLE_DATA.map((b) => {
-                              const bStock = getProductStock(b.id, "5ml Normal");
-                              const isOOS = b.isOutOfStock || bStock <= 0;
-                              return (
-                                <option key={b.id} value={b.id}>
-                                  ScentPreview Curated — {b.name} {isOOS ? "(Sold Out)" : ""}
-                                </option>
-                              );
-                            })}
+                              return fStock ? Object.values(fStock).some((q) => (Number(q) || 0) > 0) : false;
+                            }).map((f) => (
+                              <option key={f.id} value={f.id}>
+                                {f.brand} — {f.name}
+                              </option>
+                            ))
+                          : BUNDLE_DATA.filter((b) => !b.isOutOfStock && getProductStock(b.id, "5ml Normal") > 0).map((b) => (
+                              <option key={b.id} value={b.id}>
+                                ScentPreview Curated — {b.name}
+                              </option>
+                            ))}
                       </select>
                     </div>
 
@@ -5149,11 +5187,20 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2.5 mt-2 bg-[#FFFFFF] p-2.5 border border-stone-200 ">
-                            <span className="w-1.5 h-1.5 -full bg-emerald-400 animate-pulse" />
-                            <span className="text-[10px] font-mono text-black select-none">
-                              Stock Reduction: <span className="text-emerald-700 font-bold">AUTOMATIC & ENFORCED</span> (Real-time stock will be decreased automatically)
-                            </span>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-2 bg-amber-50 p-3 border border-amber-300">
+                            <div className="flex items-start sm:items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
+                              <span className="text-[10px] font-mono text-black select-none leading-relaxed">
+                                <strong className="text-amber-900 uppercase">Manual Stock Reminder:</strong> Auto stock deduction is <span className="font-bold underline">DISABLED</span> for manual orders. Please remember to manually reduce stock in the Stock Levels tab after recording this order.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setAdminActiveTab("stock")}
+                              className="px-2.5 py-1 bg-black text-white text-[9px] font-mono uppercase tracking-wider font-bold shrink-0 cursor-pointer hover:bg-stone-800"
+                            >
+                              Open Stock Tab →
+                            </button>
                           </div>
                         </div>
 
@@ -5710,7 +5757,7 @@ export default function App() {
                                     if (adminPriceFilter === "outofstock" && !row.isOutOfStock) return false;
                                     if (adminPriceFilter === "disabled" && !row.isDisabled) return false;
 
-                                    return false;
+                                    return true;
                                   });
 
                                   if (filteredRows.length === 0) {
