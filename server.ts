@@ -290,6 +290,14 @@ async function loadStockFromFirestore(): Promise<StockDB> {
             needsSave = true;
           }
         }
+        // Explicitly enforce that zara-seoul-winter remains 0 out of stock
+        if (stock.fragrances["zara-seoul-winter"]) {
+          const zsw = stock.fragrances["zara-seoul-winter"];
+          if ((zsw["10ml"] || 0) > 0 || (zsw["5ml Normal"] || 0) > 0 || (zsw["5ml HQ"] || 0) > 0) {
+            stock.fragrances["zara-seoul-winter"] = { "10ml": 0, "5ml Normal": 0, "5ml HQ": 0 };
+            needsSave = true;
+          }
+        }
       }
 
       if (needsSave) {
@@ -337,21 +345,21 @@ interface StockDB {
 
 const DEFAULT_STOCK: StockDB = {
   fragrances: {
-    "la-uno-qaswa": { "10ml": 1, "5ml Normal": 11, "5ml HQ": 2 },
-    "ck-one": { "10ml": 2, "5ml Normal": 8, "5ml HQ": 3 },
-    "zara-for-him-black": { "10ml": 1, "5ml Normal": 5, "5ml HQ": 0 },
-    "givenchy-gentleman": { "10ml": 1, "5ml Normal": 12, "5ml HQ": 0 },
-    "zara-intense-dark": { "10ml": 1, "5ml Normal": 5, "5ml HQ": 0 },
+    "la-uno-qaswa": { "10ml": 0, "5ml Normal": 11, "5ml HQ": 2 },
+    "ck-one": { "10ml": 0, "5ml Normal": 7, "5ml HQ": 3 },
+    "zara-for-him-black": { "10ml": 0, "5ml Normal": 5, "5ml HQ": 0 },
+    "givenchy-gentleman": { "10ml": 0, "5ml Normal": 12, "5ml HQ": 0 },
+    "zara-intense-dark": { "10ml": 0, "5ml Normal": 5, "5ml HQ": 0 },
     "zara-rich-warm-addictive": { "10ml": 0, "5ml Normal": 16, "5ml HQ": 0 },
-    "lattafa-khamrah": { "10ml": 0, "5ml Normal": 13, "5ml HQ": 0 },
+    "lattafa-khamrah": { "10ml": 0, "5ml Normal": 14, "5ml HQ": 0 },
     "versace-crystal-noir": { "10ml": 0, "5ml Normal": 1, "5ml HQ": 0 },
-    "zara-sunrise": { "10ml": 2, "5ml Normal": 0, "5ml HQ": 0 },
+    "zara-sunrise": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-seoul-winter": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-seoul": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 2 },
-    "ck2": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 0 }
+    "ck2": { "10ml": 0, "5ml Normal": 2, "5ml HQ": 0 }
   },
   bundles: {
-    "spotlight-arabian": 5,
+    "spotlight-arabian": 6,
     "bundle-day-night": 0,
     "bundle-marine-core": 0,
     "bundle-rare-collector": 0,
@@ -396,6 +404,15 @@ function saveStockToDisk(stock: StockDB) {
 
 function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: string } | null {
   const norm = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!norm) return null;
+
+  // Explicit distinction between Zara Seoul Winter and Zara Seoul
+  if (norm.includes("seoulwinter")) {
+    return { type: "fragrance", id: "zara-seoul-winter" };
+  }
+  if (norm.includes("seoul") && !norm.includes("winter")) {
+    return { type: "fragrance", id: "zara-seoul" };
+  }
   
   const fragrances = [
     { id: "lattafa-khamrah", names: ["lattafakhamrah", "khamrah", "lattafa"] },
@@ -404,7 +421,7 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
     { id: "zara-intense-dark", names: ["zaraintensedark", "intensedark", "intensivedark", "intense", "intensive"] },
     { id: "zara-seoul-winter", names: ["zaraseoulwinter", "seoulwinter"] },
     { id: "la-uno-qaswa", names: ["launoqaswa", "qaswa", "launo", "uno"] },
-    { id: "ck-one", names: ["calvinkleinckone", "ckone", "one", "ck1"] },
+    { id: "ck-one", names: ["calvinkleinckone", "ckone", "ck1"] },
     { id: "ck2", names: ["calvinkleinck2", "ck2"] },
     { id: "zara-rich-warm-addictive", names: ["zararichwarmaddictive", "richwarmaddictive", "richwarm"] },
     { id: "zara-seoul", names: ["zaraseoul", "seoul", "seouloriginal", "originalseoul"] },
@@ -423,15 +440,27 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
     { id: "bundle-zara-classics", names: ["thezaraonlycultclassicsquad", "bundlezaraclassics", "zaraonly"] }
   ];
 
+  // 1. Exact ID or alias match first
   for (const f of fragrances) {
-    if (f.id === norm || f.names.some(n => norm.includes(n) || n.includes(norm))) {
+    if (f.id === norm || f.id.replace(/-/g, "") === norm || f.names.includes(norm)) {
       return { type: "fragrance", id: f.id };
     }
   }
-
   for (const b of bundles) {
-    if (b.id === norm || b.names.some(n => norm.includes(n) || n.includes(norm))) {
+    if (b.id === norm || b.id.replace(/-/g, "") === norm || b.names.includes(norm)) {
       return { type: "bundle", id: b.id };
+    }
+  }
+
+  // 2. Substring match where norm contains alias (never n.includes(norm) which matches short strings to wrong items)
+  for (const b of bundles) {
+    if (b.names.some(n => norm.includes(n))) {
+      return { type: "bundle", id: b.id };
+    }
+  }
+  for (const f of fragrances) {
+    if (f.names.some(n => norm.includes(n))) {
+      return { type: "fragrance", id: f.id };
     }
   }
 
@@ -954,8 +983,10 @@ Your evaluation must fit this schema:
         userAgent: userAgent,
       };
 
-      // Validate stock before creating order unless skipped
-      if (Array.isArray(items) && !skipStockReduction) {
+      const isManualAdminOrder = Boolean(skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
+
+      // Validate stock before creating order unless skipped (manual order)
+      if (Array.isArray(items) && !isManualAdminOrder) {
         const stock = await loadStockFromFirestore();
         for (const item of items) {
           const match = findItemIdByName(item.name);
@@ -996,8 +1027,8 @@ Your evaluation must fit this schema:
         }
       }
 
-      // Reduce the stock of items by the requested quantities unless skipped
-      if (Array.isArray(items) && !skipStockReduction) {
+      // Reduce the stock of items by the requested quantities unless skipped (manual order)
+      if (Array.isArray(items) && !isManualAdminOrder) {
         await reduceStockForItems(items);
         newOrder.stockReduced = true;
       }
@@ -1116,9 +1147,9 @@ Your evaluation must fit this schema:
       // Simulate state transition to 'paid' as would happen via webhook
       order.status = "paid";
 
-      // If stock has not been reduced yet, we reduce it now!
-      const skipStockReduction = !!req.body.skipStockReduction;
-      if (!order.stockReduced && Array.isArray(order.items) && !skipStockReduction) {
+      // If stock has not been reduced yet, we reduce it now (except for manual admin orders)
+      const isManualAdminOrder = Boolean(req.body.skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
+      if (!order.stockReduced && Array.isArray(order.items) && !isManualAdminOrder) {
         await reduceStockForItems(order.items);
         order.stockReduced = true;
       }
@@ -1354,18 +1385,12 @@ Your evaluation must fit this schema:
         return res.status(404).json({ error: "Order not found." });
       }
       
-      // If the order was paid/pending and items reduced stock, restore them!
-      if (orderToDelete.stockReduced && orderToDelete.items && orderToDelete.items.length > 0) {
-        console.log(`[Stock Restoration] Restoring stock for order ${orderNumber} items:`, orderToDelete.items);
-        await restoreStockForItems(orderToDelete.items);
-      }
-
-      // Instead of splicing and completely deleting, we tombstone the order with status: "deleted"
-      // to synchronize the deletion across all distributed client browser backups.
+      // Tombstone the order with status: "deleted" without automatically re-adding stock
+      // so out-of-stock perfumes never get resurrected when cleaning up orders.
       orderToDelete.status = "deleted";
       saveOrdersToDisk();
       await saveOrderToFirestore(orderToDelete);
-      res.json({ success: true, message: `Order ${orderNumber} deleted successfully. Stock has been restored.` });
+      res.json({ success: true, message: `Order ${orderNumber} deleted successfully.` });
     } catch (error: any) {
       console.error("Error deleting order:", error);
       res.status(500).json({ error: "Failed to delete order." });

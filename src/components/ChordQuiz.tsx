@@ -59,10 +59,10 @@ const SCENT_NODES: ScentNoteNode[] = [
   },
   {
     id: "mint",
-    name: "Cool Mint",
+    name: "Aromatic Lavender & Amber",
     type: "Top",
-    desc: "Crisp green apple, arctic wind, sweet amber.",
-    matchedFragrances: ["zara-seoul-winter"]
+    desc: "Sharp lavender, energetic tangerine, warm amber.",
+    matchedFragrances: ["zara-seoul"]
   }
 ];
 
@@ -72,23 +72,45 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
   const [selectedSizes, setSelectedSizes] = useState<Record<string, "10ml" | "5ml Normal" | "5ml HQ">>({});
 
+  // Helper to determine if a specific fragrance/size is out of stock
+  const isOutOfStockCheck = (fragId: string, size: "10ml" | "5ml Normal" | "5ml HQ") => {
+    const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
+    if (!originalFrag) return true;
+    if (originalFrag.isOutOfStock) return true;
+    if (originalFrag.disabledSizes?.includes(size)) return true;
+
+    if (stock?.fragrances) {
+      const fragStock = stock.fragrances[fragId];
+      if (!fragStock) return true;
+      if ((Number(fragStock[size]) || 0) <= 0) return true;
+      if (Object.values(fragStock).every((qty) => (Number(qty) || 0) <= 0)) return true;
+    }
+    return false;
+  };
+
+  const isFragranceCompletelyOutOfStock = (fragId: string) => {
+    const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
+    if (!originalFrag || originalFrag.isOutOfStock) return true;
+    if (stock?.fragrances) {
+      const fragStock = stock.fragrances[fragId];
+      if (!fragStock) return true;
+      return Object.values(fragStock).every((qty) => (Number(qty) || 0) <= 0);
+    }
+    return false;
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       setSelectedNodes([]);
       setIsRevealed(false);
       setAddedIds({});
-      // Initialize default sizes for matches
+      // Initialize default sizes for matches based on live stock
       const defaultSizes: Record<string, "10ml" | "5ml Normal" | "5ml HQ"> = {};
       CATALOG_DATA.forEach((f) => {
-        const disabled = f.disabledSizes || [];
-        if (!disabled.includes("5ml Normal")) {
-          defaultSizes[f.id] = "5ml Normal";
-        } else if (!disabled.includes("10ml")) {
-          defaultSizes[f.id] = "10ml";
-        } else {
-          defaultSizes[f.id] = "5ml HQ";
-        }
+        const sizes: ("5ml Normal" | "5ml HQ" | "10ml")[] = ["5ml Normal", "5ml HQ", "10ml"];
+        const available = sizes.find((s) => !isOutOfStockCheck(f.id, s));
+        defaultSizes[f.id] = available || "5ml Normal";
       });
       setSelectedSizes(defaultSizes);
     } else {
@@ -97,25 +119,9 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [isOpen, stock]);
 
   if (!isOpen) return null;
-
-  // Helper to determine if a specific fragrance/size is out of stock
-  const isOutOfStockCheck = (fragId: string, size: "10ml" | "5ml Normal" | "5ml HQ") => {
-    const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
-    if (!originalFrag) return true;
-    if (originalFrag.isOutOfStock) return true;
-
-    if (stock?.fragrances) {
-      const fragStock = stock.fragrances[fragId];
-      if (fragStock) {
-        if (fragStock[size] === 0) return true;
-        if (Object.values(fragStock).every((qty) => qty === 0)) return true;
-      }
-    }
-    return false;
-  };
 
   const handleToggleNode = (id: string) => {
     if (selectedNodes.includes(id)) {
@@ -140,7 +146,7 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
     setAddedIds({});
   };
 
-  // Find matching fragrances based on selected scent nodes
+  // Find matching fragrances based on selected scent nodes (excluding completely out-of-stock perfumes)
   const getMatches = () => {
     if (selectedNodes.length === 0) return [];
     
@@ -153,7 +159,7 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
       )
     );
 
-    return CATALOG_DATA.filter((f) => matchedFragranceIds.includes(f.id));
+    return CATALOG_DATA.filter((f) => matchedFragranceIds.includes(f.id) && !isFragranceCompletelyOutOfStock(f.id));
   };
 
   const matches = getMatches();
@@ -400,8 +406,8 @@ export default function ChordQuiz({ isOpen, onClose, onAddToCart, stock }: Chord
                               <div className="space-y-1 text-left sm:text-right">
                                 <div className="flex gap-1.5">
                                   {(["5ml Normal", "5ml HQ", "10ml"] as const).map((sizeOption) => {
-                                    const isDisabled = disabledSizes.includes(sizeOption);
-                                    const isSelected = currentSize === sizeOption;
+                                    const isDisabled = disabledSizes.includes(sizeOption) || isOutOfStockCheck(surv.id, sizeOption);
+                                    const isSelected = !isDisabled && currentSize === sizeOption;
                                     return (
                                       <button
                                         key={sizeOption}

@@ -72,6 +72,7 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
     const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
     if (!originalFrag) return true;
     if (originalFrag.isOutOfStock) return true;
+    if (originalFrag.disabledSizes?.includes(size)) return true;
 
     if (!stock?.fragrances) return false;
     const fragStock = stock.fragrances[fragId];
@@ -80,8 +81,8 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
     const totalStock = Object.values(fragStock).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
     if (totalStock <= 0) return true;
 
-    const current = fragStock[size];
-    return current === undefined || current <= 0;
+    const current = Number(fragStock[size]) || 0;
+    return current <= 0;
   };
 
   useEffect(() => {
@@ -89,17 +90,12 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
       document.body.style.overflow = "hidden";
       setSelectedProfile(null);
       setAddedIds({});
-      // Initialize default sizes for matches
+      // Initialize default sizes for matches based on live stock
       const defaultSizes: Record<string, "10ml" | "5ml Normal" | "5ml HQ"> = {};
       CATALOG_DATA.forEach((f) => {
-        const disabled = f.disabledSizes || [];
-        if (!disabled.includes("5ml Normal")) {
-          defaultSizes[f.id] = "5ml Normal";
-        } else if (!disabled.includes("10ml")) {
-          defaultSizes[f.id] = "10ml";
-        } else {
-          defaultSizes[f.id] = "5ml HQ";
-        }
+        const sizes: ("5ml Normal" | "5ml HQ" | "10ml")[] = ["5ml Normal", "5ml HQ", "10ml"];
+        const available = sizes.find((s) => !isOutOfStockCheck(f.id, s));
+        defaultSizes[f.id] = available || "5ml Normal";
       });
       setSelectedSize(defaultSizes);
     } else {
@@ -108,7 +104,7 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [isOpen, stock]);
 
   if (!isOpen) return null;
 
@@ -308,8 +304,8 @@ export default function AestheticQuiz({ isOpen, onClose, onAddToCart, stock }: A
                           <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2.5 shrink-0">
                             <div className="flex items-center gap-1.5">
                               {(["5ml Normal", "5ml HQ", "10ml"] as const).map((sizeOption) => {
-                                const isDisabled = disabledSizes.includes(sizeOption);
-                                const isSelected = currentSize === sizeOption;
+                                const isDisabled = disabledSizes.includes(sizeOption) || isOutOfStockCheck(fragId, sizeOption);
+                                const isSelected = !isDisabled && currentSize === sizeOption;
                                 return (
                                   <button
                                     key={sizeOption}

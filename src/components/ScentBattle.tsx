@@ -88,13 +88,13 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
     const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
     if (!originalFrag) return true;
     if (originalFrag.isOutOfStock) return true;
+    if (originalFrag.disabledSizes?.includes(size)) return true;
 
     if (stock?.fragrances) {
       const fragStock = stock.fragrances[fragId];
-      if (fragStock) {
-        if (fragStock[size] === 0) return true;
-        if (Object.values(fragStock).every((qty) => qty === 0)) return true;
-      }
+      if (!fragStock) return true;
+      if ((Number(fragStock[size]) || 0) <= 0) return true;
+      if (Object.values(fragStock).every((qty) => (Number(qty) || 0) <= 0)) return true;
     }
     return false;
   };
@@ -120,18 +120,10 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
         setWinner(selected);
         setRound(4);
         
-        // Initialize default size for winner
-        const originalFrag = CATALOG_DATA.find((f) => f.id === selected.matchId);
-        if (originalFrag) {
-          const disabled = originalFrag.disabledSizes || [];
-          if (!disabled.includes("5ml Normal")) {
-            setSelectedSize("5ml Normal");
-          } else if (!disabled.includes("10ml")) {
-            setSelectedSize("10ml");
-          } else {
-            setSelectedSize("5ml HQ");
-          }
-        }
+        // Initialize default size for winner based on live stock
+        const sizes: ("5ml Normal" | "5ml HQ" | "10ml")[] = ["5ml Normal", "5ml HQ", "10ml"];
+        const available = sizes.find((s) => !isOutOfStockCheck(selected.matchId, s));
+        setSelectedSize(available || "5ml Normal");
       }
       setDirection(null);
     }, 200);
@@ -287,8 +279,8 @@ export default function ScentBattle({ isOpen, onClose, onAddToCart, stock }: Sce
               <div className="bg-[#111111]/80 border border-stone-850 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
                 <div className="flex items-center gap-1.5 shrink-0">
                   {(["5ml Normal", "5ml HQ", "10ml"] as const).map((sizeOption) => {
-                    const isDisabled = disabledSizes.includes(sizeOption);
-                    const isSelected = selectedSize === sizeOption;
+                    const isDisabled = disabledSizes.includes(sizeOption) || (winner ? isOutOfStockCheck(winner.matchId, sizeOption) : true);
+                    const isSelected = !isDisabled && selectedSize === sizeOption;
                     return (
                       <button
                         key={sizeOption}

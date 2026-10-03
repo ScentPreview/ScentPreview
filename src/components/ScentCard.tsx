@@ -16,14 +16,14 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
   const SIZES: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
 
   // Check if all sizes are 0 or out of stock
-  const isAllSizesOutOfStock = fragrance.isOutOfStock || (
-    fragranceStock ? Object.values(fragranceStock).every(v => (Number(v) || 0) <= 0) : false
+  const isAllSizesOutOfStock = fragrance.isOutOfStock || !fragranceStock || (
+    Object.values(fragranceStock).every(v => (Number(v) || 0) <= 0)
   );
 
   const [selectedSize, setSelectedSize] = useState<SizeType>(() => {
     for (const size of SIZES) {
-      const stock = fragranceStock ? fragranceStock[size] : undefined;
-      const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || (stock !== undefined && stock <= 0);
+      const stock = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
+      const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || stock <= 0;
       if (!isSizeDisabled) {
         return size;
       }
@@ -32,13 +32,13 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
   });
 
   useEffect(() => {
-    const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
-    const isCurrentOutOfStock = isAllSizesOutOfStock || fragrance.isOutOfStock || (currentStock !== undefined && currentStock <= 0) || fragrance.disabledSizes?.includes(selectedSize);
+    const currentStock = fragranceStock ? Number(fragranceStock[selectedSize]) || 0 : 0;
+    const isCurrentOutOfStock = isAllSizesOutOfStock || fragrance.isOutOfStock || currentStock <= 0 || fragrance.disabledSizes?.includes(selectedSize);
     
     if (isCurrentOutOfStock && !isAllSizesOutOfStock) {
       for (const size of SIZES) {
-        const stock = fragranceStock ? fragranceStock[size] : undefined;
-        const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || (stock !== undefined && stock <= 0);
+        const stock = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
+        const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || stock <= 0;
         if (!isSizeDisabled) {
           setSelectedSize(size);
           return;
@@ -49,10 +49,12 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
   const [added, setAdded] = useState(false);
 
   const price = fragrance.prices[selectedSize] ?? fragrance.prices["5ml Normal"] ?? 799;
-  const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
-  const isCurrentOutOfStock = isAllSizesOutOfStock || fragrance.isOutOfStock || (currentStock !== undefined && currentStock <= 0) || fragrance.disabledSizes?.includes(selectedSize);
+  const currentStock = fragranceStock ? Number(fragranceStock[selectedSize]) || 0 : 0;
+  const isCurrentOutOfStock = isAllSizesOutOfStock || fragrance.isOutOfStock || currentStock <= 0 || fragrance.disabledSizes?.includes(selectedSize);
 
   const handleSizeChange = (size: SizeType) => {
+    const sizeStock = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
+    if (fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || sizeStock <= 0) return;
     setSelectedSize(size);
   };
 
@@ -120,19 +122,19 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
           {/* Size Selection */}
           <div className="flex border border-black/10 rounded-xl overflow-hidden mb-3 bg-stone-50/50">
             {SIZES.map((size, idx, arr) => {
-              const isSelected = selectedSize === size;
-              const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
-              const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || (sizeStock !== undefined && sizeStock <= 0);
+              const sizeStock = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
+              const isSizeDisabled = fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || sizeStock <= 0;
+              const isSelected = !isSizeDisabled && selectedSize === size;
               
               return (
                 <button
                   key={size}
                   disabled={isSizeDisabled}
                   onClick={() => handleSizeChange(size)}
-                  className={`flex-1 py-2 sm:py-2.5 text-[11px] sm:text-xs font-sans font-medium transition-colors cursor-pointer select-none active:scale-[0.98] ${
+                  className={`flex-1 py-2 sm:py-2.5 text-[11px] sm:text-xs font-sans font-medium transition-colors select-none ${
                     idx !== arr.length - 1 ? 'border-r border-black/10' : ''
                   } ${
-                    isSelected ? "bg-black text-white" : isSizeDisabled ? "text-black/30 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5"
+                    isSelected ? "bg-black text-white cursor-pointer active:scale-[0.98]" : isSizeDisabled ? "text-black/30 line-through cursor-not-allowed bg-black/5" : "text-black hover:bg-black/5 cursor-pointer active:scale-[0.98]"
                   }`}
                 >
                   {size === "5ml Normal" ? "5ml" : size === "5ml HQ" ? "5ml (HQ)" : size}

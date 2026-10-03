@@ -127,6 +127,7 @@ export const CATALOG_DATA: Fragrance[] = [
     description: "Sharp lavender, energetic citrus, and warm amber.",
     notes: "Tangerine / Lavender / Amber",
     notesList: ["Tangerine", "Lavender", "Amber"],
+    disabledSizes: ["10ml", "5ml Normal"],
     prices: {
       "10ml": 528,
       "5ml Normal": 372,
@@ -134,7 +135,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-blue-600 to-blue-900",
     glassStyle: "shadow-blue-700/50",
-    image: "/images/perfumes/seoul.jpg"
+    image: "/images/perfumes/zara-seoul-original.jpg?v=2"
   },
   {
     id: "zara-intense-dark",
@@ -300,6 +301,7 @@ export const CATALOG_DATA: Fragrance[] = [
     description: "Crisp apple and mandarin over a sweet amber finish.",
     notes: "Tangerine / Apple / Amber",
     notesList: ["Tangerine", "Apple", "Amber"],
+    disabledSizes: ["10ml", "5ml Normal", "5ml HQ"],
     prices: {
       "10ml": 528,
       "5ml Normal": 372,
@@ -307,7 +309,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-blue-800 to-indigo-900",
     glassStyle: "shadow-indigo-800/50",
-    image: "/images/perfumes/seoul-winter.jpg"
+    image: "/images/perfumes/seoul-winter.jpg?v=2"
   }
 ];
 
@@ -340,7 +342,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     id: "bundle-marine-core",
     name: "The \"Hyper-Clean\" Marine Core Kit",
     contains: "Calvin Klein CK One + Curated Marine Pairings",
-    isOutOfStock: false,
+    isOutOfStock: true,
     prices: {
       "10ml": 1286,
       "5ml Normal": 858,
@@ -351,7 +353,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     id: "bundle-rare-collector",
     name: "Rare Discontinued Collector Duo",
     contains: "Calvin Klein CK2 + Zara Intense Dark",
-    isOutOfStock: false,
+    isOutOfStock: true,
     prices: {
       "10ml": 1710,
       "5ml Normal": 1070,
@@ -362,7 +364,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     id: "bundle-office-rotation",
     name: "24/7 Office & Boardroom Rotation",
     contains: "Givenchy Gentleman + Calvin Klein CK One",
-    isOutOfStock: false,
+    isOutOfStock: true,
     prices: {
       "10ml": 2953,
       "5ml Normal": 1692,
@@ -373,7 +375,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     id: "bundle-cozy-winter",
     name: "The Cozy Winter-Gourmand Trio",
     contains: "Zara Seoul Winter + Curated Pairings",
-    isOutOfStock: false,
+    isOutOfStock: true,
     prices: {
       "10ml": 1924,
       "5ml Normal": 1285,
@@ -384,7 +386,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     id: "bundle-master-vault",
     name: "Ultimate Master Layering Vault",
     contains: "Khamrah + Curated Winter Pairings",
-    isOutOfStock: false,
+    isOutOfStock: true,
     prices: {
       "10ml": 1871,
       "5ml Normal": 1258,
@@ -395,7 +397,7 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
     id: "bundle-zara-classics",
     name: "The \"Zara Only\" Cult Classics Quad",
     contains: "Zara Sunrise + Zara Seoul Winter + 2 Other Zara Classics",
-    isOutOfStock: false,
+    isOutOfStock: true,
     prices: {
       "10ml": 2433,
       "5ml Normal": 1673,

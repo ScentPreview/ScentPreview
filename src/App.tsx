@@ -2502,33 +2502,31 @@ export default function App() {
 
               <div className="border-t border-stone-200 mb-6" />
 
-              {/* VELYX Priority Invitation Card (Guaranteed Sign-Ups) */}
-              <div className="my-6 p-5 sm:p-6 bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white rounded-xl border-2 border-amber-400/80 shadow-2xl relative overflow-hidden text-left">
-                {/* Ambient glow accent */}
-                <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
-                
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-[9px] font-mono tracking-widest uppercase text-amber-300 font-bold">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Patron Privilege</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-amber-200/70 tracking-widest uppercase font-semibold">
-                    Private Access
+              {/* VELYX Waitlist Section */}
+              <div className="bg-[#FFFFFF] border border-stone-200/80 p-5 mb-6 text-left space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-stone-500 font-semibold">
+                    Upcoming Release • Waitlist
+                  </span>
+                  <span className="text-[8px] font-mono text-stone-400 uppercase tracking-widest">
+                    VELYX
                   </span>
                 </div>
 
-                <h4 className="text-2xl font-serif text-white tracking-wider mb-1.5">
-                  VELYX
-                </h4>
-                <p className="text-xs font-sans text-stone-300 leading-relaxed mb-4">
-                  As a valued patron, you have unlocked priority invitation to <strong>VELYX</strong>. Join the private waitlist now for limited archive drops, secret scent vaults, and member-only luxury releases before public unveil.
-                </p>
+                <div>
+                  <h4 className="text-xl font-serif text-black mb-1">
+                    VELYX
+                  </h4>
+                  <p className="text-xs text-stone-600 font-sans leading-relaxed">
+                    Join the waitlist for VELYX to receive priority access to limited decants, archive vault drops, and new olfactory releases.
+                  </p>
+                </div>
 
                 <a
                   href="https://velyx-waitlist.vercel.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-mono font-bold tracking-[0.16em] uppercase transition-all shadow-md hover:shadow-amber-400/25 active:scale-[0.98] cursor-pointer"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-stone-900 hover:bg-black text-white text-xs font-mono tracking-widest uppercase transition-colors cursor-pointer"
                 >
                   <span>Join VELYX Waitlist</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -2672,11 +2670,9 @@ export default function App() {
                 href="https://velyx-waitlist.vercel.app" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-[11px] font-sans tracking-[0.15em] text-amber-850 hover:text-black transition-colors uppercase font-bold flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30"
-                title="Exclusive VELYX Waitlist"
+                className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
               >
-                <Sparkles className="w-3 h-3 text-amber-600" />
-                <span>VELYX</span>
+                VELYX
               </a>
             </div>
           </div>
@@ -3403,32 +3399,31 @@ export default function App() {
                   Thank you for your acquisition. The sterile extraction process has begun.
                 </p>
 
-                {/* VELYX Priority Invitation Card (Guaranteed Sign-Ups) */}
-                <div className="my-6 p-5 sm:p-6 bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white rounded-xl border-2 border-amber-400/80 shadow-2xl relative overflow-hidden text-left">
-                  <div className="absolute -top-12 -right-12 w-40 h-40 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
-                  
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-[9px] font-mono tracking-widest uppercase text-amber-300 font-bold">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Patron Privilege</span>
-                    </div>
-                    <span className="text-[9px] font-mono text-amber-200/70 tracking-widest uppercase font-semibold">
-                      Early Access
+                {/* VELYX Waitlist Section */}
+                <div className="bg-[#FFFFFF] border border-stone-200/80 p-5 my-6 text-left space-y-3">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                    <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-stone-500 font-semibold">
+                      Upcoming Release • Waitlist
+                    </span>
+                    <span className="text-[8px] font-mono text-stone-400 uppercase tracking-widest">
+                      VELYX
                     </span>
                   </div>
 
-                  <h4 className="text-2xl font-serif text-white tracking-wider mb-1.5">
-                    VELYX
-                  </h4>
-                  <p className="text-xs font-sans text-stone-300 leading-relaxed mb-4">
-                    As a valued patron, you have unlocked priority invitation to <strong>VELYX</strong>. Join the private waitlist now for limited archive drops, secret scent vaults, and member-only luxury releases before public unveil.
-                  </p>
+                  <div>
+                    <h4 className="text-xl font-serif text-black mb-1">
+                      VELYX
+                    </h4>
+                    <p className="text-xs text-stone-600 font-sans leading-relaxed">
+                      Join the waitlist for VELYX to receive priority access to limited decants, archive vault drops, and new olfactory releases.
+                    </p>
+                  </div>
 
                   <a
                     href="https://velyx-waitlist.vercel.app"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-mono font-bold tracking-[0.16em] uppercase transition-all shadow-md hover:shadow-amber-400/25 active:scale-[0.98] cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-stone-900 hover:bg-black text-white text-xs font-mono tracking-widest uppercase transition-colors cursor-pointer"
                   >
                     <span>Join VELYX Waitlist</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -3756,30 +3751,31 @@ export default function App() {
                     Your luxury decanting acquisition has been successfully dispatched.
                   </p>
 
-                  {/* VELYX Priority Invitation Card (Guaranteed Sign-Ups) */}
-                  <div className="w-full my-4 p-5 bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white rounded-xl border-2 border-amber-400/80 shadow-2xl relative overflow-hidden text-left">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[9px] font-mono tracking-widest uppercase text-amber-300 font-bold">
-                        <Sparkles className="w-3 h-3 text-amber-300" />
-                        <span>Patron Privilege</span>
-                      </div>
-                      <span className="text-[9px] font-mono text-amber-200/70 tracking-widest uppercase font-semibold">
-                        Early Access
+                  {/* VELYX Waitlist Section */}
+                  <div className="w-full bg-[#FFFFFF] border border-stone-200/80 p-4 my-4 text-left space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-stone-100 pb-1.5">
+                      <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-stone-500 font-semibold">
+                        Upcoming Release • Waitlist
+                      </span>
+                      <span className="text-[8px] font-mono text-stone-400 uppercase tracking-widest">
+                        VELYX
                       </span>
                     </div>
 
-                    <h4 className="text-xl font-serif text-white tracking-wider mb-1">
-                      VELYX
-                    </h4>
-                    <p className="text-[11px] font-sans text-stone-300 leading-relaxed mb-3">
-                      As a verified patron, join the private <strong>VELYX</strong> waitlist to unlock secret vaults, priority releases, and luxury member decants before public unveil.
-                    </p>
+                    <div>
+                      <h4 className="text-lg font-serif text-black mb-1">
+                        VELYX
+                      </h4>
+                      <p className="text-[11px] text-stone-600 font-sans leading-relaxed">
+                        Join the waitlist for VELYX to receive priority access to limited decants, archive vault drops, and new olfactory releases.
+                      </p>
+                    </div>
 
                     <a
                       href="https://velyx-waitlist.vercel.app"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 text-xs font-mono font-bold tracking-[0.16em] uppercase transition-all shadow-md hover:shadow-amber-400/25 active:scale-[0.98] cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 bg-stone-900 hover:bg-black text-white text-xs font-mono tracking-widest uppercase transition-colors cursor-pointer"
                     >
                       <span>Join VELYX Waitlist</span>
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -6474,10 +6470,9 @@ export default function App() {
               href="https://velyx-waitlist.vercel.app" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-amber-850 hover:text-black font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              className="hover:text-black transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3 h-3 text-amber-600" />
-              <span>VELYX Waitlist</span>
+              VELYX
             </a>
             <button onClick={() => setIsAdminOpen(true)} className="hover:text-black transition-colors cursor-pointer ml-auto">Admin</button>
           </div>

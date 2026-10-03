@@ -45,6 +45,7 @@ interface RubberSegmentItem {
   value: string;
   label: React.ReactNode;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 interface RubberSegmentProps {
@@ -171,6 +172,7 @@ export default function RubberSegment({
   );
 
   const commit = (i: number) => {
+    if (list[i]?.disabled) return;
     committed.current = i;
     if (i === index) return;
     if (value === undefined) setInner(list[i].value);
@@ -220,7 +222,7 @@ export default function RubberSegment({
   const localX = (e: React.PointerEvent) => e.clientX - (box.current ? box.current.left : 0) - inset;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>, i: number) => {
-    if (disabled || drag.current || e.button !== 0) return;
+    if (disabled || list[i]?.disabled || drag.current || e.button !== 0) return;
     box.current = trackRef.current?.getBoundingClientRect() || null;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -285,7 +287,7 @@ export default function RubberSegment({
     release();
     const x = localX(e);
     if (!d.live) {
-      if (Math.abs(x - d.x0) <= SLOP && d.slot !== committed.current) {
+      if (Math.abs(x - d.x0) <= SLOP && d.slot !== committed.current && !list[d.slot]?.disabled) {
         const from = committed.current;
         commit(d.slot);
         travel(from, d.slot);
@@ -296,6 +298,9 @@ export default function RubberSegment({
     const flick = Math.abs(v) > FLICK;
     let to = nearestSlot(slots.current, (edgeL.get() + edgeR.get()) / 2 + project(v, glide));
     if (flick && to === committed.current) to = clamp(to + Math.sign(v), 0, list.length - 1);
+    if (list[to]?.disabled) {
+      to = committed.current;
+    }
     commit(to);
     if (reduce) jumpTo(to);
     else land(to, v, flick, flick);
@@ -365,8 +370,8 @@ export default function RubberSegment({
           role="radio"
           aria-checked={i === index}
           tabIndex={i === index ? 0 : -1}
-          disabled={disabled}
-          className="rubber-segment__item"
+          disabled={disabled || item.disabled}
+          className={`rubber-segment__item ${item.disabled ? 'opacity-35 line-through cursor-not-allowed' : ''}`}
           onPointerDown={e => handlePointerDown(e, i)}
           onKeyDown={handleKeyDown}
         >

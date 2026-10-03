@@ -62,17 +62,17 @@ export default function ProductDetailPage({
   }, [fragrance.id]);
 
   // Check if all sizes are 0 or out of stock
-  const isAllSizesOutOfStock = fragrance.isOutOfStock || (
-    fragranceStock ? Object.values(fragranceStock).every(v => (Number(v) || 0) <= 0) : false
+  const isAllSizesOutOfStock = fragrance.isOutOfStock || !fragranceStock || (
+    Object.values(fragranceStock).every(v => (Number(v) || 0) <= 0)
   );
 
   // Initialize selected size to first in-stock size when fragrance changes
   useEffect(() => {
     const sizes: SizeType[] = ["10ml", "5ml Normal", "5ml HQ"];
     for (const size of sizes) {
-      const stockVal = fragranceStock ? fragranceStock[size] : undefined;
+      const stockVal = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
       const isSizeDisabled =
-        fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || (stockVal !== undefined && stockVal <= 0);
+        fragrance.disabledSizes?.includes(size) || fragrance.isOutOfStock || isAllSizesOutOfStock || stockVal <= 0;
       if (!isSizeDisabled) {
         setSelectedSize(size);
         setQuantity(1);
@@ -83,17 +83,19 @@ export default function ProductDetailPage({
     setQuantity(1);
   }, [fragrance.id, fragranceStock, isAllSizesOutOfStock]);
 
-  const currentStock = fragranceStock ? fragranceStock[selectedSize] : undefined;
+  const currentStock = fragranceStock ? Number(fragranceStock[selectedSize]) || 0 : 0;
   const isCurrentOutOfStock =
     isAllSizesOutOfStock ||
     fragrance.isOutOfStock ||
-    (currentStock !== undefined && currentStock <= 0) ||
+    currentStock <= 0 ||
     fragrance.disabledSizes?.includes(selectedSize);
 
   const price = (fragrance.prices && fragrance.prices[selectedSize]) ?? fragrance.prices?.["5ml Normal"] ?? 799;
   const totalPrice = price * quantity;
 
   const handleSizeChange = (size: SizeType) => {
+    const stockVal = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
+    if (isAllSizesOutOfStock || fragrance.isOutOfStock || fragrance.disabledSizes?.includes(size) || stockVal <= 0) return;
     setSelectedSize(size);
     setQuantity(1);
   };
@@ -112,9 +114,16 @@ export default function ProductDetailPage({
     onBuyNow(fragrance, selectedSize, quantity);
   };
 
-  // Filter other perfumes to show "another bunch of perfumes below that" like Amazon
+  // Filter other perfumes to only show in-stock perfumes below
   const otherPerfumes = allFragrances
-    .filter((f) => f.id !== fragrance.id)
+    .filter((f) => {
+      if (f.id === fragrance.id) return false;
+      if (f.isOutOfStock) return false;
+      const fStock = stock?.fragrances?.[f.id];
+      if (!fStock) return false;
+      const hasStock = Object.values(fStock).some((v) => (Number(v) || 0) > 0);
+      return hasStock;
+    })
     .sort((a, b) => {
       // Prioritize same gender or matching notes
       const aMatch = a.gender === fragrance.gender ? 1 : 0;
@@ -335,16 +344,18 @@ export default function ProductDetailPage({
                 <RubberSegment
                   items={(["10ml", "5ml Normal", "5ml HQ"] as SizeType[]).map((size) => {
                     const itemPrice = fragrance.prices[size];
-                    const sizeStock = fragranceStock ? fragranceStock[size] : undefined;
-                    const isSizeOOS = isAllSizesOutOfStock || fragrance.disabledSizes?.includes(size) || (sizeStock !== undefined && sizeStock <= 0);
+                    const sizeStock = fragranceStock ? Number(fragranceStock[size]) || 0 : 0;
+                    const isSizeOOS = isAllSizesOutOfStock || fragrance.isOutOfStock || fragrance.disabledSizes?.includes(size) || sizeStock <= 0;
                     const labelText = size === "5ml Normal" ? "5ml" : size === "5ml HQ" ? "5ml HQ" : size;
                     return {
                       value: size,
-                      label: isSizeOOS ? `${labelText} (Sold Out)` : `${labelText} · ₹${itemPrice}`
+                      label: isSizeOOS ? `${labelText} (Sold Out)` : `${labelText} · ₹${itemPrice}`,
+                      disabled: isSizeOOS
                     };
                   })}
                   value={selectedSize}
                   onChange={(val) => handleSizeChange(val as SizeType)}
+                  disabled={isAllSizesOutOfStock}
                   trackColor="#f4f4f2"
                   thumbColor="#111111"
                   textColor="#525252"

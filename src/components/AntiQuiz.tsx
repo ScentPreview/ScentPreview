@@ -97,12 +97,12 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
     color: "from-indigo-900 to-zinc-950"
   },
   {
-    id: "zara-seoul-winter",
-    name: "Zara Seoul Winter",
+    id: "zara-seoul",
+    name: "Zara Seoul",
     brand: "Zara",
-    category: "Fresh/Sweet Tier",
-    microDesc: "Apple. Mint. Amber.",
-    notes: "Tangerine / Apple / Amber",
+    category: "Sport/Daily Tier",
+    microDesc: "Tangerine. Lavender. Amber.",
+    notes: "Tangerine / Lavender / Amber",
     color: "from-sky-300 to-blue-700"
   }
 ];
@@ -117,7 +117,7 @@ const DEALBREAKERS: Dealbreaker[] = [
   {
     id: "cloying",
     label: "Too Sweet / Cloying",
-    eliminates: ["lattafa-khamrah", "zara-seoul-winter", "zara-intense-dark"]
+    eliminates: ["lattafa-khamrah", "zara-intense-dark"]
   },
   {
     id: "heavy",
@@ -132,7 +132,7 @@ const DEALBREAKERS: Dealbreaker[] = [
   {
     id: "shaving",
     label: "Harsh / Synthetic Shaving Gel Vibe",
-    eliminates: ["zara-seoul-winter"]
+    eliminates: ["zara-seoul"]
   },
   {
     id: "grandpa",
@@ -152,6 +152,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
     if (!originalFrag) return true;
     if (originalFrag.isOutOfStock) return true;
+    if (originalFrag.disabledSizes?.includes(size)) return true;
 
     if (!stock?.fragrances) return false;
     const fragStock = stock.fragrances[fragId];
@@ -160,8 +161,17 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     const totalStock = Object.values(fragStock).reduce((sum, qty) => sum + (Number(qty) || 0), 0);
     if (totalStock <= 0) return true;
 
-    const current = fragStock[size];
-    return current === undefined || current <= 0;
+    const current = Number(fragStock[size]) || 0;
+    return current <= 0;
+  };
+
+  const isFragranceCompletelyOutOfStock = (fragId: string) => {
+    const originalFrag = CATALOG_DATA.find((f) => f.id === fragId);
+    if (!originalFrag || originalFrag.isOutOfStock) return true;
+    if (!stock?.fragrances) return false;
+    const fragStock = stock.fragrances[fragId];
+    if (!fragStock) return true;
+    return Object.values(fragStock).every((qty) => (Number(qty) || 0) <= 0);
   };
 
   // Helper to determine if the vault bundle is out of stock
@@ -170,8 +180,8 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     if (!vaultBundle) return true;
     if (vaultBundle.isOutOfStock) return true;
     if (stock?.bundles) {
-      const bundleStock = stock.bundles["bundle-master-vault"];
-      if (bundleStock === 0) return true;
+      const bundleStock = Number(stock.bundles["bundle-master-vault"]) || 0;
+      if (bundleStock <= 0) return true;
     }
     return false;
   };
@@ -183,22 +193,12 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
       setSelectedDealbreakers([]);
       setIsFiltered(false);
       setAddedIds({});
-      // Initialize default sizes based on CATALOG_DATA availability
+      // Initialize default sizes based on CATALOG_DATA and live stock availability
       const defaultSizes: Record<string, "10ml" | "5ml Normal" | "5ml HQ"> = {};
       QUIZ_FRAGRANCES.forEach((f) => {
-        const fullFrag = CATALOG_DATA.find((x) => x.id === f.id);
-        if (fullFrag) {
-          const disabled = fullFrag.disabledSizes || [];
-          if (!disabled.includes("5ml Normal")) {
-            defaultSizes[f.id] = "5ml Normal";
-          } else if (!disabled.includes("10ml")) {
-            defaultSizes[f.id] = "10ml";
-          } else {
-            defaultSizes[f.id] = "5ml HQ";
-          }
-        } else {
-          defaultSizes[f.id] = "5ml Normal";
-        }
+        const sizes: ("5ml Normal" | "5ml HQ" | "10ml")[] = ["5ml Normal", "5ml HQ", "10ml"];
+        const available = sizes.find((s) => !isOutOfStockCheck(f.id, s));
+        defaultSizes[f.id] = available || "5ml Normal";
       });
       setSelectedSizes(defaultSizes);
     } else {
@@ -207,7 +207,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen]);
+  }, [isOpen, stock]);
 
   if (!isOpen) return null;
 
@@ -220,7 +220,7 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     }
   };
 
-  // Compute survivors (disqualification mechanics)
+  // Compute survivors (disqualification mechanics) and exclude completely out-of-stock perfumes
   const eliminatedIds = Array.from(
     new Set(
       selectedDealbreakers.flatMap(
@@ -229,7 +229,9 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
     )
   );
 
-  const survivors = QUIZ_FRAGRANCES.filter((f) => !eliminatedIds.includes(f.id));
+  const survivors = QUIZ_FRAGRANCES.filter(
+    (f) => !eliminatedIds.includes(f.id) && !isFragranceCompletelyOutOfStock(f.id)
+  );
 
   // Handle action filter submission
   const handleFilter = () => {
@@ -600,8 +602,8 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                                 {/* Size selector */}
                                 <div className="flex gap-1.5">
                                   {(["5ml Normal", "5ml HQ", "10ml"] as const).map((sizeOption) => {
-                                    const isDisabled = disabledSizes.includes(sizeOption);
-                                    const isSelected = currentSize === sizeOption;
+                                    const isDisabled = disabledSizes.includes(sizeOption) || isOutOfStockCheck(surv.id, sizeOption);
+                                    const isSelected = !isDisabled && currentSize === sizeOption;
                                     return (
                                       <button
                                         key={sizeOption}
