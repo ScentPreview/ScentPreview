@@ -19,6 +19,7 @@ interface Order {
   total: number;
   subtotal?: number;
   discount?: number;
+  couponCode?: string;
   name: string;
   email: string;
   address: string;
@@ -203,17 +204,33 @@ async function fetchAllOrdersFromFirestore(): Promise<Order[]> {
     const localOrders = loadOrdersFromDisk();
     const mergedMap = new Map();
     
+    const remoteOrderNumbers = new Set<string>();
     // 1. Add local orders first
     localOrders.forEach(o => {
       if (o && o.orderNumber) {
         mergedMap.set(o.orderNumber, o);
       }
     });
-    
-    // 2. Overwrite/add with Firestore orders (Firestore is the source of truth)
-    orders.forEach(o => {
+
+    // 2. Add in-memory orders
+    ordersDb.forEach(o => {
       if (o && o.orderNumber) {
         mergedMap.set(o.orderNumber, o);
+      }
+    });
+    
+    // 3. Overwrite/add with Firestore orders (preserving deleted or paid status if newer in memory)
+    orders.forEach(o => {
+      if (o && o.orderNumber) {
+        remoteOrderNumbers.add(o.orderNumber);
+        const existing = mergedMap.get(o.orderNumber);
+        if (existing && existing.status === "deleted" && o.status !== "deleted") {
+          mergedMap.set(o.orderNumber, existing);
+        } else if (existing && existing.status === "paid" && o.status === "pending") {
+          mergedMap.set(o.orderNumber, existing);
+        } else {
+          mergedMap.set(o.orderNumber, o);
+        }
       }
     });
     
@@ -226,10 +243,9 @@ async function fetchAllOrdersFromFirestore(): Promise<Order[]> {
       return timeB - timeA;
     });
 
-    // If Firestore is empty, seed it with the current local orders
-    if (orders.length === 0 && finalOrders.length > 0) {
-      console.log(`[Firebase Seeding] Seeding ${finalOrders.length} local orders to Firestore...`);
-      for (const order of finalOrders) {
+    // Ensure any local/in-memory orders not yet in Firestore are persisted to Firestore
+    for (const order of finalOrders) {
+      if (order && order.orderNumber && !remoteOrderNumbers.has(order.orderNumber)) {
         await saveOrderToFirestore(order);
       }
     }
@@ -249,16 +265,16 @@ async function fetchAllOrdersFromFirestore(): Promise<Order[]> {
   }
 }
 
-// Helper to save a single order to Firestore
+// Helper to save a single order to Firestore (stripping any undefined fields so Firestore setDoc never rejects)
 async function saveOrderToFirestore(order: Order) {
   if (!firestoreDb) {
     return;
   }
   try {
-    const dataToSave = {
+    const dataToSave = JSON.parse(JSON.stringify({
       ...order,
-      createdAt: order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt
-    };
+      createdAt: order.createdAt instanceof Date ? order.createdAt.toISOString() : (order.createdAt || new Date().toISOString())
+    }));
     await setDoc(doc(firestoreDb, "orders", order.orderNumber), dataToSave);
     console.log(`[Firebase] Successfully saved order ${order.orderNumber} to Firestore.`);
   } catch (error) {
@@ -337,6 +353,86 @@ async function saveStockToFirestore(stock: StockDB) {
 }
 
 const STOCK_FILE_PATH = path.join(process.cwd(), "stock.json");
+const USED_COUPONS_FILE_PATH = path.join(process.cwd(), "used_coupons.json");
+
+const VALID_COUPONS = new Set([
+  "K7Q9M2X", "PROMO5B8", "V4NP7R", "SAVE2K6J", "D8W3FX", "LUCKY9QM", "Z5T7KN", "SHIP4VQ", "FREE8P2", "SPEED6HX",
+  "B9R4WL", "ENJOY7DK", "X3M5GT", "RUSH2FP", "C6Y8NV", "FAST9JQ", "T2K7RM", "BONUS5WX", "H4P6SL", "DEAL8VZ",
+  "S7B3KQ", "PICK9CX", "W5F2GT", "URBAN6MY", "R8L4PN", "QUICK7AH", "J3V9KW", "LAUNCH2DX", "A6Q5BP", "GRIP7FS",
+  "N9M3VT", "SMOOTH4LK", "E2W8RX", "VIBE5CJ", "L7P4DN", "SPARK9MZ", "G3H6KV", "ZONE8WQ", "Y5T2FP", "BLEND7RJ",
+  "O4N6XM", "MOTION9KL", "C8S3VH", "STYLE2BX", "U6W9RF", "PRIME5GT", "I7D4KQ", "FLICK3NP", "X2V8LM", "CHARGE6AY",
+  "B5H7CW", "CRUISE9PX", "F9M3RL", "ACTIVE7KZ", "J4T6DV", "SWIFT2QX", "P8R5NM", "GLORY4LJ", "K3W9BH", "STORM6FY",
+  "V7G2KX", "TURBO8CP", "S5L9RM", "ALPHA3DW", "T2H6QV", "SONIC7NP", "Z4B8FX", "BLAZE9KJ", "M6E3WL", "QUEST5GY",
+  "D9R4TX", "IGNITE2VZ", "A7C5HK", "TEMPO8QM", "U3F6RX", "VIGOR4NJ", "L5P9BW", "ORBIT7DY", "O8W2KV", "FRAME6CP",
+  "Y4M7FX", "RHYTHM9LZ", "Q6V3NM", "GLOW5BJ", "X2S8KW", "PEAK7AY", "H9D4RV", "SURGE2GX", "J3L6CP", "WAVE8NP",
+  "E5T9QM", "CREST4FZ", "W7B2KL", "NEXUS6XY", "R4H8DP", "LUNAR9AW", "I6G3NV", "BOLT5JK", "C8E9TX", "SOLAR7MZ"
+]);
+
+function loadUsedCouponsFromDisk(): Record<string, string> {
+  try {
+    if (fs.existsSync(USED_COUPONS_FILE_PATH)) {
+      const raw = fs.readFileSync(USED_COUPONS_FILE_PATH, "utf-8").trim();
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          return parsed;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Coupons] Failed to read used_coupons.json:", err);
+  }
+  return {};
+}
+
+function saveUsedCouponsToDisk(used: Record<string, string>) {
+  try {
+    fs.writeFileSync(USED_COUPONS_FILE_PATH, JSON.stringify(used, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[Coupons] Failed to write used_coupons.json:", err);
+  }
+}
+
+async function loadUsedCouponsFromFirestore(): Promise<Record<string, string>> {
+  const localUsed = loadUsedCouponsFromDisk();
+  // Also include any coupon codes from existing non-deleted orders
+  for (const o of ordersDb) {
+    if (o && o.status !== "deleted" && o.couponCode) {
+      const code = String(o.couponCode).trim().toUpperCase();
+      if (code && !localUsed[code]) {
+        localUsed[code] = o.orderNumber;
+      }
+    }
+  }
+  if (!firestoreDb) {
+    return localUsed;
+  }
+  try {
+    const docSnap = await getDoc(doc(firestoreDb, "stock", "used_coupons"));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const remoteCodes = (data && data.codes && typeof data.codes === "object") ? data.codes : {};
+      const merged = { ...localUsed, ...remoteCodes };
+      saveUsedCouponsToDisk(merged);
+      return merged;
+    } else if (Object.keys(localUsed).length > 0) {
+      await setDoc(doc(firestoreDb, "stock", "used_coupons"), { codes: localUsed });
+    }
+  } catch (err) {
+    console.error("[Coupons] Failed to load used coupons from Firestore:", err);
+  }
+  return localUsed;
+}
+
+async function saveUsedCouponsToFirestore(used: Record<string, string>) {
+  saveUsedCouponsToDisk(used);
+  if (!firestoreDb) return;
+  try {
+    await setDoc(doc(firestoreDb, "stock", "used_coupons"), { codes: used });
+  } catch (err) {
+    console.error("[Coupons] Failed to save used coupons to Firestore:", err);
+  }
+}
 
 interface StockDB {
   fragrances: Record<string, Record<string, number>>;
@@ -622,6 +718,12 @@ async function sendNotificationEmail(order: Order) {
           <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 15px; color: #047857;">-₹${order.discount}.00</td>
         </tr>
         ` : ""}
+        ${order.couponCode ? `
+        <tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #047857;">Free Delivery Coupon:</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 14px; color: #047857;">${order.couponCode} (-₹116.00)</td>
+        </tr>
+        ` : ""}
         <tr>
           <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #44403c;">Total Amount Paid:</td>
           <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 16px; color: #059669;">₹${order.total}.00</td>
@@ -716,7 +818,7 @@ async function startServer() {
   // Trust proxy is required for express-rate-limit to properly identify IPs when running behind a reverse proxy (like in AI Studio/Cloud Run)
   app.set("trust proxy", 1);
   
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -925,7 +1027,7 @@ Your evaluation must fit this schema:
   // API Route: Create order (Pending state)
   app.post("/api/orders", async (req, res) => {
     try {
-      const { items, total, subtotal, discount, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
+      const { items, total, subtotal, discount, couponCode, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
 
       if (!orderNumber || !items || !name || !address) {
         return res.status(400).json({ error: "Missing required checkout fields." });
@@ -956,34 +1058,45 @@ Your evaluation must fit this schema:
 
       const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
       const userAgent = (req.headers["user-agent"] as string) || "unknown";
+      const isManualAdminOrder = Boolean(skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
 
-      // Security Check: Block banned IP, Phone, or Email
-      if (isBlacklisted(phone, email, clientIp)) {
+      // Security Check: Block banned IP, Phone, or Email (skip for manual admin orders)
+      if (!isManualAdminOrder && isBlacklisted(phone, email, clientIp)) {
         console.warn(`[Security Alert] Blocked suspicious order submission attempt: Phone=${phone}, Email=${email}, IP=${clientIp}`);
         return res.status(403).json({ error: "Order submission rejected. This device or account has been restricted by security." });
+      }
+
+      const normalizedCoupon = couponCode ? String(couponCode).trim().toUpperCase() : undefined;
+      if (normalizedCoupon && !isManualAdminOrder) {
+        if (!VALID_COUPONS.has(normalizedCoupon)) {
+          return res.status(400).json({ error: "Invalid coupon code." });
+        }
+        const usedCoupons = await loadUsedCouponsFromFirestore();
+        if (usedCoupons[normalizedCoupon] && usedCoupons[normalizedCoupon] !== orderNumber) {
+          return res.status(400).json({ error: "This coupon code has already been used." });
+        }
       }
 
       const newOrder: Order = {
         orderNumber,
         items,
-        total,
-        subtotal: subtotal || undefined,
-        discount: discount || undefined,
+        total: Number(total) || 0,
+        ...(subtotal ? { subtotal: Number(subtotal) } : {}),
+        ...(discount ? { discount: Number(discount) } : {}),
+        ...(normalizedCoupon ? { couponCode: normalizedCoupon } : {}),
         name,
-        email,
+        email: email || "",
         address,
-        phone,
-        state,
-        pincode,
+        phone: phone || "N/A",
+        state: state || "N/A",
+        pincode: pincode || "000000",
         shippingProtection: !!shippingProtection,
-        status: "pending",
+        status: isManualAdminOrder ? "paid" : "pending",
         createdAt: new Date(),
         stockReduced: false,
         ip: clientIp,
         userAgent: userAgent,
       };
-
-      const isManualAdminOrder = Boolean(skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
 
       // Validate stock before creating order unless skipped (manual order)
       if (Array.isArray(items) && !isManualAdminOrder) {
@@ -1027,10 +1140,13 @@ Your evaluation must fit this schema:
         }
       }
 
-      // Reduce the stock of items by the requested quantities unless skipped (manual order)
-      if (Array.isArray(items) && !isManualAdminOrder) {
-        await reduceStockForItems(items);
-        newOrder.stockReduced = true;
+      // Note: Do NOT deduct stock while order is merely "pending" (unpaid).
+      // Stock is deducted only when payment is confirmed in /api/orders/confirm-payment or /api/webhooks/payment.
+
+      if (normalizedCoupon) {
+        const usedCoupons = await loadUsedCouponsFromFirestore();
+        usedCoupons[normalizedCoupon] = orderNumber;
+        await saveUsedCouponsToFirestore(usedCoupons);
       }
 
       ordersDb.push(newOrder);
@@ -1042,6 +1158,34 @@ Your evaluation must fit this schema:
     } catch (error: any) {
       console.error("Error creating order:", error);
       res.status(500).json({ error: "Failed to create order on server." });
+    }
+  });
+
+  // API Route: Get list of already-used coupon codes
+  app.get("/api/coupons/used", async (_req, res) => {
+    try {
+      const used = await loadUsedCouponsFromFirestore();
+      res.json({ usedCoupons: Object.keys(used) });
+    } catch (err) {
+      res.json({ usedCoupons: [] });
+    }
+  });
+
+  // API Route: Validate a single-use coupon code before checkout submission
+  app.post("/api/coupons/validate", async (req, res) => {
+    try {
+      const rawCode = req.body?.code;
+      const code = rawCode ? String(rawCode).trim().toUpperCase() : "";
+      if (!code || !VALID_COUPONS.has(code)) {
+        return res.status(400).json({ valid: false, error: "Invalid coupon code." });
+      }
+      const used = await loadUsedCouponsFromFirestore();
+      if (used[code]) {
+        return res.status(400).json({ valid: false, error: "This coupon code has already been used." });
+      }
+      return res.json({ valid: true, code });
+    } catch (err) {
+      return res.status(500).json({ valid: false, error: "Unable to validate coupon right now." });
     }
   });
 
@@ -1076,8 +1220,9 @@ Your evaluation must fit this schema:
       if (status === "paid") {
         order.status = "paid";
 
-        // Reduce stock if not reduced yet
-        if (!order.stockReduced && Array.isArray(order.items)) {
+        // Reduce stock if not reduced yet (never reduce for manual admin orders)
+        const isManualAdminOrder = Boolean((order as any).skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
+        if (!order.stockReduced && Array.isArray(order.items) && !isManualAdminOrder) {
           await reduceStockForItems(order.items);
           order.stockReduced = true;
         }
@@ -1147,8 +1292,8 @@ Your evaluation must fit this schema:
       // Simulate state transition to 'paid' as would happen via webhook
       order.status = "paid";
 
-      // If stock has not been reduced yet, we reduce it now (except for manual admin orders)
-      const isManualAdminOrder = Boolean(req.body.skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
+      // If stock has not been reduced yet, we reduce it now (never for manual admin orders)
+      const isManualAdminOrder = Boolean(req.body.skipStockReduction) || Boolean((order as any).skipStockReduction) || String(orderNumber).startsWith("SP-ADMIN-");
       if (!order.stockReduced && Array.isArray(order.items) && !isManualAdminOrder) {
         await reduceStockForItems(order.items);
         order.stockReduced = true;
@@ -1398,7 +1543,8 @@ Your evaluation must fit this schema:
   });
 
   // Vite Integration & Static File Serving
-  if (process.env.NODE_ENV !== "production") {
+  const isProduction = process.env.NODE_ENV === "production" || process.env.npm_lifecycle_event === "start";
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
