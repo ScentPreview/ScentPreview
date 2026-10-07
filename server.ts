@@ -1558,8 +1558,26 @@ Your evaluation must fit this schema:
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const serverInstance = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  let retryAttempts = 0;
+  serverInstance.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      if (retryAttempts < 3) {
+        retryAttempts++;
+        console.warn(`[Server Warning] Port ${PORT} is already in use. Retrying attempt ${retryAttempts}/3 in 1 second...`);
+        setTimeout(() => {
+          serverInstance.close();
+          serverInstance.listen(PORT, "0.0.0.0");
+        }, 1000);
+      } else {
+        console.warn(`[Server Warning] Port ${PORT} is in use. Continuing execution (server instance already active).`);
+      }
+    } else {
+      console.error("[Server Error] Unhandled server error:", err);
+    }
   });
 }
 

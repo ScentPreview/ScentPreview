@@ -20,6 +20,11 @@ const ALL_PERFUME_IMAGES = [
 ];
 
 if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (event) => {
+    event.preventDefault();
+    console.warn("Caught global unhandled promise rejection:", event.reason);
+  });
+
   ALL_PERFUME_IMAGES.forEach((src) => {
     const img = new Image();
     img.src = src;
