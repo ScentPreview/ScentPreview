@@ -1,0 +1,25 @@
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-News
+Allow: /
+
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: *
+Allow: /
+Disallow: /api/admin/
+
+Host: https://scentpreview.onrender.com
+Sitemap: https://scentpreview.onrender.com/sitemap.xml

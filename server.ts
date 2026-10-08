@@ -456,6 +456,7 @@ const DEFAULT_STOCK: StockDB = {
   },
   bundles: {
     "spotlight-arabian": 6,
+    "bundle-gifting-vault": 10,
     "bundle-day-night": 0,
     "bundle-marine-core": 0,
     "bundle-rare-collector": 0,
@@ -526,6 +527,7 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
   ];
 
   const bundles = [
+    { id: "bundle-gifting-vault", names: ["giftingvault", "ultimatehighstockgiftingvault", "giftingbundle", "vault"] },
     { id: "spotlight-arabian", names: ["arabianexotictreasuresduo", "spotlightarabian", "arabianexotic", "exotictreasures"] },
     { id: "bundle-day-night", names: ["thedaytonightsignatureduo", "bundledaynight", "daytonight"] },
     { id: "bundle-marine-core", names: ["thehypercleanmarinecorekit", "bundlemarinecore", "marinecore"] },
@@ -565,6 +567,8 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
 
 function getBundleConstituents(bundleId: string): string[] {
   switch (bundleId) {
+    case "bundle-gifting-vault":
+      return ["zara-rich-warm-addictive", "lattafa-khamrah", "givenchy-gentleman"];
     case "spotlight-arabian":
       return ["lattafa-khamrah", "la-uno-qaswa"];
     case "bundle-day-night":
@@ -828,9 +832,55 @@ async function startServer() {
 
 
 
-  // Health check routes for Cloud Run deployment health checks
+  // Health check routes for Cloud Run & Render deployment health checks
   app.get(["/api/health", "/healthz", "/health"], (req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+    res.status(200).json({ status: "ok", service: "scentpreview.onrender.com", timestamp: new Date().toISOString() });
+  });
+
+  // Unblock Googlebot & Search Crawlers at HTTP Header level + Cache static images for maximum PageSpeed
+  app.use((req, res, next) => {
+    if (!req.path.startsWith("/api/admin")) {
+      res.setHeader("X-Robots-Tag", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+    }
+    if (req.path.startsWith("/images/") || req.path.startsWith("/assets/")) {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
+    next();
+  });
+
+  // Explicit /robots.txt route to guarantee Googlebot is never blocked
+  app.get("/robots.txt", (req, res) => {
+    res.type("text/plain; charset=utf-8");
+    const robotsPath = path.join(process.cwd(), "public", "robots.txt");
+    if (fs.existsSync(robotsPath)) {
+      return res.send(fs.readFileSync(robotsPath, "utf-8"));
+    }
+    res.send(
+      "User-agent: Googlebot\nAllow: /\n\nUser-agent: *\nAllow: /\n\nSitemap: https://scentpreview.onrender.com/sitemap.xml\n"
+    );
+  });
+
+  // Explicit /sitemap.xml route for Google Search Console indexing
+  app.get("/sitemap.xml", (req, res) => {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    const sitemapPath = path.join(process.cwd(), "public", "sitemap.xml");
+    if (fs.existsSync(sitemapPath)) {
+      return res.send(fs.readFileSync(sitemapPath, "utf-8"));
+    }
+    res.status(404).end();
+  });
+
+  // SEO & Google Search Console verification status endpoint
+  app.get("/api/seo/status", (req, res) => {
+    res.json({
+      domain: "https://scentpreview.onrender.com",
+      sitemapUrl: "https://scentpreview.onrender.com/sitemap.xml",
+      robotsUrl: "https://scentpreview.onrender.com/robots.txt",
+      googlebotAllowed: true,
+      primaryAuthorEntity: "Gephel Chingtham",
+      canonicalUrl: "https://scentpreview.onrender.com/",
+      status: "ready_for_google_search_console"
+    });
   });
 
   // Non-blocking load of initial orders and stock from Firestore on startup

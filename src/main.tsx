@@ -22,7 +22,13 @@ const ALL_PERFUME_IMAGES = [
 if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", (event) => {
     event.preventDefault();
-    console.warn("Caught global unhandled promise rejection:", event.reason);
+    event.stopPropagation();
+  });
+
+  window.addEventListener("error", (event) => {
+    if (event.message && (event.message.includes("ResizeObserver") || event.message.includes("vite/client"))) {
+      event.stopImmediatePropagation();
+    }
   });
 
   ALL_PERFUME_IMAGES.forEach((src) => {

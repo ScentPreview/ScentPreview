@@ -78,14 +78,13 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
         >
           <img 
             src={fragrance.image} 
-            alt={fragrance.name} 
+            alt={`${fragrance.name} (${fragrance.brand}) Perfume Decant – ScentPreview by Gephel Chingtham`} 
             width="250"
             height="250"
             className="h-full w-full object-contain"
             referrerPolicy="no-referrer"
-            loading="eager"
-            decoding="sync"
-            fetchPriority="high"
+            loading={fragrance.id === "givenchy-gentleman" ? "eager" : "lazy"}
+            decoding="async"
           />
         </div>
       )}

@@ -2818,6 +2818,17 @@ export default function App() {
               >
                 Bundles
               </button>
+              <button 
+                onClick={() => {
+                  setSelectedDetailFragrance(null);
+                  setTimeout(() => {
+                    document.getElementById("founder-gephel-chingtham")?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
+                }} 
+                className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
+              >
+                Founder
+              </button>
               <a 
                 href="https://velyx-waitlist.vercel.app" 
                 target="_blank" 
@@ -3722,24 +3733,131 @@ export default function App() {
         </>
       )}
 
+      {/* Founder & Author Bio Section — Gephel Chingtham (SEO & Entity Authority) */}
+      <section
+        id="founder-gephel-chingtham"
+        itemScope
+        itemType="https://schema.org/Person"
+        aria-labelledby="founder-heading"
+        className="relative z-10 bg-[#F4F4F2] border-t border-black/10 py-16 md:py-24 px-5 md:px-12 scroll-mt-16"
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="border-b border-black/10 pb-5 mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600 mb-2">
+                <span>Founder &amp; Author Dossier</span>
+                <span aria-hidden="true">·</span>
+                <span itemProp="jobTitle">Chief Olfactory Architect</span>
+                <span aria-hidden="true">·</span>
+                <span>India Edition</span>
+              </div>
+              <h2
+                id="founder-heading"
+                itemProp="name"
+                className="text-3xl md:text-4xl font-serif text-black tracking-tight"
+              >
+                Gephel Chingtham
+              </h2>
+            </div>
+            <link itemProp="url" href="https://scentpreview.onrender.com/#founder-gephel-chingtham" />
+            <p className="text-xs font-mono text-neutral-600 uppercase tracking-widest">
+              ScentPreview (SP 0.2) &amp; VELYX Olfactory Laboratories
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-start">
+            {/* Primary Author Bio Narrative */}
+            <article className="lg:col-span-7 space-y-4 text-sm font-sans text-neutral-800 leading-relaxed bg-white border border-black/10 p-6 sm:p-8">
+              <div className="flex items-center gap-2 text-[11px] font-mono text-neutral-500 uppercase tracking-wider pb-3 border-b border-black/5">
+                <span>Authored by</span>
+                <strong className="text-black" rel="author">Gephel Chingtham</strong>
+                <span aria-hidden="true">·</span>
+                <span>Verified Entity Profile</span>
+              </div>
+              <p itemProp="description" className="text-sm sm:text-base text-black font-medium leading-relaxed">
+                <strong>Gephel Chingtham</strong> is the founder, lead olfactory curator, and principal author behind{" "}
+                <a href="https://scentpreview.onrender.com" className="underline underline-offset-4 hover:text-neutral-600">
+                  ScentPreview
+                </a>{" "}
+                and the upcoming <strong>VELYX</strong> fragrance house. Operating at the intersection of sterile fragrance extraction and algorithmic sensory profiling, Gephel Chingtham established ScentPreview to make archive-grade designer and niche perfumery accessible across India in precision-measured 5ml and 10ml glass decants.
+              </p>
+              <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                Every composition featured in the ScentPreview Kinetic Catalog—from Givenchy Gentleman Reserve and Versace Crystal Noir to Lattafa Khamrah and Calvin Klein CK2—is personally evaluated, stability-tested, and cataloged by Gephel Chingtham. His proprietary four-stage sensory diagnostic suite (The Scent Anti-Quiz, Lifestyle Aesthetic Grid, Chemical Chords &amp; Notes, and The Ultimate Scent Battle) decodes individual skin chemistry and olfactory dealbreakers before a patron commits to a full bottle.
+              </p>
+              <div className="pt-4 border-t border-black/5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-mono text-neutral-600">
+                <span>Organization: <strong itemProp="worksFor" className="text-black">ScentPreview</strong></span>
+                <span aria-hidden="true">·</span>
+                <span>Canonical Domain: <strong className="text-black">scentpreview.onrender.com</strong></span>
+                <span aria-hidden="true">·</span>
+                <a
+                  href="/sitemap.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-black underline underline-offset-4 hover:text-neutral-600"
+                >
+                  XML Sitemap
+                </a>
+              </div>
+            </article>
+
+            {/* Industry Research, Press Reference & Citation Block */}
+            <aside className="lg:col-span-5 space-y-4">
+              <div className="bg-white border border-black/10 p-6 sm:p-7 space-y-4">
+                <div className="flex items-center justify-between border-b border-black/5 pb-3">
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-black font-bold">
+                    Industry Context &amp; Press Reference
+                  </span>
+                  <span className="text-[10px] font-mono text-neutral-500">
+                     Olfactory Market
+                  </span>
+                </div>
+                <p className="text-xs font-sans text-neutral-700 leading-relaxed">
+                  Aligned with global luxury fragrance market shifts documented by{" "}
+                  <a
+                    href="https://www.forbes.com/lifestyle/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-black underline underline-offset-4 hover:text-neutral-600 inline-flex items-center gap-1"
+                  >
+                    <span>Forbes Lifestyle &amp; Luxury Fragrance Coverage</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  , micro-batch decanting and personalized scent wardrobing represent the fastest-growing segment among modern fragrance collectors.
+                </p>
+                <div className="bg-[#F7F7F5] border border-black/10 p-4 space-y-2">
+                  <span className="block text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+                    Press &amp; Backlink Citation Snippet (Gephel Chingtham)
+                  </span>
+                  <code className="block text-[10px] font-mono text-black break-all select-all bg-white p-2.5 border border-black/5">
+                    &lt;a href="https://scentpreview.onrender.com/#founder-gephel-chingtham" rel="dofollow"&gt;Gephel Chingtham — Founder of ScentPreview Luxury Perfume Decants&lt;/a&gt;
+                  </code>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
       {/* Modern Editorial Footer */}
-      <footer className="bg-[#FFFFFF] text-black  py-16 px-6 md:px-12 border-t border-black/5">
+      <footer className="bg-[#FFFFFF] text-black py-16 px-6 md:px-12 border-t border-black/5 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
-            <span className="text-xl font-sans font-bold text-black font-bold">
-              SP 0.2
+            <span className="text-xl font-sans font-bold text-black">
+              SP 0.2 — ScentPreview
             </span>
             <span className="block text-[10px] font-mono text-black mt-2 uppercase tracking-widest">
-              © 2026 ScentPreview. All Rights Reserved.
+              © 2026 ScentPreview by Gephel Chingtham. All Rights Reserved.
             </span>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
             <div className="flex flex-wrap justify-center sm:justify-end gap-4 text-[10px] font-sans tracking-[0.15em] text-black uppercase">
+              <a href="#founder-gephel-chingtham" className="hover:text-amber-700 transition-colors cursor-pointer">Gephel Chingtham</a>
               <button onClick={() => setPolicyModal("terms")} className="hover:text-amber-700 transition-colors cursor-pointer">Terms of Use</button>
               <button onClick={() => setPolicyModal("privacy")} className="hover:text-amber-700 transition-colors cursor-pointer">Privacy Policy</button>
               <button onClick={() => setPolicyModal("shipping")} className="hover:text-amber-700 transition-colors cursor-pointer">Shipping Policy</button>
-              <button onClick={() => setPolicyModal("returns")} className="hover:text-amber-700 transition-colors cursor-pointer">Returns & Refunds</button>
+              <button onClick={() => setPolicyModal("returns")} className="hover:text-amber-700 transition-colors cursor-pointer">Returns &amp; Refunds</button>
+              <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 transition-colors cursor-pointer">Sitemap</a>
             </div>
             <div className="flex items-center gap-4">
                 <button 
