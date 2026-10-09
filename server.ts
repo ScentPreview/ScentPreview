@@ -456,7 +456,6 @@ const DEFAULT_STOCK: StockDB = {
   },
   bundles: {
     "spotlight-arabian": 6,
-    "bundle-gifting-vault": 10,
     "bundle-day-night": 0,
     "bundle-marine-core": 0,
     "bundle-rare-collector": 0,
@@ -527,7 +526,6 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
   ];
 
   const bundles = [
-    { id: "bundle-gifting-vault", names: ["giftingvault", "ultimatehighstockgiftingvault", "giftingbundle", "vault"] },
     { id: "spotlight-arabian", names: ["arabianexotictreasuresduo", "spotlightarabian", "arabianexotic", "exotictreasures"] },
     { id: "bundle-day-night", names: ["thedaytonightsignatureduo", "bundledaynight", "daytonight"] },
     { id: "bundle-marine-core", names: ["thehypercleanmarinecorekit", "bundlemarinecore", "marinecore"] },
@@ -567,8 +565,6 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
 
 function getBundleConstituents(bundleId: string): string[] {
   switch (bundleId) {
-    case "bundle-gifting-vault":
-      return ["zara-rich-warm-addictive", "lattafa-khamrah", "givenchy-gentleman"];
     case "spotlight-arabian":
       return ["lattafa-khamrah", "la-uno-qaswa"];
     case "bundle-day-night":

@@ -315,24 +315,11 @@ export const CATALOG_DATA: Fragrance[] = [
 
 export const BUNDLE_DATA: CapsuleBundle[] = [
   {
-    id: "bundle-gifting-vault",
-    name: "The Ultimate High-Stock Gifting Vault",
-    contains: "Zara Rich Warm Addictive + Lattafa Khamrah + Givenchy Gentleman",
-    isOutOfStock: false,
-    isSpotlight: true,
-    fixedPrice: 1499,
-    prices: {
-      "10ml": 2200,
-      "5ml Normal": 1499,
-      "5ml HQ": 1699
-    }
-  },
-  {
     id: "spotlight-arabian",
     name: "Arabian Exotic Treasures Duo",
     contains: "Lattafa Khamrah + La Uno Qaswa",
     isOutOfStock: false,
-    isSpotlight: false,
+    isSpotlight: true,
     fixedPrice: 814,
     prices: {
       "10ml": 1196,
