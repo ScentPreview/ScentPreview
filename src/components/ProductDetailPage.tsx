@@ -300,35 +300,6 @@ export default function ProductDetailPage({
                 <p className="text-[11px] font-sans text-neutral-500 mt-1">
                   Inclusive of sterile packaging & fine-mist atomizer
                 </p>
-
-                {/* Tier Discount Callout - Sleek & Editorial */}
-                {totalPrice >= 2500 ? (
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono border-t border-black/5 pt-2 text-neutral-800">
-                    <span className="text-neutral-500">Tier Privilege:</span>
-                    <span className="font-semibold text-neutral-900 bg-black/5 px-2 py-0.5 rounded text-[10px]">
-                      25% OFF Unlocked
-                    </span>
-                  </div>
-                ) : totalPrice >= 1500 ? (
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono border-t border-black/5 pt-2 text-neutral-800">
-                    <span className="text-neutral-500">Tier Privilege:</span>
-                    <span className="font-semibold text-neutral-900 bg-black/5 px-2 py-0.5 rounded text-[10px]">
-                      20% OFF Unlocked
-                    </span>
-                  </div>
-                ) : totalPrice >= 999 ? (
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono border-t border-black/5 pt-2 text-neutral-800">
-                    <span className="text-neutral-500">Tier Privilege:</span>
-                    <span className="font-semibold text-neutral-900 bg-black/5 px-2 py-0.5 rounded text-[10px]">
-                      10% OFF Unlocked
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mt-2.5 flex items-center justify-between text-[10.5px] font-mono text-neutral-500 border-t border-black/5 pt-2">
-                    <span>Next Tier:</span>
-                    <span>+₹{999 - totalPrice} for 10% OFF</span>
-                  </div>
-                )}
               </div>
 
               {/* Size Selector (Smaller & Sleeker) */}

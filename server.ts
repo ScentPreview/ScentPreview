@@ -316,6 +316,21 @@ async function loadStockFromFirestore(): Promise<StockDB> {
         }
       }
 
+      // Ensure all bundles from DEFAULT_STOCK exist in the stock record without overwriting user adjustments
+      if (stock) {
+        if (!stock.bundles) {
+          stock.bundles = { ...DEFAULT_STOCK.bundles };
+          needsSave = true;
+        } else {
+          for (const [bundleId, defaultCount] of Object.entries(DEFAULT_STOCK.bundles)) {
+            if (stock.bundles[bundleId] === undefined) {
+              stock.bundles[bundleId] = defaultCount;
+              needsSave = true;
+            }
+          }
+        }
+      }
+
       if (needsSave) {
         await saveStockToFirestore(stock);
       }
@@ -455,6 +470,8 @@ const DEFAULT_STOCK: StockDB = {
     "ck2": { "10ml": 0, "5ml Normal": 2, "5ml HQ": 0 }
   },
   bundles: {
+    "bundle-winter-layers-trio": 6,
+    "bundle-winter-warmth-trio": 5,
     "spotlight-arabian": 6,
     "bundle-day-night": 0,
     "bundle-marine-core": 0,
@@ -526,6 +543,8 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
   ];
 
   const bundles = [
+    { id: "bundle-winter-layers-trio", names: ["winterlayerstrio", "bundlewinterlayerstrio", "mensbundlewinterlayerstrio", "winterlayers"] },
+    { id: "bundle-winter-warmth-trio", names: ["winterwarmthtrio", "bundlewinterwarmthtrio", "womensbundlewinterwarmthtrio", "winterwarmth"] },
     { id: "spotlight-arabian", names: ["arabianexotictreasuresduo", "spotlightarabian", "arabianexotic", "exotictreasures"] },
     { id: "bundle-day-night", names: ["thedaytonightsignatureduo", "bundledaynight", "daytonight"] },
     { id: "bundle-marine-core", names: ["thehypercleanmarinecorekit", "bundlemarinecore", "marinecore"] },
@@ -565,6 +584,10 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
 
 function getBundleConstituents(bundleId: string): string[] {
   switch (bundleId) {
+    case "bundle-winter-layers-trio":
+      return ["la-uno-qaswa", "givenchy-gentleman", "ck-one"];
+    case "bundle-winter-warmth-trio":
+      return ["zara-rich-warm-addictive", "lattafa-khamrah", "zara-intense-dark"];
     case "spotlight-arabian":
       return ["lattafa-khamrah", "la-uno-qaswa"];
     case "bundle-day-night":
@@ -712,12 +735,6 @@ async function sendNotificationEmail(order: Order) {
             ${shippingProtectionText}
           </td>
         </tr>
-        ${order.discount && order.discount > 0 ? `
-        <tr>
-          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #047857;">Tier Discount Applied:</td>
-          <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; font-size: 15px; color: #047857;">-₹${order.discount}.00</td>
-        </tr>
-        ` : ""}
         ${order.couponCode ? `
         <tr>
           <td style="padding: 10px 8px; border-bottom: 1px solid #e7e5e4; font-weight: bold; color: #047857;">Free Delivery Coupon:</td>
@@ -743,7 +760,7 @@ Order Number: ${order.orderNumber}
 Perfume Variant: ${itemsList}
 Customer Name: ${order.name}
 Customer Address: ${order.address}, ${order.state || ""} ${order.pincode || ""}
-Shipping Protection: ${shippingProtectionText}${order.discount && order.discount > 0 ? `\nTier Discount Applied: -₹${order.discount}.00` : ""}
+Shipping Protection: ${shippingProtectionText}
 Total Amount Paid: ₹${order.total}.00
   `;
 
@@ -1138,7 +1155,6 @@ Your evaluation must fit this schema:
         items,
         total: Number(total) || 0,
         ...(subtotal ? { subtotal: Number(subtotal) } : {}),
-        ...(discount ? { discount: Number(discount) } : {}),
         ...(normalizedCoupon ? { couponCode: normalizedCoupon } : {}),
         name,
         email: email || "",
@@ -1601,11 +1617,26 @@ Your evaluation must fit this schema:
   // Vite Integration & Static File Serving
   const isProduction = process.env.NODE_ENV === "production" || process.env.npm_lifecycle_event === "start";
   if (!isProduction) {
-    const vite = await createViteServer({
+    let viteMiddleware: any = null;
+    const vitePromise = createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    }).then((vite) => {
+      viteMiddleware = vite.middlewares;
+      return vite;
+    }).catch((err) => {
+      console.error("[Vite Error] Failed to initialize Vite middleware:", err);
     });
-    app.use(vite.middlewares);
+
+    app.use(async (req, res, next) => {
+      if (!viteMiddleware) {
+        await vitePromise;
+      }
+      if (viteMiddleware) {
+        return viteMiddleware(req, res, next);
+      }
+      next();
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));

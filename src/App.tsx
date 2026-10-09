@@ -62,6 +62,8 @@ const DEFAULT_FALLBACK_STOCK = {
     "versace-crystal-noir": { "5ml Normal": 1, "5ml HQ": 0, "10ml": 0 }
   },
   bundles: {
+    "bundle-winter-layers-trio": 6,
+    "bundle-winter-warmth-trio": 5,
     "spotlight-arabian": 6,
     "bundle-cozy-winter": 0,
     "bundle-marine-core": 0,
@@ -188,80 +190,6 @@ const getBundleAesthetic = (id: string) => {
   }
 };
 
-const getBundleOriginalPrice = (id: string): string => {
-  switch (id) {
-    case "spotlight-arabian": return "956";
-    case "bundle-day-night": return "1,040";
-    case "bundle-marine-core": return "945";
-    case "bundle-rare-collector": return "1,212";
-    case "bundle-office-rotation": return "1,779";
-    case "bundle-cozy-winter": return "1,487";
-    case "bundle-master-vault": return "1,470";
-    case "bundle-zara-classics": return "1,957";
-    default: return "0";
-  }
-};
-
-const getScentOriginalPrice = (id: string, size: "10ml" | "5ml Normal" | "5ml HQ"): string => {
-  const data: Record<string, Record<string, string>> = {
-    "givenchy-gentleman": {
-      "10ml": "2,187",
-      "5ml Normal": "1,237",
-      "5ml HQ": "1,310"
-    },
-    "ck2": {
-      "10ml": "1,187",
-      "5ml Normal": "737",
-      "5ml HQ": "810"
-    },
-    "ck-one": {
-      "10ml": "853",
-      "5ml Normal": "542",
-      "5ml HQ": "615"
-    },
-    "lattafa-khamrah": {
-      "10ml": "820",
-      "5ml Normal": "553",
-      "5ml HQ": "627"
-    },
-    "zara-sunrise": {
-      "10ml": "753",
-      "5ml Normal": "520",
-      "5ml HQ": "593"
-    },
-    "zara-for-him-black": {
-      "10ml": "753",
-      "5ml Normal": "520",
-      "5ml HQ": "593"
-    },
-    "zara-intense-dark": {
-      "10ml": "665",
-      "5ml Normal": "475",
-      "5ml HQ": "550"
-    },
-    "zara-rich-warm-addictive": {
-      "10ml": "708",
-      "5ml Normal": "492",
-      "5ml HQ": "567"
-    },
-    "zara-seoul-winter": {
-      "10ml": "598",
-      "5ml Normal": "442",
-      "5ml HQ": "517"
-    },
-    "zara-seoul": {
-      "10ml": "582",
-      "5ml Normal": "425",
-      "5ml HQ": "498"
-    },
-    "la-uno-qaswa": {
-      "10ml": "520",
-      "5ml Normal": "403",
-      "5ml HQ": "477"
-    }
-  };
-  return data[id]?.[size] || "0";
-};
 
 
 // --- ROBUST ERROR HANDLING WRAPPER & CONSOLE PATCH ---
@@ -649,13 +577,6 @@ export default function App() {
     }
   };
 
-  const [activeTierBannerIndex, setActiveTierBannerIndex] = useState(0);
-  useEffect(() => {
-    const bannerTimer = setInterval(() => {
-      setActiveTierBannerIndex((prev) => (prev + 1) % 3);
-    }, 3200);
-    return () => clearInterval(bannerTimer);
-  }, []);
 
   useEffect(() => {
     fetchStock();
@@ -2058,6 +1979,8 @@ export default function App() {
       // Get constituents
       let constituents: string[] = [];
       switch (id) {
+        case "bundle-winter-layers-trio": constituents = ["la-uno-qaswa", "givenchy-gentleman", "ck-one"]; break;
+        case "bundle-winter-warmth-trio": constituents = ["zara-rich-warm-addictive", "lattafa-khamrah", "zara-intense-dark"]; break;
         case "spotlight-arabian": constituents = ["lattafa-khamrah", "la-uno-qaswa"]; break;
         case "bundle-day-night": constituents = ["zara-sunrise", "zara-for-him-black"]; break;
         case "bundle-marine-core": constituents = ["ck-one", "la-uno-qaswa"]; break;
@@ -2327,36 +2250,12 @@ export default function App() {
     setIsCheckoutOpen(true);
   };
 
-  const calculateTierDiscount = (subtotal: number): number => {
-    if (subtotal >= 2500) return 625;
-    if (subtotal >= 1500) return 300;
-    if (subtotal >= 999) return 100;
-    return 0;
-  };
-
-  const getTierPercentage = (subtotal: number): string | null => {
-    if (subtotal >= 2500) return "25%";
-    if (subtotal >= 1500) return "20%";
-    if (subtotal >= 999) return "10%";
-    return null;
-  };
-
-  const getNextDiscountTier = (subtotal: number): { nextGoal: number; discount: number; percent: string; amountNeeded: number } | null => {
-    if (subtotal < 999) {
-      return { nextGoal: 999, discount: 100, percent: "10%", amountNeeded: 999 - subtotal };
-    }
-    if (subtotal < 1500) {
-      return { nextGoal: 1500, discount: 300, percent: "20%", amountNeeded: 1500 - subtotal };
-    }
-    if (subtotal < 2500) {
-      return { nextGoal: 2500, discount: 625, percent: "25%", amountNeeded: 2500 - subtotal };
-    }
-    return null;
-  };
+  const calculateTierDiscount = (_subtotal: number): number => 0;
+  const getTierPercentage = (_subtotal: number): string | null => null;
+  const getNextDiscountTier = (_subtotal: number): { nextGoal: number; discount: number; percent: string; amountNeeded: number } | null => null;
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const activeDiscount = calculateTierDiscount(cartTotal);
-  const nextTier = getNextDiscountTier(cartTotal);
+  const activeDiscount = 0;
 
   // Find the active selected product for "Buy Now"
   const selectedProduct = selectionType === "fragrance" 
@@ -2425,14 +2324,12 @@ export default function App() {
       size: item.size,
       quantity: item.quantity
     }));
-    const discountAmount = calculateTierDiscount(cartTotal);
-    const total = Math.max(0, cartTotal - discountAmount) + effectiveDeliveryFee + (isShippingProtectionEnabled ? 150 : 0);
+    const total = cartTotal + effectiveDeliveryFee + (isShippingProtectionEnabled ? 150 : 0);
 
     const payload = {
       items,
       total,
       subtotal: cartTotal,
-      discount: discountAmount,
       couponCode: activeCoupon || undefined,
       orderNumber: orderNum,
       name: checkoutName,
@@ -2614,16 +2511,10 @@ export default function App() {
                       const itemsSummary = paymentDetails.items
                         .map((item: any) => `- ${item.name} (${item.size}) x${item.quantity}`)
                         .join("\n");
-                      const discountPercent = paymentDetails.subtotal
-                        ? getTierPercentage(paymentDetails.subtotal)
-                        : (paymentDetails.total >= 2500 ? "25%" : paymentDetails.total >= 1500 ? "20%" : paymentDetails.total >= 999 ? "10%" : "");
-                      const discountLine = paymentDetails.discount && paymentDetails.discount > 0
-                        ? `\n*Tier Discount (${discountPercent || "Tier"} OFF):* Applied`
-                        : "";
                       const couponLine = paymentDetails.couponCode
                         ? `\n*Coupon (${paymentDetails.couponCode}):* Free Delivery Applied`
                         : "";
-                      const message = `Hello ScentPreview Support!\n\nI would like to complete payment for my order.\n\n*Order Number:* ${orderNum}\n*Customer:* ${paymentDetails.name}\n*Phone:* ${paymentDetails.phone}\n*Address:* ${paymentDetails.address}, ${paymentDetails.state || ""} - ${paymentDetails.pincode || ""}\n\n*Items Ordered*:\n${itemsSummary}${discountLine}${couponLine}\n\n*Total Amount:* ₹${paymentDetails.total}.00\n\nPlease verify my payment and begin extraction. Thank you!`;
+                      const message = `Hello ScentPreview Support!\n\nI would like to complete payment for my order.\n\n*Order Number:* ${orderNum}\n*Customer:* ${paymentDetails.name}\n*Phone:* ${paymentDetails.phone}\n*Address:* ${paymentDetails.address}, ${paymentDetails.state || ""} - ${paymentDetails.pincode || ""}\n\n*Items Ordered*:\n${itemsSummary}${couponLine}\n\n*Total Amount:* ₹${paymentDetails.total}.00\n\nPlease verify my payment and begin extraction. Thank you!`;
 
                       const whatsappUrl = `https://wa.me/919366110996?text=${encodeURIComponent(message)}`;
                       window.open(whatsappUrl, "_blank");
@@ -2644,16 +2535,6 @@ export default function App() {
                     <span>×{item.quantity}</span>
                   </div>
                 ))}
-                {paymentDetails.discount && paymentDetails.discount > 0 && (
-                  <div className="flex justify-between items-center text-emerald-700">
-                    <span>Tier Discount:</span>
-                    <span>
-                      {paymentDetails.subtotal
-                        ? `${getTierPercentage(paymentDetails.subtotal)} OFF`
-                        : (paymentDetails.total >= 2500 ? "25% OFF" : paymentDetails.total >= 1500 ? "20% OFF" : "10% OFF")}
-                    </span>
-                  </div>
-                )}
                 <div className="flex justify-between items-center text-stone-600 pt-2 border-t border-stone-100">
                   <span>Delivery:</span>
                   <span>
@@ -2818,34 +2699,6 @@ export default function App() {
 
       {/* Modern High-End Sticky Header Navigation */}
       <header className="sticky top-0 bg-[#F4F4F2]/95 backdrop-blur-md z-50 border-b border-black/10 shadow-xs">
-        {/* Tiered Discount Announcement Bar */}
-        <div className="bg-[#111111] text-[#E8E8E6] py-2 px-3 sm:px-6 text-center text-[10px] sm:text-[11px] font-mono tracking-wider flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b border-white/10">
-          <span className="text-neutral-400 font-sans uppercase text-[10px] tracking-widest shrink-0">
-            Complimentary Tier Privileges:
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px]">
-            {[
-              { threshold: "₹999+", discount: "10% OFF" },
-              { threshold: "₹1,500+", discount: "20% OFF" },
-              { threshold: "₹2,500+", discount: "25% OFF" }
-            ].map((tier, idx) => {
-              const isActive = activeTierBannerIndex === idx;
-              return (
-                <div 
-                  key={tier.threshold}
-                  className={`flex items-center gap-1.5 transition-all duration-500 ${
-                    isActive ? "text-white scale-105 font-bold underline decoration-white/60 underline-offset-4" : "text-neutral-400 opacity-60"
-                  }`}
-                >
-                  <span>{tier.threshold}</span>
-                  <span className={isActive ? "text-white" : "text-neutral-300"}>{tier.discount}</span>
-                  {idx < 2 && <span className="text-neutral-600 ml-1.5">/</span>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <nav className="w-full flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto gap-2">
           {/* Brand Identity & Primary Links */}
           <div className="flex items-center gap-4 sm:gap-8 min-w-0 shrink">
@@ -2860,6 +2713,17 @@ export default function App() {
             </span>
             <div className="hidden md:flex items-center gap-6 pl-6 border-l border-black/10 shrink-0">
               <button 
+                onClick={() => {
+                  setSelectedDetailFragrance(null);
+                  setTimeout(() => {
+                    document.getElementById("gifting-bundles")?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
+                }} 
+                className="text-[11px] font-sans tracking-[0.15em] text-black hover:opacity-70 transition-opacity uppercase font-bold cursor-pointer"
+              >
+                Gifting Trios
+              </button>
+              <button 
                 onClick={scrollToCatalog} 
                 className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
               >
@@ -2867,7 +2731,10 @@ export default function App() {
               </button>
               <button 
                 onClick={() => {
-                  document.getElementById("bundle-capsules")?.scrollIntoView({ behavior: "smooth" });
+                  setSelectedDetailFragrance(null);
+                  setTimeout(() => {
+                    document.getElementById("bundle-capsules")?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
                 }} 
                 className="text-[11px] font-sans tracking-[0.15em] text-neutral-800 hover:text-black transition-colors uppercase font-medium cursor-pointer"
               >
@@ -2968,8 +2835,19 @@ export default function App() {
                   </p>
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <button
-                      onClick={scrollToCatalog}
+                      onClick={() => {
+                        setSelectedDetailFragrance(null);
+                        setTimeout(() => {
+                          document.getElementById("gifting-bundles")?.scrollIntoView({ behavior: "smooth" });
+                        }, 50);
+                      }}
                       className="border border-white/20 bg-white text-black shadow-md rounded-full px-7 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase hover:bg-neutral-200 transition-all cursor-pointer font-bold"
+                    >
+                      Shop Gifting Trios
+                    </button>
+                    <button
+                      onClick={scrollToCatalog}
+                      className="border border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-black/60 hover:border-white/50 transition-all rounded-full px-6 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase cursor-pointer font-bold shadow-sm"
                     >
                       Explore Catalog
                     </button>
@@ -3213,21 +3091,6 @@ export default function App() {
                         <span className="text-black font-sans tracking-[0.15em] uppercase tracking-wider">Subtotal:</span>
                         <span className="font-mono text-black text-sm font-bold">₹{buyItemPrice * buyQuantity}.00</span>
                       </div>
-
-                      {/* Tier Discount Callout if active */}
-                      {calculateTierDiscount(buyItemPrice * buyQuantity) > 0 ? (
-                        <div className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs font-mono">
-                          <span className="text-neutral-700">Tier Privilege ({getTierPercentage(buyItemPrice * buyQuantity)} OFF):</span>
-                          <span className="text-neutral-900 font-semibold">{getTierPercentage(buyItemPrice * buyQuantity)} Applied</span>
-                        </div>
-                      ) : (
-                        getNextDiscountTier(buyItemPrice * buyQuantity) && (
-                          <div className="text-[11px] font-mono text-neutral-500 flex items-center justify-between py-1">
-                            <span>Next Tier Privilege:</span>
-                            <span>+₹{getNextDiscountTier(buyItemPrice * buyQuantity)?.amountNeeded}.00 for {getNextDiscountTier(buyItemPrice * buyQuantity)?.percent} OFF</span>
-                          </div>
-                        )
-                      )}
                       
                       {(() => {
                         const maxStock = selectedProduct ? getProductStock(selectedProduct.id, selectedBuySize) : 0;
@@ -3316,12 +3179,6 @@ export default function App() {
                             <span>Subtotal</span>
                             <span>₹{buyItemPrice * buyQuantity}.00</span>
                           </div>
-                          {calculateTierDiscount(buyItemPrice * buyQuantity) > 0 && (
-                            <div className="flex justify-between text-xs font-mono text-emerald-700">
-                              <span>Tier Discount</span>
-                              <span>{getTierPercentage(buyItemPrice * buyQuantity)} OFF</span>
-                            </div>
-                          )}
                           <div className="flex justify-between text-xs font-mono text-stone-700">
                             <span>Delivery</span>
                             <span>
@@ -3610,6 +3467,156 @@ export default function App() {
           </div>
         </div>
 
+        {/* MAIN ATTRACTION: Curated Gifting Bundles Showcase */}
+        {(() => {
+          const giftingBundles = filteredBundles.filter((b) => b.isGiftingBundle);
+          if (giftingBundles.length === 0) return null;
+
+          return (
+            <div id="gifting-bundles" className="mb-24 scroll-mt-20">
+              {/* Showcase Header */}
+              <div className="mb-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black/15 pb-5">
+                  <div>
+                    <div className="text-[11px] font-mono tracking-[0.22em] text-neutral-400 uppercase font-bold mb-2">
+                      MAIN ATTRACTION · CURATED 3 × 5ML GIFTING SETS
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/50 backdrop-blur-md rounded-2xl sm:rounded-3xl px-5 py-2.5 sm:px-7 sm:py-3.5 shadow-lg">
+                      Signature Gifting Trios
+                    </h2>
+                  </div>
+                  <p className="text-xs sm:text-sm font-sans text-neutral-300 max-w-md border border-white/15 bg-black/40 backdrop-blur-md rounded-2xl px-4 py-3">
+                    Three complementary 5ml decants (15ml total per trio) paired for daytime-to-evening layering and ready-to-gift presentation.
+                  </p>
+                </div>
+              </div>
+
+              {/* Two Flagship Gifting Trio Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10">
+                {giftingBundles.map((bundle) => {
+                  const availableSets = getProductStock(bundle.id, "5ml Normal");
+                  const isBundleOutOfStock = bundle.isOutOfStock || availableSets <= 0;
+                  const price = bundle.fixedPrice ?? bundle.prices?.["5ml Normal"] ?? 0;
+                  const constituents = (bundle.constituentIds || [])
+                    .map((cid) => CATALOG_DATA.find((f) => f.id === cid))
+                    .filter((f): f is Fragrance => Boolean(f));
+
+                  return (
+                    <div
+                      key={bundle.id}
+                      className="bg-white/95 backdrop-blur-md border border-black/15 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between transition-all hover:shadow-2xl"
+                    >
+                      <div>
+                        {/* Top Metadata Row (Clean Unboxed Typography) */}
+                        <div className="flex items-center justify-between gap-2 text-[11px] font-mono tracking-[0.16em] uppercase text-stone-600 pb-4 border-b border-stone-200/80 mb-5">
+                          <div className="flex items-center gap-2 font-bold text-black">
+                            <span>{bundle.gender === "Men" ? "MEN’S BUNDLE" : "WOMEN’S BUNDLE"}</span>
+                            <span aria-hidden="true" className="text-stone-400">·</span>
+                            <span className="text-stone-600 font-normal">3 × 5ML DECANTS (15ML)</span>
+                          </div>
+                          <span className={isBundleOutOfStock ? "text-red-600 font-bold" : "text-emerald-800 font-bold"}>
+                            {isBundleOutOfStock ? "SOLD OUT" : `${availableSets} SETS IN STOCK`}
+                          </span>
+                        </div>
+
+                        {/* Title & Description */}
+                        <div className="mb-6">
+                          <div className="flex items-baseline justify-between gap-4 flex-wrap mb-2">
+                            <h3 className="text-2xl sm:text-3xl font-serif text-black tracking-tight font-bold">
+                              “{bundle.name}”
+                            </h3>
+                            <span className="text-2xl sm:text-3xl font-mono font-bold text-black">
+                              ₹{price.toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                          {bundle.description && (
+                            <p className="text-xs sm:text-sm font-sans text-stone-600 leading-relaxed">
+                              {bundle.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Visual Triptych of the 3 Constituent Perfumes */}
+                        {constituents.length > 0 && (
+                          <div className="mb-6">
+                            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-stone-500 font-bold mb-3">
+                              INCLUDED IN THIS TRIO (CLICK ANY SCENT TO INSPECT)
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              {constituents.map((frag, idx) => (
+                                <button
+                                  key={frag.id}
+                                  type="button"
+                                  onClick={() => handleOpenFragranceDetails(frag)}
+                                  className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-2xl p-2.5 sm:p-3 transition-all cursor-pointer flex flex-col justify-between"
+                                >
+                                  <div>
+                                    <div className="aspect-square w-full bg-white rounded-xl border border-stone-200/60 overflow-hidden mb-2.5 flex items-center justify-center p-2">
+                                      {frag.image ? (
+                                        <img
+                                          src={frag.image}
+                                          alt={frag.name}
+                                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                          loading="lazy"
+                                        />
+                                      ) : (
+                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${frag.color}`} />
+                                      )}
+                                    </div>
+                                    <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider truncate">
+                                      0{idx + 1} · {frag.brand}
+                                    </div>
+                                    <div className="text-xs font-sans font-bold text-black leading-snug line-clamp-1 group-hover:underline mt-0.5">
+                                      {frag.name}
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 pt-1.5 border-t border-stone-200/70">
+                                    <div className="text-[10px] font-mono text-stone-600 truncate">
+                                      5ml Decant
+                                    </div>
+                                    <div className="text-[9px] font-sans text-stone-500 truncate">
+                                      {frag.notes}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Footer */}
+                      <div className="pt-5 border-t border-stone-200/80 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            disabled={isBundleOutOfStock}
+                            onClick={() => {
+                              handleAddBundleToCart(bundle, true);
+                              setIsCartOpen(true);
+                            }}
+                            className="w-full py-3.5 px-5 bg-black hover:bg-stone-800 text-white rounded-xl text-xs font-sans font-bold uppercase tracking-[0.14em] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+                          >
+                            {isBundleOutOfStock ? "Sold Out" : "Add Trio to Cart"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBundleOutOfStock}
+                            onClick={() => handleBuyBundleNow(bundle)}
+                            className="w-full py-3.5 px-5 bg-stone-100 hover:bg-stone-200 text-black border border-stone-300 rounded-xl text-xs font-sans font-bold uppercase tracking-[0.14em] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                          >
+                            {isBundleOutOfStock ? "Unavailable" : `Buy Now · ₹${price.toLocaleString("en-IN")}`}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Brutalist Grid Layout - Categorized by Gender */}
         {filteredCatalog.length > 0 && (
           <div className="space-y-24">
@@ -3706,23 +3713,26 @@ export default function App() {
                 const selectedSize = "5ml Normal";
                 const isSpotlight = bundle.isSpotlight;
                 const price = isSpotlight ? bundle.fixedPrice : (bundle.prices ? bundle.prices[selectedSize] : 0);
-                const originalPrice = isSpotlight ? getBundleOriginalPrice(bundle.id) : null;
-                const bundleStock = stock ? stock.bundles[bundle.id] : undefined;
-                const isBundleOutOfStock = bundle.isOutOfStock || bundleStock === 0;
+                const availableBundleStock = getProductStock(bundle.id, selectedSize);
+                const isBundleOutOfStock = bundle.isOutOfStock || availableBundleStock <= 0;
 
                 return (
                   <div 
                     key={bundle.id}
-                    className={`bg-white/95 backdrop-blur-sm p-6 sm:p-7 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow ${isSpotlight ? 'md:col-span-2' : ''}`}
+                    className={`bg-white/95 backdrop-blur-sm p-6 sm:p-7 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow ${bundle.isGiftingBundle ? 'lg:col-span-1 border-black/20' : isSpotlight ? 'md:col-span-2' : ''}`}
                   >
                     <div>
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="text-[9px] font-sans tracking-[0.15em] uppercase text-black tracking-widest border border-black/5 shadow-xs rounded-full px-2 py-0.5 bg-black/5">
-                          {isSpotlight ? "SPOTLIGHT" : "CURATED"}
+                      <div className="flex items-center justify-between gap-2 mb-4 text-[10px] font-mono uppercase tracking-widest text-stone-600">
+                        <span className="font-bold text-black">
+                          {bundle.categoryLabel || (isSpotlight ? "SPOTLIGHT" : "CURATED")}
                         </span>
-                        {isBundleOutOfStock && (
-                          <span className="text-[9px] font-mono text-red-600 tracking-widest uppercase font-semibold">
-                            [ SOLD OUT ]
+                        {isBundleOutOfStock ? (
+                          <span className="text-red-600 font-semibold">
+                            SOLD OUT
+                          </span>
+                        ) : (
+                          <span className="text-emerald-800 font-semibold">
+                            {availableBundleStock} IN STOCK
                           </span>
                         )}
                       </div>
@@ -3749,11 +3759,6 @@ export default function App() {
                         <span className="font-mono text-xs font-semibold text-neutral-800">
                           ₹{price}
                         </span>
-                        {originalPrice && (
-                          <span className="font-mono text-[10px] text-neutral-400 line-through ml-1.5">
-                            ₹{originalPrice}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -4153,12 +4158,6 @@ export default function App() {
                               <span>Subtotal</span>
                               <span>₹{cartTotal}.00</span>
                             </div>
-                            {activeDiscount > 0 && (
-                              <div className="flex justify-between items-center text-xs font-mono text-emerald-700">
-                                <span>Tier Discount</span>
-                                <span>{getTierPercentage(cartTotal)} OFF</span>
-                              </div>
-                            )}
                             <div className="flex justify-between text-xs font-mono text-stone-700">
                               <span>Delivery</span>
                               <span>
@@ -4277,12 +4276,6 @@ export default function App() {
                     <span>Subtotal</span>
                     <span>₹{cartTotal}.00</span>
                   </div>
-                  {activeDiscount > 0 && (
-                    <div className="flex justify-between items-center text-xs font-mono text-emerald-700">
-                      <span>Tier Discount</span>
-                      <span>{getTierPercentage(cartTotal)} OFF</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-xs font-mono text-stone-700">
                     <span>Delivery</span>
                     <span>

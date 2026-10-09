@@ -29,6 +29,11 @@ export interface CapsuleBundle {
   contains: string;
   isOutOfStock: boolean;
   isSpotlight?: boolean;
+  isGiftingBundle?: boolean;
+  gender?: "Men" | "Women";
+  categoryLabel?: string;
+  description?: string;
+  constituentIds?: string[];
   fixedPrice?: number; // Spotlights have a fixed price
   prices?: {
     "10ml": number;
@@ -314,6 +319,42 @@ export const CATALOG_DATA: Fragrance[] = [
 ];
 
 export const BUNDLE_DATA: CapsuleBundle[] = [
+  {
+    id: "bundle-winter-layers-trio",
+    name: "Winter Layers Trio",
+    categoryLabel: "MEN’S BUNDLE — GIFTING EDITION",
+    gender: "Men",
+    contains: "La Uno Qaswa (5ml) + Givenchy Gentleman (5ml) + Calvin Klein CK One (5ml)",
+    description: "Warm smoky oud, reserve powdery iris-leather elegance, and crisp citrus-musk versatility — a complete 3-decant gifting wardrobe from daytime refinement to evening distinction.",
+    constituentIds: ["la-uno-qaswa", "givenchy-gentleman", "ck-one"],
+    isOutOfStock: false,
+    isSpotlight: true,
+    isGiftingBundle: true,
+    fixedPrice: 1799,
+    prices: {
+      "10ml": 3401,
+      "5ml Normal": 1799,
+      "5ml HQ": 1967
+    }
+  },
+  {
+    id: "bundle-winter-warmth-trio",
+    name: "Winter Warmth Trio",
+    categoryLabel: "WOMEN’S BUNDLE — GIFTING EDITION",
+    gender: "Women",
+    contains: "Zara Rich Warm Addictive (5ml) + Lattafa Khamrah (5ml) + Zara Intense Dark (5ml)",
+    description: "Golden honeyed coconut, spiced praline dates, and warm tonka bean — three enveloping cold-weather gourmands curated for effortless signature layering.",
+    constituentIds: ["zara-rich-warm-addictive", "lattafa-khamrah", "zara-intense-dark"],
+    isOutOfStock: false,
+    isSpotlight: true,
+    isGiftingBundle: true,
+    fixedPrice: 1199,
+    prices: {
+      "10ml": 1991,
+      "5ml Normal": 1199,
+      "5ml HQ": 1367
+    }
+  },
   {
     id: "spotlight-arabian",
     name: "Arabian Exotic Treasures Duo",
