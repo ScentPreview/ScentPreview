@@ -1,6 +1,8 @@
 {
-  "name": "ScentPreview",
+  "name": "ScentPreview – Luxury Perfume Decants & Fragrance Lab",
   "short_name": "ScentPreview",
+  "description": "Shop authentic 5ml and 10ml luxury perfume decants, curated capsule bundles, and interactive scent discovery at ScentPreview. Fast India-wide shipping.",
+  "start_url": "/",
   "icons": [
     {
       "src": "/favicon-192x192.png",
@@ -13,7 +15,8 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#000000",
-  "background_color": "#000000",
-  "display": "standalone"
+  "theme_color": "#111111",
+  "background_color": "#FAF9F6",
+  "display": "standalone",
+  "categories": ["shopping", "lifestyle"]
 }

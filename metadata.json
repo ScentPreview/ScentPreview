@@ -1,6 +1,6 @@
 {
   "name": "ScentPreview",
-  "description": "Founded by Gephel Chingtham, ScentPreview is India's premier luxury perfume decant studio and fragrance layering laboratory. Explore curated 5ml & 10ml decants.",
+  "description": "Shop authentic 5ml and 10ml luxury perfume decants, curated capsule bundles, and interactive scent discovery at ScentPreview. Fast India-wide shipping.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

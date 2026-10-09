@@ -832,55 +832,65 @@ async function startServer() {
 
 
 
-  // Health check routes for Cloud Run & Render deployment health checks
+  // Health check routes for Cloud Run deployment health checks
   app.get(["/api/health", "/healthz", "/health"], (req, res) => {
-    res.status(200).json({ status: "ok", service: "scentpreview.onrender.com", timestamp: new Date().toISOString() });
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Unblock Googlebot & Search Crawlers at HTTP Header level + Cache static images for maximum PageSpeed
-  app.use((req, res, next) => {
-    if (!req.path.startsWith("/api/admin")) {
-      res.setHeader("X-Robots-Tag", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
-    }
-    if (req.path.startsWith("/images/") || req.path.startsWith("/assets/")) {
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    }
-    next();
-  });
-
-  // Explicit /robots.txt route to guarantee Googlebot is never blocked
+  // Dynamic robots.txt and sitemap.xml for all search engines (Google, Bing, DuckDuckGo, Yahoo, Brave, etc.)
   app.get("/robots.txt", (req, res) => {
-    res.type("text/plain; charset=utf-8");
-    const robotsPath = path.join(process.cwd(), "public", "robots.txt");
-    if (fs.existsSync(robotsPath)) {
-      return res.send(fs.readFileSync(robotsPath, "utf-8"));
-    }
-    res.send(
-      "User-agent: Googlebot\nAllow: /\n\nUser-agent: *\nAllow: /\n\nSitemap: https://scentpreview.onrender.com/sitemap.xml\n"
+    const proto = (req.headers["x-forwarded-proto"] as string)?.split(",")[0]?.trim() || req.protocol || "https";
+    const host = (req.headers["x-forwarded-host"] as string)?.split(",")[0]?.trim() || req.get("host") || "";
+    const baseUrl = (process.env.APP_URL || (host ? `${proto}://${host}` : "")).replace(/\/+$/, "");
+    res.type("text/plain").send(
+      [
+        "User-agent: *",
+        "Allow: /",
+        "",
+        "User-agent: Googlebot",
+        "Allow: /",
+        "",
+        "User-agent: Bingbot",
+        "Allow: /",
+        "",
+        "User-agent: DuckDuckBot",
+        "Allow: /",
+        "",
+        "User-agent: Slurp",
+        "Allow: /",
+        "",
+        `Sitemap: ${baseUrl}/sitemap.xml`,
+      ].join("\n")
     );
   });
 
-  // Explicit /sitemap.xml route for Google Search Console indexing
   app.get("/sitemap.xml", (req, res) => {
-    res.setHeader("Content-Type", "application/xml; charset=utf-8");
-    const sitemapPath = path.join(process.cwd(), "public", "sitemap.xml");
-    if (fs.existsSync(sitemapPath)) {
-      return res.send(fs.readFileSync(sitemapPath, "utf-8"));
-    }
-    res.status(404).end();
-  });
-
-  // SEO & Google Search Console verification status endpoint
-  app.get("/api/seo/status", (req, res) => {
-    res.json({
-      domain: "https://scentpreview.onrender.com",
-      sitemapUrl: "https://scentpreview.onrender.com/sitemap.xml",
-      robotsUrl: "https://scentpreview.onrender.com/robots.txt",
-      googlebotAllowed: true,
-      primaryAuthorEntity: "Gephel Chingtham",
-      canonicalUrl: "https://scentpreview.onrender.com/",
-      status: "ready_for_google_search_console"
-    });
+    const proto = (req.headers["x-forwarded-proto"] as string)?.split(",")[0]?.trim() || req.protocol || "https";
+    const host = (req.headers["x-forwarded-host"] as string)?.split(",")[0]?.trim() || req.get("host") || "";
+    const baseUrl = (process.env.APP_URL || (host ? `${proto}://${host}` : "https://ais-pre-34vkte5pxyfvvqewx3onpg-561103057805.asia-southeast1.run.app")).replace(/\/+$/, "");
+    const perfumeIds = [
+      "givenchy-gentleman",
+      "lattafa-khamrah",
+      "zara-rich-warm-addictive",
+      "la-uno-qaswa",
+      "ck-one",
+      "ck2",
+      "versace-crystal-noir",
+      "zara-for-him-black",
+      "zara-intense-dark",
+      "zara-sunrise",
+      "zara-seoul",
+      "zara-seoul-winter",
+    ];
+    const urls = [
+      `  <url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      ...perfumeIds.map(
+        (id) => `  <url><loc>${baseUrl}/?perfume=${id}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>`
+      ),
+    ];
+    res
+      .type("application/xml")
+      .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
   });
 
   // Non-blocking load of initial orders and stock from Firestore on startup
