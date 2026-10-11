@@ -689,6 +689,28 @@ export default function App() {
     return null;
   };
 
+  // Helper to detect if the current route/subdomain is the dedicated Admin Portal (/admin or admin.*)
+  const resolveIsAdminFromLocation = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const hostname = window.location.hostname.toLowerCase();
+    const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#+/, "").toLowerCase();
+
+    if (
+      hostname.startsWith("admin.") ||
+      hostname.includes("scentpreviewadmin") ||
+      pathname === "admin" ||
+      pathname.startsWith("admin/") ||
+      searchParams.get("admin") === "1" ||
+      searchParams.get("admin") === "true" ||
+      hash === "admin"
+    ) {
+      return true;
+    }
+    return false;
+  };
+
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
   const [selectedDetailFragrance, setSelectedDetailFragrance] = useState<Fragrance | null>(() => {
     return resolveFragranceFromLocation();
@@ -713,15 +735,20 @@ export default function App() {
     } catch (e) {}
   };
 
-  // Listen to browser forward/back buttons
+  // Listen to browser forward/back buttons and URL changes
   useEffect(() => {
     const handlePopState = () => {
+      setIsAdminOpen(resolveIsAdminFromLocation());
       const resolved = resolveFragranceFromLocation();
       setSelectedDetailFragrance(resolved);
     };
 
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("hashchange", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("hashchange", handlePopState);
+    };
   }, []);
 
   // Dynamically sync SEO title, canonical link, OpenGraph, and Twitter card metadata
@@ -1136,8 +1163,8 @@ export default function App() {
     }
   }, [isQuizListOpen]);
 
-  // Admin Portal States
-  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  // Admin Portal States (accessible exclusively via /admin or admin subdomain)
+  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(() => resolveIsAdminFromLocation());
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [isLoadingAdminOrders, setIsLoadingAdminOrders] = useState<boolean>(false);
   const [adminActiveTab, setAdminActiveTab] = useState<"view" | "create" | "stock" | "prices" | "claims">("view");
@@ -1702,6 +1729,14 @@ export default function App() {
     }
   };
 
+  const handleLockAdminSession = async () => {
+    await saveStockImmediately();
+    setIsAdminAuthenticated(false);
+    setAdminPasscodeInput("");
+    setAdminOrders([]);
+    localStorage.removeItem("scent_admin_token");
+  };
+
   const handleCloseAndSaveAdminSession = async () => {
     await saveStockImmediately();
     setIsAdminOpen(false);
@@ -1709,6 +1744,11 @@ export default function App() {
     setAdminPasscodeInput("");
     setAdminOrders([]);
     localStorage.removeItem("scent_admin_token");
+    try {
+      if (typeof window !== "undefined" && (window.location.pathname.toLowerCase().includes("admin") || window.location.search.includes("admin") || window.location.hash.includes("admin"))) {
+        window.history.pushState({}, "", "/");
+      }
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -2697,6 +2737,8 @@ export default function App() {
         />
       </div>
 
+      {!isAdminOpen && (
+        <>
       {/* Modern High-End Sticky Header Navigation */}
       <header className="sticky top-0 bg-[#F4F4F2]/95 backdrop-blur-md z-50 border-b border-black/10 shadow-xs">
         <nav className="w-full flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto gap-2">
@@ -3802,20 +3844,15 @@ export default function App() {
               <button onClick={() => setPolicyModal("returns")} className="hover:text-amber-700 transition-colors cursor-pointer">Returns & Refunds</button>
             </div>
             <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => {
-                    setAdminPasscodeInput("");
-                    setAdminPasscodeError(null);
-                    setIsAdminOpen(true);
-                  }}
-                  className="text-[10px] font-sans text-black font-semibold uppercase tracking-[0.15em] cursor-pointer"
-                >
-                  India Edition
-                </button>
+              <span className="text-[10px] font-sans text-black font-semibold uppercase tracking-[0.15em]">
+                India Edition
+              </span>
             </div>
           </div>
         </div>
       </footer>
+        </>
+      )}
 
       {/* Luxury Slide-out Cart Drawer */}
       <AnimatePresence>
@@ -4466,7 +4503,7 @@ export default function App() {
                   {isAdminAuthenticated && (
                     <button
                       type="button"
-                      onClick={handleCloseAndSaveAdminSession}
+                      onClick={handleLockAdminSession}
                       className="px-3 py-1.5  border border-stone-200 hover:border-amber-gold/30 hover:bg-stone-850 text-black hover:text-white text-[10px] font-sans tracking-[0.15em] uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                       <Lock className="w-3 h-3" />
@@ -6376,22 +6413,23 @@ export default function App() {
       />
 
         {/* Footer */}
-        <footer className="mt-auto border-t border-black/10 bg-[#F4F4F2] py-8 z-10 relative">
-          <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
-            <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
-            <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
-            <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
-            <a 
-              href="https://velyx-waitlist.vercel.app" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="hover:text-black transition-colors cursor-pointer"
-            >
-              VELYX
-            </a>
-            <button onClick={() => setIsAdminOpen(true)} className="hover:text-black transition-colors cursor-pointer ml-auto">Admin</button>
-          </div>
-        </footer>
+        {!isAdminOpen && (
+          <footer className="mt-auto border-t border-black/10 bg-[#F4F4F2] py-8 z-10 relative">
+            <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
+              <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
+              <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
+              <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
+              <a 
+                href="https://velyx-waitlist.vercel.app" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:text-black transition-colors cursor-pointer"
+              >
+                VELYX
+              </a>
+            </div>
+          </footer>
+        )}
       
     </div>
   );
