@@ -1,18 +1,6 @@
-import React, { useRef, useMemo } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
 import { cn } from "@/src/lib/utils";
-
-// Suppress deprecated THREE.Clock warning from three.js/r3f
-if (typeof window !== "undefined") {
-  const originalWarn = console.warn;
-  console.warn = (...args: unknown[]) => {
-    if (typeof args[0] === "string" && args[0].includes("THREE.Clock: This module has been deprecated")) {
-      return;
-    }
-    originalWarn(...args);
-  };
-}
 
 const vertexShader = `
   varying vec2 vUv;
@@ -211,117 +199,6 @@ const fragmentShader = `
   }
 `;
 
-interface LiquidBarsMeshProps {
-  color: THREE.Color;
-  opacity: number;
-  speed: number;
-  barCount: number;
-  scale: number;
-  waveComplexity: number;
-  waveAmplitude: number;
-  reflectionFrequency: number;
-  streakIntensity: number;
-  metallicContrast: number;
-  highlightWarmth: number;
-  refractionStrength: number;
-  edgeWidth: number;
-  edgeSoftness: number;
-  fresnelIntensity: number;
-  edgeHighlight: number;
-  gapDarkness: number;
-  refractionWaveSpeed: number;
-  refractionWaveFrequency: number;
-}
-
-function LiquidBarsMesh({
-  color,
-  opacity,
-  speed,
-  barCount,
-  scale,
-  waveComplexity,
-  waveAmplitude,
-  reflectionFrequency,
-  streakIntensity,
-  metallicContrast,
-  highlightWarmth,
-  refractionStrength,
-  edgeWidth,
-  edgeSoftness,
-  fresnelIntensity,
-  edgeHighlight,
-  gapDarkness,
-  refractionWaveSpeed,
-  refractionWaveFrequency,
-}: LiquidBarsMeshProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const { size } = useThree();
-
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uResolution: { value: new THREE.Vector2(100, 100) },
-      uColor: { value: new THREE.Color() },
-      uOpacity: { value: 1 },
-      uBarCount: { value: 12 },
-      uScale: { value: 1 },
-      uWaveComplexity: { value: 3 },
-      uWaveAmplitude: { value: 1 },
-      uReflectionFrequency: { value: 8 },
-      uStreakIntensity: { value: 1 },
-      uMetallicContrast: { value: 1 },
-      uHighlightWarmth: { value: 1 },
-      uRefractionStrength: { value: 1 },
-      uEdgeWidth: { value: 0.12 },
-      uEdgeSoftness: { value: 0.03 },
-      uFresnelIntensity: { value: 0.2 },
-      uEdgeHighlight: { value: 0.12 },
-      uGapDarkness: { value: 0.6 },
-      uRefractionWaveSpeed: { value: 2 },
-      uRefractionWaveFrequency: { value: 12.566 },
-    }),
-    []
-  );
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      const material = meshRef.current.material as THREE.ShaderMaterial;
-      material.uniforms.uTime.value = state.clock.elapsedTime * speed;
-      material.uniforms.uColor.value = color;
-      material.uniforms.uOpacity.value = opacity;
-      material.uniforms.uBarCount.value = barCount;
-      material.uniforms.uScale.value = scale;
-      material.uniforms.uWaveComplexity.value = waveComplexity;
-      material.uniforms.uWaveAmplitude.value = waveAmplitude;
-      material.uniforms.uReflectionFrequency.value = reflectionFrequency;
-      material.uniforms.uStreakIntensity.value = streakIntensity;
-      material.uniforms.uMetallicContrast.value = metallicContrast;
-      material.uniforms.uHighlightWarmth.value = highlightWarmth;
-      material.uniforms.uRefractionStrength.value = refractionStrength;
-      material.uniforms.uEdgeWidth.value = edgeWidth;
-      material.uniforms.uEdgeSoftness.value = edgeSoftness;
-      material.uniforms.uFresnelIntensity.value = fresnelIntensity;
-      material.uniforms.uEdgeHighlight.value = edgeHighlight;
-      material.uniforms.uGapDarkness.value = gapDarkness;
-      material.uniforms.uRefractionWaveSpeed.value = refractionWaveSpeed;
-      material.uniforms.uRefractionWaveFrequency.value = refractionWaveFrequency;
-      material.uniforms.uResolution.value.set(size.width, size.height);
-    }
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      <planeGeometry args={[2, 2]} />
-      <shaderMaterial
-        uniforms={uniforms}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        transparent={true}
-      />
-    </mesh>
-  );
-}
-
 export interface LiquidBarsProps {
   width?: string | number;
   height?: string | number;
@@ -373,52 +250,159 @@ export const LiquidBars: React.FC<LiquidBarsProps> = ({
   className,
   children,
 }) => {
-  const threeColor = useMemo(() => new THREE.Color(color), [color]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const materialRef = useRef<THREE.ShaderMaterial | null>(null);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+
+  useEffect(() => {
+    if (materialRef.current) {
+      const u = materialRef.current.uniforms;
+      u.uColor.value.set(color);
+      u.uOpacity.value = opacity;
+      u.uBarCount.value = barCount;
+      u.uScale.value = scale;
+      u.uWaveComplexity.value = waveComplexity;
+      u.uWaveAmplitude.value = waveAmplitude;
+      u.uReflectionFrequency.value = reflectionFrequency;
+      u.uStreakIntensity.value = streakIntensity;
+      u.uMetallicContrast.value = metallicContrast;
+      u.uHighlightWarmth.value = highlightWarmth;
+      u.uRefractionStrength.value = refractionStrength;
+      u.uEdgeWidth.value = edgeWidth;
+      u.uEdgeSoftness.value = edgeSoftness;
+      u.uFresnelIntensity.value = fresnelIntensity;
+      u.uEdgeHighlight.value = edgeHighlight;
+      u.uGapDarkness.value = gapDarkness;
+      u.uRefractionWaveSpeed.value = refractionWaveSpeed;
+      u.uRefractionWaveFrequency.value = refractionWaveFrequency;
+    }
+  }, [
+    color,
+    opacity,
+    barCount,
+    scale,
+    waveComplexity,
+    waveAmplitude,
+    reflectionFrequency,
+    streakIntensity,
+    metallicContrast,
+    highlightWarmth,
+    refractionStrength,
+    edgeWidth,
+    edgeSoftness,
+    fresnelIntensity,
+    edgeHighlight,
+    gapDarkness,
+    refractionWaveSpeed,
+    refractionWaveFrequency,
+  ]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    camera.position.set(0, 0, 5);
+
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch {
+      return;
+    }
+
+    const w = container.clientWidth || 300;
+    const h = container.clientHeight || 300;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h);
+    renderer.domElement.style.position = "absolute";
+    renderer.domElement.style.inset = "0";
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
+    container.insertBefore(renderer.domElement, container.firstChild);
+
+    const uniforms = {
+      uTime: { value: 0 },
+      uResolution: { value: new THREE.Vector2(w, h) },
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
+      uBarCount: { value: barCount },
+      uScale: { value: scale },
+      uWaveComplexity: { value: waveComplexity },
+      uWaveAmplitude: { value: waveAmplitude },
+      uReflectionFrequency: { value: reflectionFrequency },
+      uStreakIntensity: { value: streakIntensity },
+      uMetallicContrast: { value: metallicContrast },
+      uHighlightWarmth: { value: highlightWarmth },
+      uRefractionStrength: { value: refractionStrength },
+      uEdgeWidth: { value: edgeWidth },
+      uEdgeSoftness: { value: edgeSoftness },
+      uFresnelIntensity: { value: fresnelIntensity },
+      uEdgeHighlight: { value: edgeHighlight },
+      uGapDarkness: { value: gapDarkness },
+      uRefractionWaveSpeed: { value: refractionWaveSpeed },
+      uRefractionWaveFrequency: { value: refractionWaveFrequency },
+    };
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      transparent: true,
+    });
+    materialRef.current = material;
+
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    const handleResize = () => {
+      if (!container) return;
+      const nw = container.clientWidth || 100;
+      const nh = container.clientHeight || 100;
+      renderer.setSize(nw, nh);
+      uniforms.uResolution.value.set(nw, nh);
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
+
+    const startTime = performance.now();
+    let frameId = 0;
+
+    const animate = (now: number) => {
+      frameId = requestAnimationFrame(animate);
+      const elapsedSeconds = (now - startTime) / 1000;
+      uniforms.uTime.value = elapsedSeconds * speedRef.current;
+      renderer.render(scene, camera);
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+      materialRef.current = null;
+      geometry.dispose();
+      material.dispose();
+      renderer.dispose();
+      if (renderer.domElement.parentNode === container) {
+        container.removeChild(renderer.domElement);
+      }
+    };
+  }, []);
+
   const widthStyle = typeof width === "number" ? `${width}px` : width;
   const heightStyle = typeof height === "number" ? `${height}px` : height;
 
   return (
     <div
+      ref={containerRef}
       className={cn("relative overflow-hidden", className)}
       style={{ width: widthStyle, height: heightStyle }}
     >
-      <Canvas
-        className="absolute inset-0"
-        orthographic
-        camera={{
-          left: -1,
-          right: 1,
-          top: 1,
-          bottom: -1,
-          near: 0,
-          far: 10,
-          position: [0, 0, 5],
-        }}
-        gl={{ antialias: true, alpha: true }}
-        style={{ width: "100%", height: "100%" }}
-      >
-        <LiquidBarsMesh
-          color={threeColor}
-          opacity={opacity}
-          speed={speed}
-          barCount={barCount}
-          scale={scale}
-          waveComplexity={waveComplexity}
-          waveAmplitude={waveAmplitude}
-          reflectionFrequency={reflectionFrequency}
-          streakIntensity={streakIntensity}
-          metallicContrast={metallicContrast}
-          highlightWarmth={highlightWarmth}
-          refractionStrength={refractionStrength}
-          edgeWidth={edgeWidth}
-          edgeSoftness={edgeSoftness}
-          fresnelIntensity={fresnelIntensity}
-          edgeHighlight={edgeHighlight}
-          gapDarkness={gapDarkness}
-          refractionWaveSpeed={refractionWaveSpeed}
-          refractionWaveFrequency={refractionWaveFrequency}
-        />
-      </Canvas>
       {children && (
         <div className="relative z-10 w-full h-full pointer-events-none">
           {children}
