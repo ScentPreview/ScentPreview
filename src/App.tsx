@@ -13,6 +13,7 @@ import AestheticQuiz from "./components/AestheticQuiz";
 import ChordQuiz from "./components/ChordQuiz";
 import ScentBattle from "./components/ScentBattle";
 import LiquidBars from "./components/ui/liquid-bars";
+import { handleCloudflareFirestoreApi } from "./lib/cloudflareFirestoreBridge";
 import { 
   ShoppingBag, 
   X, 
@@ -202,14 +203,29 @@ console.error = (...args) => {
   originalConsoleError(...args);
 };
 
-// Robust fetch wrapper that gracefully catches network/stock fetch failures
+// Robust fetch wrapper that seamlessly bridges /api/* to Firebase Firestore on Cloudflare Pages
 const safeFetch = async (url: string, options?: RequestInit) => {
   try {
     const response = await fetch(url, options);
+    const contentType = response.headers.get("content-type") || "";
+    const isApiRoute = url.startsWith("/api/");
+    const isStaticFallback =
+      isApiRoute &&
+      (!contentType.includes("application/json") ||
+        response.status === 404 ||
+        response.status === 405 ||
+        response.status === 502 ||
+        response.status === 503 ||
+        response.status === 504);
+
+    if (isStaticFallback) {
+      return await handleCloudflareFirestoreApi(url, options);
+    }
     return response;
   } catch (error) {
-    // Silently catch the fetch error and return a mock 503 response
-    // This prevents recurring warnings in the app logs for unavailable endpoints
+    if (url.startsWith("/api/")) {
+      return await handleCloudflareFirestoreApi(url, options);
+    }
     return new Response(JSON.stringify({ error: "Network fetch failed gracefully.", success: false }), {
       status: 503,
       statusText: "Service Unavailable",
@@ -312,7 +328,7 @@ const ClaimFormModal = ({ isOpen, onClose, availableSkus, onSubmitSuccess }: { i
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/complaints", {
+      const res = await safeFetch("/api/complaints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ buyerName, email, perfumeAndSize, proofImage })
@@ -1436,7 +1452,7 @@ export default function App() {
   const updateClaimStatus = async (id: string, status: string) => {
     try {
       const token = localStorage.getItem("scent_admin_token") || "";
-      const response = await fetch(`/api/complaints/${id}`, {
+      const response = await safeFetch(`/api/complaints/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
