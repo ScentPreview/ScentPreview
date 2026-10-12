@@ -165,6 +165,19 @@ async function reduceStockDirect(items: { name: string; size: string; quantity: 
   return stock;
 }
 
+const VALID_COUPONS = new Set([
+  "K7Q9M2X", "PROMO5B8", "V4NP7R", "SAVE2K6J", "D8W3FX", "LUCKY9QM", "Z5T7KN", "SHIP4VQ", "FREE8P2", "SPEED6HX",
+  "B9R4WL", "ENJOY7DK", "X3M5GT", "RUSH2FP", "C6Y8NV", "FAST9JQ", "T2K7RM", "BONUS5WX", "H4P6SL", "DEAL8VZ",
+  "S7B3KQ", "PICK9CX", "W5F2GT", "URBAN6MY", "R8L4PN", "QUICK7AH", "J3V9KW", "LAUNCH2DX", "A6Q5BP", "GRIP7FS",
+  "N9M3VT", "SMOOTH4LK", "E2W8RX", "VIBE5CJ", "L7P4DN", "SPARK9MZ", "G3H6KV", "ZONE8WQ", "Y5T2FP", "BLEND7RJ",
+  "O4N6XM", "MOTION9KL", "C8S3VH", "STYLE2BX", "U6W9RF", "PRIME5GT", "I7D4KQ", "FLICK3NP", "X2V8LM", "CHARGE6AY",
+  "B5H7CW", "CRUISE9PX", "F9M3RL", "ACTIVE7KZ", "J4T6DV", "SWIFT2QX", "P8R5NM", "GLORY4LJ", "K3W9BH", "STORM6FY",
+  "V7G2KX", "TURBO8CP", "S5L9RM", "ALPHA3DW", "T2H6QV", "SONIC7NP", "Z4B8FX", "BLAZE9KJ", "M6E3WL", "QUEST5GY",
+  "D9R4TX", "IGNITE2VZ", "A7C5HK", "TEMPO8QM", "U3F6RX", "VIGOR4NJ", "L5P9BW", "ORBIT7DY", "O8W2KV", "FRAME6CP",
+  "Y4M7FX", "RHYTHM9LZ", "Q6V3NM", "GLOW5BJ", "X2S8KW", "PEAK7AY", "H9D4RV", "SURGE2GX", "J3L6CP", "WAVE8NP",
+  "E5T9QM", "CREST4FZ", "W7B2KL", "NEXUS6XY", "R4H8DP", "LUNAR9AW", "I6G3NV", "BOLT5JK", "C8E9TX", "SOLAR7MZ"
+]);
+
 export async function handleCloudflareFirestoreApi(url: string, options?: RequestInit): Promise<Response> {
   const method = (options?.method || "GET").toUpperCase();
   const parsedBody = options?.body && typeof options.body === "string" ? JSON.parse(options.body) : {};
@@ -209,6 +222,9 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
     // 6. POST /api/coupons/validate
     if (pathOnly === "/api/coupons/validate" && method === "POST") {
       const code = String(parsedBody?.code || "").trim().toUpperCase();
+      if (!code || !VALID_COUPONS.has(code)) {
+        return jsonResponse({ valid: false, error: "Invalid coupon code." }, 400);
+      }
       const snap = await getDoc(doc(firestoreDb, "stock", "used_coupons"));
       const usedMap = snap.exists() ? snap.data()?.codes || {} : {};
       if (usedMap[code]) {
@@ -235,20 +251,27 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
     // 8. POST /api/orders
     if (pathOnly === "/api/orders" && method === "POST") {
       const isManual = Boolean(parsedBody.skipStockReduction) || String(parsedBody.orderNumber || "").startsWith("SP-ADMIN-");
+      const rawCoupon = parsedBody.couponCode ? String(parsedBody.couponCode).trim().toUpperCase() : "";
+      if (rawCoupon && !isManual) {
+        if (!VALID_COUPONS.has(rawCoupon)) {
+          return jsonResponse({ success: false, error: "Invalid coupon code." }, 400);
+        }
+        const couponRef = doc(firestoreDb, "stock", "used_coupons");
+        const cSnap = await getDoc(couponRef);
+        const existingCodes = cSnap.exists() ? cSnap.data()?.codes || {} : {};
+        if (existingCodes[rawCoupon] && existingCodes[rawCoupon] !== parsedBody.orderNumber) {
+          return jsonResponse({ success: false, error: "This coupon code has already been used." }, 400);
+        }
+        existingCodes[rawCoupon] = parsedBody.orderNumber;
+        await setDoc(couponRef, { codes: existingCodes, updatedAt: new Date().toISOString() });
+      }
       const orderRecord = {
         ...parsedBody,
+        ...(rawCoupon ? { couponCode: rawCoupon } : {}),
         status: isManual ? "paid" : "pending",
         stockReduced: false,
         createdAt: parsedBody.createdAt || new Date().toISOString(),
       };
-      if (parsedBody.couponCode) {
-        const code = String(parsedBody.couponCode).trim().toUpperCase();
-        const couponRef = doc(firestoreDb, "stock", "used_coupons");
-        const cSnap = await getDoc(couponRef);
-        const existingCodes = cSnap.exists() ? cSnap.data()?.codes || {} : {};
-        existingCodes[code] = orderRecord.orderNumber;
-        await setDoc(couponRef, { codes: existingCodes, updatedAt: new Date().toISOString() });
-      }
       await setDoc(doc(firestoreDb, "orders", orderRecord.orderNumber), orderRecord);
       return jsonResponse({ success: true, order: orderRecord }, 201);
     }

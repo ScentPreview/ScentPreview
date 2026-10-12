@@ -1676,6 +1676,52 @@ export default function App() {
   };
 
   const [banningOrderNum, setBanningOrderNum] = useState<string | null>(null);
+  const [confirmingOrderNum, setConfirmingOrderNum] = useState<string | null>(null);
+
+  const handleConfirmPendingOrder = async (order: any) => {
+    if (!order || !order.orderNumber) return;
+    setConfirmingOrderNum(order.orderNumber);
+    try {
+      const response = await safeFetch("/api/orders/confirm-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(order),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        addOrderToLocalStorageBackup({
+          ...order,
+          status: "paid",
+          stockReduced: true,
+        });
+        setAdminOrders((prev) =>
+          prev.map((o: any) =>
+            o.orderNumber === order.orderNumber
+              ? { ...o, status: "paid", stockReduced: true }
+              : o
+          )
+        );
+        setAdminStatusMessage({
+          type: "success",
+          text: `Order ${order.orderNumber} confirmed as PAID.`,
+        });
+        fetchAdminOrders();
+        fetchStock();
+      } else {
+        throw new Error(data.error || "Failed to confirm order");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAdminStatusMessage({
+        type: "error",
+        text: err.message || "Failed to confirm order.",
+      });
+    } finally {
+      setConfirmingOrderNum(null);
+    }
+  };
 
   const handleBanOrder = async (order: any) => {
     try {
@@ -2341,7 +2387,12 @@ export default function App() {
     }
   }
 
-  const shippingCost = appliedCoupon ? 0 : 116;
+  const isAppliedCouponValid = Boolean(
+    appliedCoupon &&
+    FREE_DELIVERY_COUPONS.has(appliedCoupon.trim().toUpperCase()) &&
+    !usedCoupons.includes(appliedCoupon.trim().toUpperCase())
+  );
+  const shippingCost = isAppliedCouponValid ? 0 : 116;
   const buySubtotal = buyItemPrice * buyQuantity;
   const buyDiscount = calculateTierDiscount(buySubtotal);
   const checkoutTotal = Math.max(0, buySubtotal - buyDiscount) + shippingCost;
@@ -2365,13 +2416,30 @@ export default function App() {
     setIsProcessingOrder(true);
     
     const typedCoupon = couponInput.trim().toUpperCase();
-    if (!appliedCoupon && typedCoupon && usedCoupons.includes(typedCoupon)) {
-      setIsProcessingOrder(false);
-      setCouponError("This coupon code has already been used.");
-      setCheckoutErrorMessage("The entered coupon code has already been used. Please remove it to proceed.");
-      return;
+    const candidateCoupon = appliedCoupon ? appliedCoupon.trim().toUpperCase() : typedCoupon;
+    if (candidateCoupon) {
+      if (!FREE_DELIVERY_COUPONS.has(candidateCoupon)) {
+        setIsProcessingOrder(false);
+        setAppliedCoupon(null);
+        try {
+          localStorage.removeItem("scent_appliedCoupon");
+        } catch {}
+        setCouponError("Invalid coupon code.");
+        setCheckoutErrorMessage("Invalid coupon code. Only official ScentPreview codes are valid.");
+        return;
+      }
+      if (usedCoupons.includes(candidateCoupon)) {
+        setIsProcessingOrder(false);
+        setAppliedCoupon(null);
+        try {
+          localStorage.removeItem("scent_appliedCoupon");
+        } catch {}
+        setCouponError("This coupon code has already been used.");
+        setCheckoutErrorMessage("The entered coupon code has already been used. Please remove it to proceed.");
+        return;
+      }
     }
-    const activeCoupon = appliedCoupon || (FREE_DELIVERY_COUPONS.has(typedCoupon) && !usedCoupons.includes(typedCoupon) ? typedCoupon : null);
+    const activeCoupon = candidateCoupon && FREE_DELIVERY_COUPONS.has(candidateCoupon) && !usedCoupons.includes(candidateCoupon) ? candidateCoupon : null;
     const effectiveDeliveryFee = activeCoupon ? 0 : 116;
 
     const orderNum = `SP-2026-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -4971,8 +5039,21 @@ export default function App() {
                                       </span>
                                     </div>
 
-                                    {/* Actions: Ban Device & Delete */}
+                                    {/* Actions: Confirm Pending, Ban Device & Delete */}
                                     <div className="pt-2 flex items-center gap-2 flex-wrap justify-end">
+                                      {/* Confirm Pending Order Button */}
+                                      {order.status !== "paid" && (
+                                        <button
+                                          type="button"
+                                          disabled={confirmingOrderNum === order.orderNumber}
+                                          onClick={() => handleConfirmPendingOrder(order)}
+                                          className="text-[10px] font-mono text-white bg-emerald-700 hover:bg-emerald-800 uppercase tracking-wider font-bold flex items-center gap-1 px-2.5 py-1 border border-emerald-800 cursor-pointer disabled:opacity-50 transition-colors"
+                                        >
+                                          <Check className="w-3 h-3 text-white" />
+                                          {confirmingOrderNum === order.orderNumber ? "Confirming..." : "Confirm Order"}
+                                        </button>
+                                      )}
+
                                       {/* Flag & Ban Button */}
                                       {banningOrderNum === order.orderNumber ? (
                                         <div className="flex items-center gap-1">
