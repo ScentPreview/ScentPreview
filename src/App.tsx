@@ -264,11 +264,11 @@ const POLICIES = {
     ]
   },
   returns: {
-    title: "RETURN & REFUND POLICY",
+    title: "RETURN POLICY",
     content: [
-      { subtitle: "1. Return Eligibility", text: "Due to hygiene, safety, and personal care standards, opened or used fragrance bottles cannot be accepted for return. Unopened, factory-sealed products in their original packaging are eligible for return within 14 days of delivery." },
-      { subtitle: "2. Damaged or Defective Items", text: "If your package arrives damaged, leaking, or broken, contact us within 48 hours of delivery with photos of the damaged item and packaging. We will issue an immediate replacement or full refund." },
-      { subtitle: "3. Refund Process", text: "Once an eligible return is received and inspected, refunds will be issued to your original payment method within 5 to 7 business days. Original shipping fees are non-refundable." }
+      { subtitle: "RETURN ELIGIBILITY", text: "Unopened, factory-sealed products only. 14 days from delivery." },
+      { subtitle: "DAMAGED OR DEFECTIVE ITEMS", text: "Contact within 48 hours with photos. Immediate replacement or refund." },
+      { subtitle: "RETURN PROCESS", text: "File a refund request. You cover return shipping to:\nKC Khim\nHouse NO 7/8, Lower Arithang\nGangtok, Sikkim 737101\n\nOnce received, we inspect the perfume. Refund amount is determined by our inspection—no guarantees on package return. Original shipping non-refundable." }
     ]
   }
 };
@@ -395,15 +395,15 @@ const ClaimFormModal = ({ isOpen, onClose, availableSkus, onSubmitSuccess }: { i
         ) : (
           <>
             <h2 className="text-2xl md:text-3xl font-sans font-bold mb-6 border-b border-[#111111] pb-4">
-              Shipping Complaint & Claim
+              Refund & Claim Request
             </h2>
             
             <div className="mb-8 p-4 border border-[#111111] bg-stone-100/50">
               <span className="block font-mono text-[10px] md:text-xs tracking-widest uppercase font-bold text-black mb-2 leading-relaxed">
-                CLAIMS MUST BE SUBMITTED WITHIN 48 HOURS OF SHIPPING.
+                DAMAGED / DEFECTIVE: CONTACT WITHIN 48 HOURS OF DELIVERY WITH PHOTOS.
               </span>
               <p className="font-mono text-[10px] text-black leading-relaxed uppercase">
-                * Claims past the 48-hour post-dispatch mark will be automatically rejected. Our internal systems cryptographically verify dispatch timestamps.
+                * Unopened products only eligible within 14 days of delivery. Customer covers return shipping to Gangtok, Sikkim. Original shipping non-refundable.
               </p>
             </div>
 
@@ -6478,7 +6478,7 @@ export default function App() {
                       }}
                       className="w-full bg-[#111111] hover:bg-[#1A1A1A] text-white transition-all duration-300 px-8 py-4 text-[11px] font-sans tracking-[0.2em] uppercase font-medium cursor-pointer shadow-xl shadow-black/10 flex items-center justify-center gap-2"
                     >
-                      FILE A CLAIM
+                      FILE A REFUND / CLAIM REQUEST
                     </button>
                   </div>
                 )}
