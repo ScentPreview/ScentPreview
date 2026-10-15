@@ -238,12 +238,28 @@ const safeFetch = async (url: string, options?: RequestInit) => {
 
 const POLICIES = {
   terms: {
-    title: "TERMS OF USE",
+    title: "TERMS OF SERVICE",
     content: [
-      { subtitle: "1. Overview", text: "By accessing or purchasing from Scent Preview, you agree to be bound by these Terms of Use. If you do not agree, please do not use our site or services." },
-      { subtitle: "2. Product Use & Intellectual Property", text: "All content, branding, media, and formulations displayed on Scent Preview are the intellectual property of Scent Preview. Products are sold strictly for personal use and may not be resold or redistributed without explicit authorization." },
-      { subtitle: "3. Pricing & Modifications", text: "Prices, product availability, and promotional offers are subject to change at any time without prior notice. We reserve the right to modify or discontinue any product or service at our discretion." },
-      { subtitle: "4. Limitation of Liability", text: "Scent Preview is not liable for any direct, indirect, or incidental damages resulting from the use or inability to use our products or website." }
+      { 
+        subtitle: "1. No Affiliation", 
+        text: "ScentPreview is an independent fragrance decant reseller. We have no affiliation, partnership, or endorsement with any brand sold on this site. Brand names are used only to identify products and remain the property of their owners." 
+      },
+      { 
+        subtitle: "2. Authenticity", 
+        text: "All fragrances sold by ScentPreview are 100% authentic." 
+      },
+      { 
+        subtitle: "3. Product Use & Intellectual Property", 
+        text: "All content, branding, media, and formulations displayed on Scent Preview are the intellectual property of Scent Preview. Products are sold strictly for personal use as decant samples and may not be resold or redistributed without explicit authorization." 
+      },
+      { 
+        subtitle: "4. Pricing & Modifications", 
+        text: "Prices, product availability, and promotional offers are subject to change at any time without prior notice. We reserve the right to modify or discontinue any product or service at our discretion." 
+      },
+      { 
+        subtitle: "5. Limitation of Liability", 
+        text: "Scent Preview is not liable for any direct, indirect, or incidental damages resulting from the use or inability to use our products or website." 
+      }
     ]
   },
   privacy: {
@@ -3904,6 +3920,16 @@ export default function App() {
             </span>
           </div>
         )}
+
+        {/* Fine Print / Brand Association Disclaimer */}
+        <div className="mt-16 pt-8 border-t border-black/10 text-center max-w-2xl mx-auto px-4">
+          <p className="text-[10px] font-sans text-neutral-500 leading-relaxed">
+            <span className="font-semibold text-neutral-700 uppercase tracking-widest text-[9px] block mb-1">
+              Disclaimer & Fine Print
+            </span>
+            Each fragrance is an independent <strong>SP Decant</strong> hand-rebottled by Scent Preview. We have no association, affiliation, partnership, or endorsement with any of the brands sold on this site. Brand names and trademarks are used only to identify products and remain the property of their respective owners.
+          </p>
+        </div>
       </section>
         </>
       )}
@@ -3917,6 +3943,9 @@ export default function App() {
             </span>
             <span className="block text-[10px] font-mono text-black mt-2 uppercase tracking-widest">
               © 2026 ScentPreview. All Rights Reserved.
+            </span>
+            <span className="block text-[9px] font-sans text-neutral-500 mt-1">
+              Independent SP Decants. We have no association with any of these brands.
             </span>
           </div>
 
@@ -6512,18 +6541,23 @@ export default function App() {
         {/* Footer */}
         {!isAdminOpen && (
           <footer className="mt-auto border-t border-black/10 bg-[#F4F4F2] py-8 z-10 relative">
-            <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
-              <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
-              <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
-              <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
-              <a 
-                href="https://velyx-waitlist.vercel.app" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="hover:text-black transition-colors cursor-pointer"
-              >
-                VELYX
-              </a>
+            <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-6 text-[10px] uppercase tracking-[0.2em] font-sans font-medium text-neutral-600">
+              <div className="flex flex-wrap items-center gap-6">
+                <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
+                <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
+                <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
+                <a 
+                  href="https://velyx-waitlist.vercel.app" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-black transition-colors cursor-pointer"
+                >
+                  VELYX
+                </a>
+              </div>
+              <p className="text-[9px] normal-case tracking-normal text-neutral-500">
+                Independent SP Decants. We have no association with any of these brands.
+              </p>
             </div>
           </footer>
         )}

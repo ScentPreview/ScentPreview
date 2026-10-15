@@ -95,6 +95,15 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
           onClick={() => onOpenDetails?.(fragrance)}
           className="space-y-3 mb-6 cursor-pointer group/detail"
         >
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-block text-[9px] font-mono uppercase tracking-[0.15em] font-bold px-2 py-0.5 rounded bg-black text-white">
+              SP Decant
+            </span>
+            <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+              {fragrance.brand}
+            </span>
+          </div>
+
           <div className="flex items-start justify-between gap-3">
             <h3 className="text-xl font-sans font-semibold text-neutral-900 group-hover/detail:text-black group-hover/detail:underline decoration-neutral-300 underline-offset-4 leading-snug tracking-tight transition-colors">
               {fragrance.name}
@@ -113,6 +122,9 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
           <div className="pt-2 flex items-center justify-between">
             <span className="inline-block text-[10px] font-sans px-3 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium tracking-wide">
               {fragrance.type}
+            </span>
+            <span className="text-[10px] font-mono text-neutral-500 font-medium">
+              SP Decant
             </span>
           </div>
         </div>
@@ -157,6 +169,13 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
             <span className="text-xs font-mono font-semibold text-neutral-700">
               ₹{price}
             </span>
+          </div>
+
+          {/* Fine print below */}
+          <div className="mt-3 pt-2.5 border-t border-black/5 text-center">
+            <p className="text-[9px] font-sans text-neutral-400 leading-tight">
+              SP Decant • We have no association with any of these brands.
+            </p>
           </div>
         </div>
       </div>

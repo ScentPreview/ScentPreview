@@ -190,11 +190,16 @@ export default function ProductDetailPage({
             <div className="bg-white border border-black/5 rounded-3xl p-8 shadow-xs relative overflow-hidden">
               {/* Top Meta Badges */}
               <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                <span className="text-[10px] font-mono tracking-[0.2em] uppercase px-3 py-1 rounded-full bg-neutral-100 text-neutral-800 font-semibold">
-                  {fragrance.brand}
-                </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-sans px-2.5 py-1 rounded-full bg-black text-white font-medium">
+                  <span className="text-[10px] font-mono uppercase tracking-widest font-bold px-2.5 py-1 rounded-full bg-black text-white">
+                    SP Decant
+                  </span>
+                  <span className="text-[10px] font-mono tracking-[0.2em] uppercase px-3 py-1 rounded-full bg-neutral-100 text-neutral-800 font-semibold">
+                    {fragrance.brand}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-sans px-2.5 py-1 rounded-full bg-neutral-800 text-white font-medium">
                     {fragrance.type || "AUTHENTIC DECANT"}
                   </span>
                   {fragrance.isPremium && (
@@ -223,9 +228,14 @@ export default function ProductDetailPage({
               )}
 
               {/* Title & Brand */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-sans font-bold text-neutral-950 tracking-tight leading-[1.05] mb-8">
-                {fragrance.name}
-              </h1>
+              <div className="mb-8">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-sans font-bold text-neutral-950 tracking-tight leading-[1.05] mb-2">
+                  {fragrance.name}
+                </h1>
+                <p className="text-xs font-mono uppercase tracking-widest text-neutral-500 font-semibold">
+                  Authentic SP Decant · {fragrance.brand}
+                </p>
+              </div>
 
               {/* Description */}
               <div className="space-y-4 mb-8">
@@ -275,6 +285,13 @@ export default function ProductDetailPage({
                     <span className="text-[10px] font-sans text-neutral-500">Air-tight & leak-tested packaging</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Fine Print Disclaimer */}
+              <div className="mt-6 pt-4 border-t border-black/5 text-center">
+                <p className="text-[10px] font-sans text-neutral-400 leading-relaxed">
+                  * Note: All fragrances are independent <strong>SP Decants</strong>. We have no association with any of these brands.
+                </p>
               </div>
             </div>
           </div>
@@ -416,6 +433,14 @@ export default function ProductDetailPage({
                   <RotateCcw className="w-3 h-3 text-neutral-400" />
                   <span>Eligible for Damaged in Transit claims</span>
                 </div>
+              </div>
+
+              {/* Fine Print Notice */}
+              <div className="border-t border-black/5 pt-4 text-center">
+                <p className="text-[10px] font-sans text-neutral-400 leading-relaxed">
+                  <span className="font-semibold text-neutral-600 uppercase tracking-wider text-[9px] block mb-0.5">Disclaimer & Fine Print</span>
+                  * Authentic SP Decant rebottled independently. We have no association with any of these brands.
+                </p>
               </div>
             </div>
           </div>
