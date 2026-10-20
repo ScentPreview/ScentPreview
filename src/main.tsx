@@ -6,7 +6,7 @@ import './index.css';
 // Pre-warm and decode all perfume assets into GPU/browser cache immediately
 const ALL_PERFUME_IMAGES = [
   "/images/perfumes/givenchy-gentleman.jpg",
-  "/images/perfumes/la-uno.jpg",
+  "/images/perfumes/la-uno.jpg?v=final",
   "/images/perfumes/for-him-black.jpg",
   "/images/perfumes/seoul.jpg",
   "/images/perfumes/intense-dark.jpg",

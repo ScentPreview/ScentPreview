@@ -96,7 +96,7 @@ export const CATALOG_DATA: Fragrance[] = [
     },
     color: "from-stone-700 to-stone-900",
     glassStyle: "shadow-stone-800/50",
-    image: "/images/perfumes/la-uno.jpg"
+    image: "/images/perfumes/la-uno.jpg?v=final"
   },
   {
     id: "zara-for-him-black",
