@@ -98,18 +98,18 @@ const mapNameToKey = (name: string): { type: "fragrance" | "bundle"; key: string
   if (n.includes("master vault")) return { type: "bundle", key: "bundle-master-vault" };
   if (n.includes("zara classics")) return { type: "bundle", key: "bundle-zara-classics" };
 
-  if (n.includes("khamrah")) return { type: "fragrance", key: "lattafa-khamrah" };
-  if (n.includes("ck2")) return { type: "fragrance", key: "ck2" };
-  if (n.includes("gentleman")) return { type: "fragrance", key: "givenchy-gentleman" };
-  if (n.includes("for him") || n.includes("black edition")) return { type: "fragrance", key: "zara-for-him-black" };
-  if (n.includes("sunrise")) return { type: "fragrance", key: "zara-sunrise" };
-  if (n.includes("seoul 532-8") || n.includes("seoul winter")) return { type: "fragrance", key: "zara-seoul-winter" };
-  if (n.includes("seoul")) return { type: "fragrance", key: "zara-seoul" };
-  if (n.includes("intense dark")) return { type: "fragrance", key: "zara-intense-dark" };
-  if (n.includes("rich warm")) return { type: "fragrance", key: "zara-rich-warm-addictive" };
-  if (n.includes("ck one")) return { type: "fragrance", key: "ck-one" };
-  if (n.includes("qaswa") || n.includes("la uno")) return { type: "fragrance", key: "la-uno-qaswa" };
-  if (n.includes("crystal noir") || n.includes("versace")) return { type: "fragrance", key: "versace-crystal-noir" };
+  if (n.includes("khamrah") || n.includes("sample no. 6") || n.includes("sample 6")) return { type: "fragrance", key: "lattafa-khamrah" };
+  if (n.includes("ck2") || n.includes("sample no. 9") || n.includes("sample 9")) return { type: "fragrance", key: "ck2" };
+  if (n.includes("gentleman") || n.includes("sample no. 1") || n.includes("sample 1")) return { type: "fragrance", key: "givenchy-gentleman" };
+  if (n.includes("for him") || n.includes("black edition") || n.includes("sample no. 3") || n.includes("sample 3")) return { type: "fragrance", key: "zara-for-him-black" };
+  if (n.includes("sunrise") || n.includes("sample no. 10") || n.includes("sample 10")) return { type: "fragrance", key: "zara-sunrise" };
+  if (n.includes("seoul 532-8") || n.includes("seoul winter") || n.includes("sample no. 11") || n.includes("sample 11")) return { type: "fragrance", key: "zara-seoul-winter" };
+  if (n.includes("seoul") || n.includes("sample no. 4") || n.includes("sample 4")) return { type: "fragrance", key: "zara-seoul" };
+  if (n.includes("intense dark") || n.includes("sample no. 5") || n.includes("sample 5")) return { type: "fragrance", key: "zara-intense-dark" };
+  if (n.includes("rich warm") || n.includes("sample no. 7") || n.includes("sample 7")) return { type: "fragrance", key: "zara-rich-warm-addictive" };
+  if (n.includes("ck one") || n.includes("sample no. 8") || n.includes("sample 8")) return { type: "fragrance", key: "ck-one" };
+  if (n.includes("qaswa") || n.includes("la uno") || n.includes("sample no. 2") || n.includes("sample 2")) return { type: "fragrance", key: "la-uno-qaswa" };
+  if (n.includes("crystal noir") || n.includes("versace") || n.includes("sample no. 12") || n.includes("sample 12")) return { type: "fragrance", key: "versace-crystal-noir" };
   return null;
 };
 

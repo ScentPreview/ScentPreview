@@ -403,6 +403,18 @@ export default function ProductDetailPage({
 
               {/* Action Buttons: Add to Cart & Buy Now */}
               <div className="space-y-3 pt-2">
+                {isAllSizesOutOfStock && (
+                  <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-xs font-mono space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <span>✕</span>
+                      <span>Sold Out Across All Sizes</span>
+                    </div>
+                    <p className="text-[11px] font-sans text-red-700">
+                      This perfume is currently sold out and unlisted from the live catalog until restocked.
+                    </p>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   disabled={isCurrentOutOfStock || isAllSizesOutOfStock}
@@ -410,7 +422,7 @@ export default function ProductDetailPage({
                   className="w-full py-4 bg-black text-white rounded-2xl text-xs sm:text-sm font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm select-none"
                 >
                   {added ? <Check className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-                  {added ? "Added to Cart" : (isCurrentOutOfStock || isAllSizesOutOfStock) ? "Sold Out" : "Add to cart"}
+                  {added ? "Added to Cart" : isAllSizesOutOfStock ? "Sold Out · Unlisted" : isCurrentOutOfStock ? "Sold Out" : "Add to cart"}
                 </button>
 
                 <button
@@ -419,7 +431,7 @@ export default function ProductDetailPage({
                   onClick={handleBuy}
                   className="w-full py-4 border border-black/20 hover:border-black bg-stone-50/50 hover:bg-stone-100 rounded-2xl text-xs sm:text-sm font-sans font-medium text-black active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer select-none"
                 >
-                  {(isCurrentOutOfStock || isAllSizesOutOfStock) ? "Sold Out / Unavailable" : "Buy Now"}
+                  {isAllSizesOutOfStock ? "Unavailable (Unlisted)" : isCurrentOutOfStock ? "Sold Out" : "Buy Now"}
                 </button>
               </div>
 

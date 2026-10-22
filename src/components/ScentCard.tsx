@@ -116,7 +116,7 @@ function ScentCardComponent({ fragrance, onAddToCart, onBuyNow, onNoteClick, onO
           <p className="text-xs font-sans text-neutral-700 leading-relaxed">
             <span className="font-semibold text-black">Notes:</span> {fragrance.notes}
           </p>
-          <p className="text-xs font-sans text-neutral-600 leading-relaxed line-clamp-2">
+          <p className="text-xs font-sans text-neutral-600 leading-relaxed line-clamp-3">
             {fragrance.description}
           </p>
           <div className="pt-2 flex items-center justify-between">

@@ -9,6 +9,22 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Gracefully ignore harmless Vite HMR WebSocket disconnects in AI Studio preview iframe
+      window.addEventListener('unhandledrejection', function(e) {
+        var reason = e && e.reason;
+        var msg = (reason && (reason.message || (typeof reason === 'string' ? reason : ''))) || '';
+        if (typeof msg === 'string' && (msg.includes('WebSocket') || msg.includes('vite:ws') || msg.includes('@vite/client'))) {
+          e.preventDefault();
+        }
+      });
+      window.addEventListener('error', function(e) {
+        var msg = (e && (e.message || e.filename)) || '';
+        if (typeof msg === 'string' && (msg.includes('WebSocket') || msg.includes('vite:ws') || msg.includes('@vite/client'))) {
+          e.preventDefault();
+        }
+      });
+    </script>
 
     <!-- Primary Search Engine Optimization (SEO) -->
     <title>ScentPreview – Luxury Perfume Decants &amp; Fragrance Lab</title>
@@ -112,9 +128,9 @@
                 "position": 1,
                 "item": {
                   "@type": "Product",
-                  "name": "Lattafa Khamrah Perfume Decant",
-                  "brand": { "@type": "Brand", "name": "Lattafa" },
-                  "description": "Warm cinnamon bark, sweet dates, praline, and roasted tonka bean.",
+                  "name": "SCENTPREVIEW Sample No. 6",
+                  "brand": { "@type": "Brand", "name": "SCENTPREVIEW" },
+                  "description": "This generic vial contains authentic Lattafa Khamrah liquid, independently rebottled by SCENTPREVIEW. SCENTPREVIEW has no official affiliation or partnership with Lattafa.",
                   "image": "/images/perfumes/lattafa-khamrah.jpg",
                   "offers": {
                     "@type": "AggregateOffer",
@@ -130,9 +146,9 @@
                 "position": 2,
                 "item": {
                   "@type": "Product",
-                  "name": "Givenchy Gentleman Perfume Decant",
-                  "brand": { "@type": "Brand", "name": "Givenchy" },
-                  "description": "Dry powdery iris, crushed black pepper, and dark leather.",
+                  "name": "SCENTPREVIEW Sample No. 1",
+                  "brand": { "@type": "Brand", "name": "SCENTPREVIEW" },
+                  "description": "This generic vial contains authentic Givenchy Gentleman liquid, independently rebottled by SCENTPREVIEW. SCENTPREVIEW has no official affiliation or partnership with Givenchy.",
                   "image": "/images/perfumes/givenchy-gentleman.jpg",
                   "offers": {
                     "@type": "AggregateOffer",
@@ -148,9 +164,9 @@
                 "position": 3,
                 "item": {
                   "@type": "Product",
-                  "name": "Zara Rich Warm Addictive Perfume Decant",
-                  "brand": { "@type": "Brand", "name": "Zara" },
-                  "description": "Smooth honey, toasted coconut cream, and sweet tobacco leaf.",
+                  "name": "SCENTPREVIEW Sample No. 7",
+                  "brand": { "@type": "Brand", "name": "SCENTPREVIEW" },
+                  "description": "This generic vial contains authentic Zara Rich Warm Addictive liquid, independently rebottled by SCENTPREVIEW. SCENTPREVIEW has no official affiliation or partnership with Zara.",
                   "image": "/images/perfumes/rich-warm-addictive.jpg",
                   "offers": {
                     "@type": "AggregateOffer",
@@ -166,9 +182,9 @@
                 "position": 4,
                 "item": {
                   "@type": "Product",
-                  "name": "La Uno Qaswa Perfume Decant",
-                  "brand": { "@type": "Brand", "name": "La Uno" },
-                  "description": "Heavy resinous smoke, raw oud, incense, and dark woods.",
+                  "name": "SCENTPREVIEW Sample No. 2",
+                  "brand": { "@type": "Brand", "name": "SCENTPREVIEW" },
+                  "description": "This generic vial contains authentic La Uno Qaswa liquid, independently rebottled by SCENTPREVIEW. SCENTPREVIEW has no official affiliation or partnership with La Uno.",
                   "image": "/images/perfumes/la-uno.jpg",
                   "offers": {
                     "@type": "AggregateOffer",
@@ -184,9 +200,9 @@
                 "position": 5,
                 "item": {
                   "@type": "Product",
-                  "name": "Calvin Klein CK One Perfume Decant",
-                  "brand": { "@type": "Brand", "name": "Calvin Klein" },
-                  "description": "Clean green tea leaf, sharp lemon citrus, and light jasmine florals.",
+                  "name": "SCENTPREVIEW Sample No. 8",
+                  "brand": { "@type": "Brand", "name": "SCENTPREVIEW" },
+                  "description": "This generic vial contains authentic Calvin Klein CK One liquid, independently rebottled by SCENTPREVIEW. SCENTPREVIEW has no official affiliation or partnership with Calvin Klein.",
                   "image": "/images/perfumes/ck-one.jpg",
                   "offers": {
                     "@type": "AggregateOffer",
@@ -202,9 +218,9 @@
                 "position": 6,
                 "item": {
                   "@type": "Product",
-                  "name": "Versace Crystal Noir Perfume Decant",
-                  "brand": { "@type": "Brand", "name": "Versace" },
-                  "description": "Spiced cardamom, creamy coconut, gardenia, and sensual sandalwood.",
+                  "name": "SCENTPREVIEW Sample No. 12",
+                  "brand": { "@type": "Brand", "name": "SCENTPREVIEW" },
+                  "description": "This generic vial contains 5ml of authentic Versace Crystal Noir liquid, independently rebottled by SCENTPREVIEW. SCENTPREVIEW has no official affiliation or partnership with Versace.",
                   "image": "/images/perfumes/versace-crystal-noir.jpg",
                   "offers": {
                     "@type": "AggregateOffer",
@@ -284,17 +300,17 @@
         <p>Welcome to ScentPreview (Scent Preview). Discover and shop 100% authentic 5ml and 10ml luxury perfume decants, designer fragrance samples, and curated capsule bundles with fast shipping across India.</p>
         <h2>Featured Perfume Decants at ScentPreview</h2>
         <ul>
-          <li><a href="/?perfume=givenchy-gentleman">Givenchy Gentleman Decant (5ml &amp; 10ml) – Iris, Black Pepper, Leather</a></li>
-          <li><a href="/?perfume=lattafa-khamrah">Lattafa Khamrah Decant (5ml &amp; 10ml) – Cinnamon, Dates, Praline</a></li>
-          <li><a href="/?perfume=zara-rich-warm-addictive">Zara Rich Warm Addictive Decant (5ml &amp; 10ml) – Honey, Coconut, Tobacco</a></li>
-          <li><a href="/?perfume=la-uno-qaswa">La Uno Qaswa Decant (5ml &amp; 10ml) – Oud, Incense, Dark Woods</a></li>
-          <li><a href="/?perfume=ck-one">Calvin Klein CK One Decant (5ml &amp; 10ml) – Lemon, Green Tea, Jasmine</a></li>
-          <li><a href="/?perfume=ck2">Calvin Klein CK2 Decant (5ml &amp; 10ml) – Wasabi, Violet Leaf, Wet Cobblestones</a></li>
-          <li><a href="/?perfume=versace-crystal-noir">Versace Crystal Noir Decant (5ml &amp; 10ml) – Cardamom, Coconut, Sandalwood</a></li>
-          <li><a href="/?perfume=zara-for-him-black">Zara For Him Black Decant (5ml &amp; 10ml)</a></li>
-          <li><a href="/?perfume=zara-intense-dark">Zara Intense Dark Exclusive Decant (5ml &amp; 10ml)</a></li>
-          <li><a href="/?perfume=zara-sunrise">Zara Sunrise On The Red Sand Dunes Decant (10ml)</a></li>
-          <li><a href="/?perfume=zara-seoul">Zara Seoul 532-8 Sinsa Dong Gangnam-Gu Decant (5ml HQ)</a></li>
+          <li><a href="/?perfume=givenchy-gentleman">SCENTPREVIEW Sample No. 1 (5ml Decant) – Iris, Black Pepper, Leather</a></li>
+          <li><a href="/?perfume=la-uno-qaswa">SCENTPREVIEW Sample No. 2 (5ml &amp; 10ml Decant) – Oud, Incense, Dark Woods</a></li>
+          <li><a href="/?perfume=zara-for-him-black">SCENTPREVIEW Sample No. 3 (5ml &amp; 10ml Decant)</a></li>
+          <li><a href="/?perfume=zara-seoul">SCENTPREVIEW Sample No. 4 (5ml HQ Decant)</a></li>
+          <li><a href="/?perfume=zara-intense-dark">SCENTPREVIEW Sample No. 5 (5ml &amp; 10ml Decant)</a></li>
+          <li><a href="/?perfume=lattafa-khamrah">SCENTPREVIEW Sample No. 6 (5ml Decant) – Cinnamon, Dates, Praline</a></li>
+          <li><a href="/?perfume=zara-rich-warm-addictive">SCENTPREVIEW Sample No. 7 (5ml &amp; 10ml Decant) – Honey, Coconut, Tobacco</a></li>
+          <li><a href="/?perfume=ck-one">SCENTPREVIEW Sample No. 8 (5ml &amp; 10ml Decant) – Lemon, Green Tea, Jasmine</a></li>
+          <li><a href="/?perfume=ck2">SCENTPREVIEW Sample No. 9 (5ml &amp; 10ml Decant) – Wasabi, Violet Leaf, Wet Cobblestones</a></li>
+          <li><a href="/?perfume=zara-sunrise">SCENTPREVIEW Sample No. 10 (10ml Decant)</a></li>
+          <li><a href="/?perfume=versace-crystal-noir">SCENTPREVIEW Sample No. 12 (5ml Decant) – Cardamom, Coconut, Sandalwood</a></li>
         </ul>
       </main>
     </noscript>

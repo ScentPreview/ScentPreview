@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import rateLimit from "express-rate-limit";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -314,6 +315,14 @@ async function loadStockFromFirestore(): Promise<StockDB> {
             needsSave = true;
           }
         }
+        // Ensure SCENTPREVIEW Sample No. 12 (versace-crystal-noir) has 1 unit of 5ml Normal stock
+        if (stock.fragrances["versace-crystal-noir"]) {
+          const vcn = stock.fragrances["versace-crystal-noir"];
+          if ((vcn["5ml Normal"] || 0) <= 0 && (vcn["10ml"] || 0) <= 0 && (vcn["5ml HQ"] || 0) <= 0) {
+            stock.fragrances["versace-crystal-noir"] = { "5ml Normal": 1, "10ml": 0, "5ml HQ": 0 };
+            needsSave = true;
+          }
+        }
       }
 
       // Ensure all bundles from DEFAULT_STOCK exist in the stock record without overwriting user adjustments
@@ -515,6 +524,76 @@ function saveStockToDisk(stock: StockDB) {
   }
 }
 
+const FRAGRANCE_METADATA: Record<string, { name: string; brand: string }> = {
+  "givenchy-gentleman": { name: "SCENTPREVIEW Sample No. 1", brand: "SCENTPREVIEW" },
+  "la-uno-qaswa": { name: "SCENTPREVIEW Sample No. 2", brand: "SCENTPREVIEW" },
+  "zara-for-him-black": { name: "SCENTPREVIEW Sample No. 3", brand: "SCENTPREVIEW" },
+  "zara-seoul": { name: "SCENTPREVIEW Sample No. 4", brand: "SCENTPREVIEW" },
+  "intense-dark": { name: "SCENTPREVIEW Sample No. 5", brand: "SCENTPREVIEW" },
+  "zara-intense-dark": { name: "SCENTPREVIEW Sample No. 5", brand: "SCENTPREVIEW" },
+  "lattafa-khamrah": { name: "SCENTPREVIEW Sample No. 6", brand: "SCENTPREVIEW" },
+  "zara-rich-warm-addictive": { name: "SCENTPREVIEW Sample No. 7", brand: "SCENTPREVIEW" },
+  "ck-one": { name: "SCENTPREVIEW Sample No. 8", brand: "SCENTPREVIEW" },
+  "ck2": { name: "SCENTPREVIEW Sample No. 9", brand: "SCENTPREVIEW" },
+  "zara-sunrise": { name: "SCENTPREVIEW Sample No. 10", brand: "SCENTPREVIEW" },
+  "zara-seoul-winter": { name: "SCENTPREVIEW Sample No. 11", brand: "SCENTPREVIEW" },
+  "versace-crystal-noir": { name: "SCENTPREVIEW Sample No. 12", brand: "SCENTPREVIEW" }
+};
+
+const ALERTS_FILE_PATH = path.join(process.cwd(), "sold_out_alerts.json");
+
+interface SoldOutAlert {
+  id: string;
+  fragranceId: string;
+  fragranceName: string;
+  brand: string;
+  message: string;
+  timestamp: string;
+  dismissed: boolean;
+}
+
+function loadAlertsFromDisk(): SoldOutAlert[] {
+  try {
+    if (fs.existsSync(ALERTS_FILE_PATH)) {
+      const data = fs.readFileSync(ALERTS_FILE_PATH, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("Error reading sold_out_alerts.json:", err);
+  }
+  return [];
+}
+
+function saveAlertsToDisk(alerts: SoldOutAlert[]) {
+  try {
+    fs.writeFileSync(ALERTS_FILE_PATH, JSON.stringify(alerts, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error saving sold_out_alerts.json:", err);
+  }
+}
+
+async function recordSoldOutAlert(fragId: string, fragName: string, brand: string, sendEmail: boolean = true) {
+  const alerts = loadAlertsFromDisk();
+  const existing = alerts.find(a => a.fragranceId === fragId && !a.dismissed);
+  if (!existing) {
+    const newAlert: SoldOutAlert = {
+      id: `alert-${fragId}-${Date.now()}`,
+      fragranceId: fragId,
+      fragranceName: fragName,
+      brand: brand,
+      message: "perfume sold out we have removed",
+      timestamp: new Date().toISOString(),
+      dismissed: false
+    };
+    alerts.unshift(newAlert);
+    saveAlertsToDisk(alerts);
+    console.log(`[Sold Out Notification] Registered alert: "perfume sold out we have removed: ${brand} — ${fragName}"`);
+    if (sendEmail) {
+      await sendSoldOutNotificationEmail(fragName, brand);
+    }
+  }
+}
+
 function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: string } | null {
   const norm = name.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!norm) return null;
@@ -528,18 +607,18 @@ function findItemIdByName(name: string): { type: "fragrance" | "bundle"; id: str
   }
   
   const fragrances = [
-    { id: "lattafa-khamrah", names: ["lattafakhamrah", "khamrah", "lattafa"] },
-    { id: "zara-sunrise", names: ["zarasunrise", "sunrise", "sunriseontheredsanddunes", "redsanddunes", "sanddunes"] },
-    { id: "zara-for-him-black", names: ["zaraforhimblack", "forhimblack", "himblack"] },
-    { id: "zara-intense-dark", names: ["zaraintensedark", "intensedark", "intensivedark", "intense", "intensive"] },
-    { id: "zara-seoul-winter", names: ["zaraseoulwinter", "seoulwinter"] },
-    { id: "la-uno-qaswa", names: ["launoqaswa", "qaswa", "launo", "uno"] },
-    { id: "ck-one", names: ["calvinkleinckone", "ckone", "ck1"] },
-    { id: "ck2", names: ["calvinkleinck2", "ck2"] },
-    { id: "zara-rich-warm-addictive", names: ["zararichwarmaddictive", "richwarmaddictive", "richwarm"] },
-    { id: "zara-seoul", names: ["zaraseoul", "seoul", "seouloriginal", "originalseoul"] },
-    { id: "givenchy-gentleman", names: ["givenchygentleman", "gentleman", "givenchy"] },
-    { id: "versace-crystal-noir", names: ["versacecrystalnoir", "crystalnoir", "versace", "crystal"] }
+    { id: "givenchy-gentleman", names: ["sampleno1", "sample1", "scentpreviewsampleno1", "givenchygentleman", "gentleman", "givenchy"] },
+    { id: "la-uno-qaswa", names: ["sampleno2", "sample2", "scentpreviewsampleno2", "launoqaswa", "qaswa", "launo", "uno"] },
+    { id: "zara-for-him-black", names: ["sampleno3", "sample3", "scentpreviewsampleno3", "zaraforhimblack", "forhimblack", "himblack"] },
+    { id: "zara-seoul", names: ["sampleno4", "sample4", "scentpreviewsampleno4", "zaraseoul", "seoul", "seouloriginal", "originalseoul"] },
+    { id: "zara-intense-dark", names: ["sampleno5", "sample5", "scentpreviewsampleno5", "zaraintensedark", "intensedark", "intensivedark", "intense", "intensive"] },
+    { id: "lattafa-khamrah", names: ["sampleno6", "sample6", "scentpreviewsampleno6", "lattafakhamrah", "khamrah", "lattafa"] },
+    { id: "zara-rich-warm-addictive", names: ["sampleno7", "sample7", "scentpreviewsampleno7", "zararichwarmaddictive", "richwarmaddictive", "richwarm"] },
+    { id: "ck-one", names: ["sampleno8", "sample8", "scentpreviewsampleno8", "calvinkleinckone", "ckone", "ck1"] },
+    { id: "ck2", names: ["sampleno9", "sample9", "scentpreviewsampleno9", "calvinkleinck2", "ck2"] },
+    { id: "zara-sunrise", names: ["sampleno10", "sample10", "scentpreviewsampleno10", "zarasunrise", "sunrise", "sunriseontheredsanddunes", "redsanddunes", "sanddunes"] },
+    { id: "zara-seoul-winter", names: ["sampleno11", "sample11", "scentpreviewsampleno11", "zaraseoulwinter", "seoulwinter"] },
+    { id: "versace-crystal-noir", names: ["sampleno12", "sample12", "scentpreviewsampleno12", "versacecrystalnoir", "crystalnoir", "versace", "crystal"] }
   ];
 
   const bundles = [
@@ -612,6 +691,8 @@ function getBundleConstituents(bundleId: string): string[] {
 async function reduceStockForItems(items: { name: string; size: string; quantity: number }[]) {
   try {
     const stock = await loadStockFromFirestore();
+    const affectedFragranceIds = new Set<string>();
+
     for (const item of items) {
       const match = findItemIdByName(item.name);
       if (match) {
@@ -621,6 +702,7 @@ async function reduceStockForItems(items: { name: string; size: string; quantity
             const current = fStock[item.size] || 0;
             fStock[item.size] = Math.max(0, current - item.quantity);
             console.log(`[Stock] Reduced fragrance ${match.id} (${item.size}) by ${item.quantity}. Remaining: ${fStock[item.size]}`);
+            affectedFragranceIds.add(match.id);
           }
         } else {
           // Reduce the bundle stock level
@@ -637,6 +719,7 @@ async function reduceStockForItems(items: { name: string; size: string; quantity
               const curFragStock = fStock[sizeToReduce] || 0;
               fStock[sizeToReduce] = Math.max(0, curFragStock - item.quantity);
               console.log(`[Stock] Reduced constituent fragrance ${fragId} (${sizeToReduce}) by ${item.quantity} due to bundle ${match.id}. Remaining: ${fStock[sizeToReduce]}`);
+              affectedFragranceIds.add(fragId);
             }
           }
         }
@@ -645,6 +728,19 @@ async function reduceStockForItems(items: { name: string; size: string; quantity
       }
     }
     await saveStockToFirestore(stock);
+
+    // Check if any affected fragrance is now completely sold out across all sizes
+    for (const fragId of affectedFragranceIds) {
+      const fStock = stock.fragrances[fragId];
+      if (fStock) {
+        const totalRemaining = Object.values(fStock).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+        if (totalRemaining === 0) {
+          const meta = FRAGRANCE_METADATA[fragId] || { name: fragId, brand: "ScentPreview" };
+          console.log(`[Stock Alert] ${meta.name} is now completely sold out across all sizes. Removing from live listing and notifying admin.`);
+          await recordSoldOutAlert(fragId, meta.name, meta.brand, true);
+        }
+      }
+    }
   } catch (err) {
     console.error("[Stock Error] Failed to reduce stock:", err);
   }
@@ -653,6 +749,8 @@ async function reduceStockForItems(items: { name: string; size: string; quantity
 async function restoreStockForItems(items: { name: string; size: string; quantity: number }[]) {
   try {
     const stock = await loadStockFromFirestore();
+    const affectedFragranceIds = new Set<string>();
+
     for (const item of items) {
       const match = findItemIdByName(item.name);
       if (match) {
@@ -662,6 +760,7 @@ async function restoreStockForItems(items: { name: string; size: string; quantit
             const current = fStock[item.size] || 0;
             fStock[item.size] = current + item.quantity;
             console.log(`[Stock] Restored fragrance ${match.id} (${item.size}) by ${item.quantity}. New level: ${fStock[item.size]}`);
+            affectedFragranceIds.add(match.id);
           }
         } else {
           // Restore the bundle stock level
@@ -678,6 +777,7 @@ async function restoreStockForItems(items: { name: string; size: string; quantit
               const curFragStock = fStock[sizeToRestore] || 0;
               fStock[sizeToRestore] = curFragStock + item.quantity;
               console.log(`[Stock] Restored constituent fragrance ${fragId} (${sizeToRestore}) by ${item.quantity} due to bundle ${match.id}. New level: ${fStock[sizeToRestore]}`);
+              affectedFragranceIds.add(fragId);
             }
           }
         }
@@ -686,6 +786,25 @@ async function restoreStockForItems(items: { name: string; size: string; quantit
       }
     }
     await saveStockToFirestore(stock);
+
+    // If restocked fragrance now has stock, auto-dismiss any active sold-out alert
+    for (const fragId of affectedFragranceIds) {
+      const fStock = stock.fragrances[fragId];
+      if (fStock) {
+        const totalRemaining = Object.values(fStock).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+        if (totalRemaining > 0) {
+          const alerts = loadAlertsFromDisk();
+          let changed = false;
+          for (const a of alerts) {
+            if (a.fragranceId === fragId && !a.dismissed) {
+              a.dismissed = true;
+              changed = true;
+            }
+          }
+          if (changed) saveAlertsToDisk(alerts);
+        }
+      }
+    }
   } catch (err) {
     console.error("[Stock Error] Failed to restore stock:", err);
   }
@@ -825,6 +944,83 @@ Total Amount Paid: ₹${order.total}.00
   console.log(`Shipping Address:    ${order.address}, ${order.state || ""} ${order.pincode || ""}`);
   console.log(`Shipping Protection: ${shippingProtectionText}`);
   console.log(`Total Amount Paid:   ₹${order.total}.00`);
+  console.log("==================================================\n");
+  return { success: false, service: "log-only" };
+}
+
+async function sendSoldOutNotificationEmail(fragranceName: string, brand: string = "ScentPreview") {
+  const recipient = "scentpreview@gmail.com";
+  const emailSubject = `perfume sold out we have removed: ${fragranceName}`;
+  const emailHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff; color: #1c1917;">
+      <h2 style="color: #b45309; border-bottom: 2px solid #b45309; padding-bottom: 10px; font-family: serif; font-style: italic; margin-top: 0;">ScentPreview Inventory Alert</h2>
+      <p style="font-size: 15px; font-weight: bold; color: #991b1b; margin: 16px 0;">
+        perfume sold out we have removed
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #44403c;">
+        <strong>${brand ? `${brand} — ` : ""}${fragranceName}</strong> has run out of stock for all sizes.
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #44403c;">
+        It has been automatically unlisted and removed from the listing for all live customers to prevent unfulfillable orders.
+      </p>
+      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 14px; margin: 20px 0; font-size: 13px; color: #991b1b;">
+        <strong>Admin Notice:</strong> Once new decants or bottles arrive, log into the Admin Portal (/admin) and update stock levels to re-enable this fragrance for live customers automatically.
+      </div>
+      <p style="font-size: 11px; color: #78716c; border-top: 1px solid #e7e5e4; padding-top: 15px; margin-top: 25px;">
+        Automated alert generated by ScentPreview Inventory Monitor.
+      </p>
+    </div>
+  `;
+  const emailText = `perfume sold out we have removed: ${brand ? `${brand} — ` : ""}${fragranceName} is out of stock across all sizes and has been removed from the listing for live customers.`;
+
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: "ScentPreview <onboarding@resend.dev>",
+        to: recipient,
+        subject: emailSubject,
+        html: emailHtml,
+        text: emailText,
+      });
+      console.log(`[Sold Out Notification] Email successfully sent to ${recipient} via Resend.`);
+      return { success: true, service: "resend" };
+    } catch (err) {
+      console.error("[Sold Out Notification] Failed to send email using Resend:", err);
+    }
+  }
+
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      await transporter.sendMail({
+        from: `ScentPreview <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to: recipient,
+        subject: emailSubject,
+        text: emailText,
+        html: emailHtml,
+      });
+      console.log(`[Sold Out Notification] Email successfully sent to ${recipient} via Nodemailer.`);
+      return { success: true, service: "nodemailer" };
+    } catch (err) {
+      console.error("[Sold Out Notification] Failed to send email using Nodemailer:", err);
+    }
+  }
+
+  console.log("\n==================================================");
+  console.log("    [ALERT] PERFUME SOLD OUT WE HAVE REMOVED      ");
+  console.log("==================================================");
+  console.log(`To:      ${recipient}`);
+  console.log(`Subject: ${emailSubject}`);
+  console.log(`Message: perfume sold out we have removed: ${fragranceName}`);
   console.log("==================================================\n");
   return { success: false, service: "log-only" };
 }
@@ -1090,10 +1286,59 @@ Your evaluation must fit this schema:
       
       const updatedStock: StockDB = { fragrances, bundles };
       await saveStockToFirestore(updatedStock);
+
+      // Check if any fragrance became 0 across all sizes or got restocked
+      for (const [fragId, fStock] of Object.entries(fragrances as Record<string, Record<string, number>>)) {
+        const total = Object.values(fStock).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const meta = FRAGRANCE_METADATA[fragId] || { name: fragId, brand: "ScentPreview" };
+        if (total === 0) {
+          await recordSoldOutAlert(fragId, meta.name, meta.brand, true);
+        } else {
+          // If restocked, auto-dismiss any active alert
+          const alerts = loadAlertsFromDisk();
+          let modified = false;
+          for (const a of alerts) {
+            if (a.fragranceId === fragId && !a.dismissed) {
+              a.dismissed = true;
+              modified = true;
+            }
+          }
+          if (modified) saveAlertsToDisk(alerts);
+        }
+      }
+
       res.json({ success: true, message: "Stock levels successfully updated", stock: updatedStock });
     } catch (error) {
       console.error("Error updating stock levels:", error);
       res.status(500).json({ error: "Failed to update stock levels" });
+    }
+  });
+
+  // API Route: Get sold-out alerts for admin
+  app.get("/api/admin/sold-out-alerts", authenticateAdmin, (req, res) => {
+    try {
+      const alerts = loadAlertsFromDisk();
+      res.json({ success: true, alerts });
+    } catch (error) {
+      console.error("Error fetching sold-out alerts:", error);
+      res.status(500).json({ error: "Failed to load sold-out alerts" });
+    }
+  });
+
+  // API Route: Dismiss a sold-out alert
+  app.post("/api/admin/sold-out-alerts/dismiss", authenticateAdmin, (req, res) => {
+    try {
+      const { id } = req.body;
+      const alerts = loadAlertsFromDisk();
+      const target = alerts.find(a => a.id === id);
+      if (target) {
+        target.dismissed = true;
+        saveAlertsToDisk(alerts);
+      }
+      res.json({ success: true, alerts });
+    } catch (error) {
+      console.error("Error dismissing sold-out alert:", error);
+      res.status(500).json({ error: "Failed to dismiss alert" });
     }
   });
 
@@ -1614,12 +1859,18 @@ Your evaluation must fit this schema:
     }
   });
 
-  // Vite Integration & Static File Serving
+  // HTTP Server & Vite Integration
+  const httpServer = http.createServer(app);
   const isProduction = process.env.NODE_ENV === "production" || process.env.npm_lifecycle_event === "start";
   if (!isProduction) {
     let viteMiddleware: any = null;
     const vitePromise = createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: {
+          server: httpServer,
+        },
+      },
       appType: "spa",
     }).then((vite) => {
       viteMiddleware = vite.middlewares;
@@ -1645,7 +1896,7 @@ Your evaluation must fit this schema:
     });
   }
 
-  const serverInstance = app.listen(PORT, "0.0.0.0", () => {
+  const serverInstance = httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 

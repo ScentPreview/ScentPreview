@@ -259,6 +259,10 @@ const POLICIES = {
       { 
         subtitle: "5. Limitation of Liability", 
         text: "Scent Preview is not liable for any direct, indirect, or incidental damages resulting from the use or inability to use our products or website." 
+      },
+      { 
+        subtitle: "6. Payment Fulfillment & Refund Policy", 
+        text: "We will not ship the order if the payment is not paid in full and the exact correct amount. In the event that payment is not paid in full and the exact correct amount, the order will not be dispatched and we will issue a full refund of your own money back to your originating account." 
       }
     ]
   },
@@ -2139,7 +2143,7 @@ export default function App() {
     
     CATALOG_DATA.forEach((f) => {
       const fragStock = stock?.fragrances[f.id];
-      const isActuallyOutOfStock = f.isOutOfStock || (fragStock && Object.values(fragStock).every((qty) => qty === 0));
+      const isActuallyOutOfStock = f.isOutOfStock || (fragStock && Object.values(fragStock).every((qty) => (Number(qty) || 0) <= 0));
       if (isActuallyOutOfStock) {
         list.push({
           type: "fragrance",
@@ -2542,14 +2546,29 @@ export default function App() {
     }
   };
 
-  // Filter catalog based on search query
+  // Filter catalog based on search query, and automatically remove any perfume that is out of stock for all sizes from live customer listings
   const filteredCatalog = CATALOG_DATA.filter((fragrance) => {
+    // If perfume is marked out of stock or all sizes in stock have 0 units, remove it from live customer listing
+    if (fragrance.isOutOfStock) return false;
+    const fStock = stock?.fragrances?.[fragrance.id];
+    if (fStock) {
+      const availableSizes = (["10ml", "5ml Normal", "5ml HQ"] as const).filter(
+        (size) => !fragrance.disabledSizes?.includes(size)
+      );
+      const hasAnyStock = availableSizes.some((size) => (Number(fStock[size]) || 0) > 0);
+      if (!hasAnyStock) {
+        // Completely sold out across all sizes: remove from customer catalog
+        return false;
+      }
+    }
+
     const query = searchQuery.toLowerCase();
     return (
       fragrance.name.toLowerCase().includes(query) ||
       fragrance.brand.toLowerCase().includes(query) ||
       fragrance.notes.toLowerCase().includes(query) ||
-      fragrance.notesList.some((note) => note.toLowerCase().includes(query))
+      fragrance.notesList.some((note) => note.toLowerCase().includes(query)) ||
+      fragrance.description.toLowerCase().includes(query)
     );
   });
 
@@ -2577,17 +2596,43 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-5 text-center">
                 <h2 className="text-xl font-serif text-black mb-1">
                   Complete UPI Payment
                 </h2>
                 <p className="text-xs text-stone-600 font-sans">
-                  Pay <strong className="text-black font-mono">₹{paymentDetails.total}.00</strong> to the UPI ID below to confirm your order.
+                  Total Payable Amount: <strong className="text-black font-mono text-sm">₹{paymentDetails.total}.00</strong>
                 </p>
               </div>
 
-              <div className="bg-stone-50 border border-stone-200 p-4 mb-6 space-y-3">
-                <div className="flex items-center justify-between bg-white border border-stone-200 px-3.5 py-2.5">
+              {/* Payment QR Code Box */}
+              <div className="bg-stone-50 border border-stone-200 p-4 sm:p-5 mb-5 space-y-4">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="relative w-56 h-56 sm:w-64 sm:h-64 bg-white border border-stone-300 p-2.5 rounded-xl shadow-xs flex items-center justify-center">
+                    <img
+                      src="/images/gpay-upi-qr.png"
+                      alt="Google Pay UPI QR Code"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <span className="mt-2 text-[11px] font-mono font-semibold text-stone-700 uppercase tracking-wider">
+                    Scan with Google Pay, PhonePe, Paytm, or any UPI App
+                  </span>
+                </div>
+
+                {/* Terms & Fulfillment Policy Callout */}
+                <div className="bg-amber-50 border border-amber-200/90 rounded-lg p-3 text-xs text-amber-950 font-sans space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-700" />
+                    <span>Payment & Fulfillment Policy</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900">
+                    We will not ship the order if the payment is not paid in full and the exact correct amount (<strong className="font-mono font-bold text-amber-950">₹{paymentDetails.total}.00</strong>). If the payment is not paid in full and correct amount, we will issue a full refund of your own money back to your account.
+                  </p>
+                </div>
+
+                {/* UPI ID Details */}
+                <div className="flex items-center justify-between bg-white border border-stone-200 px-3.5 py-2.5 rounded-lg">
                   <div>
                     <span className="block text-[9px] font-mono uppercase tracking-wider text-stone-500">
                       UPI ID
@@ -2603,7 +2648,7 @@ export default function App() {
                       setIsCopied(true);
                       setTimeout(() => setIsCopied(false), 2000);
                     }}
-                    className="text-[10px] font-mono bg-stone-900 hover:bg-black text-white px-3 py-1.5 transition-colors cursor-pointer"
+                    className="text-[10px] font-mono bg-stone-900 hover:bg-black text-white px-3 py-1.5 rounded transition-colors cursor-pointer"
                   >
                     {isCopied ? "Copied" : "Copy UPI ID"}
                   </button>
@@ -2611,10 +2656,10 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <a
-                    href={`upi://pay?pa=chingtham@okhdfcbank&pn=Chingtham&am=${paymentDetails.total}&cu=INR&tn=ScentPreview%20Order`}
+                    href={`upi://pay?pa=chingtham@okhdfcbank&pn=ScentPreview&am=${paymentDetails.total}&cu=INR&tn=Order%20${paymentDetails.orderNumber}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center text-xs font-semibold bg-black hover:bg-stone-800 text-white py-2.5 px-4 transition-colors cursor-pointer text-center font-sans"
+                    className="inline-flex items-center justify-center text-xs font-semibold bg-black hover:bg-stone-800 text-white py-2.5 px-4 rounded transition-colors cursor-pointer text-center font-sans tracking-wide"
                   >
                     Open UPI App
                   </a>
@@ -4894,21 +4939,49 @@ export default function App() {
                       const outOfStockItems = getOutOfStockItems();
                       if (outOfStockItems.length === 0) return null;
                       return (
-                        <div className="p-4 bg-red-950/25 border border-red-900/40  space-y-2">
-                          <div className="flex items-center gap-2 text-rose-700">
-                            <span className="w-1.5 h-1.5 -full bg-rose-500 animate-ping" />
-                            <span className="text-[10px] font-sans tracking-[0.15em] uppercase tracking-widest font-bold">
-                              CRITICAL OUT OF STOCK ALERTS ({outOfStockItems.length})
-                            </span>
+                        <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-2xl shadow-sm space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-amber-900">
+                              <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                              <span className="text-xs font-mono font-bold tracking-wider uppercase">
+                                Notification: perfume sold out we have removed ({outOfStockItems.length})
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setAdminActiveTab("stock")}
+                              className="text-[11px] font-mono font-bold text-amber-900 hover:text-black underline cursor-pointer"
+                            >
+                              Manage Inventory →
+                            </button>
                           </div>
-                          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                          
+                          <p className="text-xs font-sans text-stone-700 leading-relaxed">
+                            The following perfume(s) have run out of stock for all sizes and have been <strong>automatically removed from the live customer listing</strong>:
+                          </p>
+                          
+                          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                             {outOfStockItems.map((item, index) => (
-                              <p key={index} className="text-xs text-black font-mono flex items-center gap-1.5">
-                                <span className="text-rose-700">⚠</span>
-                                <span>
-                                  <strong className="text-black ">{item.brand ? `${item.brand} — ` : ""}{item.name}</strong> is completely out of stock.
-                                </span>
-                              </p>
+                              <div key={index} className="flex flex-wrap items-center justify-between gap-2 bg-white border border-amber-200/80 p-2.5 rounded-xl text-xs font-mono">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-red-600 font-bold">✕</span>
+                                  <span className="text-stone-900 font-bold">
+                                    {item.brand ? `${item.brand} — ` : ""}{item.name}
+                                  </span>
+                                  <span className="text-[10px] text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full font-sans font-semibold">
+                                    Removed from live store
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAdminActiveTab("stock");
+                                  }}
+                                  className="text-[10px] font-mono font-bold bg-stone-900 text-white px-2.5 py-1 rounded-lg hover:bg-black transition-colors cursor-pointer"
+                                >
+                                  Restock Item ↗
+                                </button>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -5466,7 +5539,7 @@ export default function App() {
                                           const totalUnits = Object.values(fragStock).reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
                                           return totalUnits <= 0 ? (
                                             <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded bg-red-100 text-red-700 border border-red-200">
-                                              0 Stock (Sold Out)
+                                              0 Stock · Removed from Live Listing
                                             </span>
                                           ) : (
                                             <button
@@ -5486,7 +5559,7 @@ export default function App() {
                                         const totalUnits = Object.values(fragStock).reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
                                         return (
                                           <span className={totalUnits <= 0 ? "text-red-600 font-bold" : "text-stone-500"}>
-                                            Total: {totalUnits} units {totalUnits <= 0 ? "• Cannot be bought" : ""}
+                                            Total: {totalUnits} units {totalUnits <= 0 ? "• Sold out & unlisted for live customers" : ""}
                                           </span>
                                         );
                                       })()}
