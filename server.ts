@@ -315,11 +315,11 @@ async function loadStockFromFirestore(): Promise<StockDB> {
             needsSave = true;
           }
         }
-        // Ensure SCENTPREVIEW Sample No. 12 (versace-crystal-noir) has 1 unit of 5ml Normal stock
+        // Explicitly enforce that versace-crystal-noir remains 0 out of stock
         if (stock.fragrances["versace-crystal-noir"]) {
           const vcn = stock.fragrances["versace-crystal-noir"];
-          if ((vcn["5ml Normal"] || 0) <= 0 && (vcn["10ml"] || 0) <= 0 && (vcn["5ml HQ"] || 0) <= 0) {
-            stock.fragrances["versace-crystal-noir"] = { "5ml Normal": 1, "10ml": 0, "5ml HQ": 0 };
+          if ((vcn["10ml"] || 0) > 0 || (vcn["5ml Normal"] || 0) > 0 || (vcn["5ml HQ"] || 0) > 0) {
+            stock.fragrances["versace-crystal-noir"] = { "10ml": 0, "5ml Normal": 0, "5ml HQ": 0 };
             needsSave = true;
           }
         }
@@ -472,7 +472,7 @@ const DEFAULT_STOCK: StockDB = {
     "zara-intense-dark": { "10ml": 0, "5ml Normal": 5, "5ml HQ": 0 },
     "zara-rich-warm-addictive": { "10ml": 0, "5ml Normal": 16, "5ml HQ": 0 },
     "lattafa-khamrah": { "10ml": 0, "5ml Normal": 14, "5ml HQ": 0 },
-    "versace-crystal-noir": { "10ml": 0, "5ml Normal": 1, "5ml HQ": 0 },
+    "versace-crystal-noir": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-sunrise": { "10ml": 1, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-seoul-winter": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 0 },
     "zara-seoul": { "10ml": 0, "5ml Normal": 0, "5ml HQ": 2 },

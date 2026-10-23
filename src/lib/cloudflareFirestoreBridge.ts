@@ -25,7 +25,7 @@ export const DEFAULT_STOCK_DATA = {
     "zara-rich-warm-addictive": { "5ml Normal": 16, "5ml HQ": 0, "10ml": 0 },
     "ck-one": { "5ml Normal": 7, "5ml HQ": 3, "10ml": 0 },
     "la-uno-qaswa": { "5ml Normal": 11, "5ml HQ": 2, "10ml": 0 },
-    "versace-crystal-noir": { "5ml Normal": 1, "5ml HQ": 0, "10ml": 0 },
+    "versace-crystal-noir": { "5ml Normal": 0, "5ml HQ": 0, "10ml": 0 },
   } as Record<string, Record<string, number>>,
   bundles: {
     "bundle-winter-layers-trio": 6,

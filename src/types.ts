@@ -358,7 +358,9 @@ export const BUNDLE_DATA: CapsuleBundle[] = [
   {
     id: "spotlight-arabian",
     name: "Arabian Exotic Treasures Duo",
+    categoryLabel: "DUO BUNDLE — SPOTLIGHT",
     contains: "SCENTPREVIEW Sample No. 6 + Sample No. 2",
+    constituentIds: ["lattafa-khamrah", "la-uno-qaswa"],
     isOutOfStock: false,
     isSpotlight: true,
     fixedPrice: 814,

@@ -60,7 +60,7 @@ const DEFAULT_FALLBACK_STOCK = {
     "zara-rich-warm-addictive": { "5ml Normal": 16, "5ml HQ": 0, "10ml": 0 },
     "ck-one": { "5ml Normal": 7, "5ml HQ": 3, "10ml": 0 },
     "la-uno-qaswa": { "5ml Normal": 11, "5ml HQ": 2, "10ml": 0 },
-    "versace-crystal-noir": { "5ml Normal": 1, "5ml HQ": 0, "10ml": 0 }
+    "versace-crystal-noir": { "5ml Normal": 0, "5ml HQ": 0, "10ml": 0 }
   },
   bundles: {
     "bundle-winter-layers-trio": 6,
@@ -2572,8 +2572,14 @@ export default function App() {
     );
   });
 
-  // Filter bundles based on search query
+  // Filter bundles based on search query and remove out of stock bundles
   const filteredBundles = BUNDLE_DATA.filter((bundle) => {
+    // Completely remove bundles that are out of stock from customer view
+    const availableBundleStock = getProductStock(bundle.id, "5ml Normal");
+    if (bundle.isOutOfStock || availableBundleStock <= 0) {
+      return false;
+    }
+
     const query = searchQuery.toLowerCase();
     return (
       bundle.name.toLowerCase().includes(query) ||
@@ -3902,6 +3908,9 @@ export default function App() {
                 const price = isSpotlight ? bundle.fixedPrice : (bundle.prices ? bundle.prices[selectedSize] : 0);
                 const availableBundleStock = getProductStock(bundle.id, selectedSize);
                 const isBundleOutOfStock = bundle.isOutOfStock || availableBundleStock <= 0;
+                const constituents = (bundle.constituentIds || [])
+                  .map((cid) => CATALOG_DATA.find((f) => f.id === cid))
+                  .filter((f): f is Fragrance => Boolean(f));
 
                 return (
                   <div 
@@ -3929,6 +3938,50 @@ export default function App() {
                       <p className="text-xs font-sans text-neutral-600 mb-4 leading-relaxed">
                         Contains: {bundle.contains}
                       </p>
+
+                      {/* Visual display of what comes in the bundle */}
+                      {constituents.length > 0 && (
+                        <div className="my-4 pt-3.5 border-t border-black/10">
+                          <span className="block text-[10px] font-mono uppercase tracking-wider text-stone-600 mb-2.5 font-bold">
+                            Included in this set ({constituents.length} decants):
+                          </span>
+                          <div className={`grid grid-cols-${Math.min(constituents.length, 3)} gap-2 sm:gap-2.5`}>
+                            {constituents.map((frag) => (
+                              <button
+                                key={frag.id}
+                                type="button"
+                                onClick={() => handleOpenFragranceDetails(frag)}
+                                className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-xl p-2 sm:p-2.5 transition-all cursor-pointer flex flex-col justify-between"
+                                title={`Click to view ${frag.name}`}
+                              >
+                                <div className="aspect-square w-full bg-white rounded-lg border border-stone-200/60 overflow-hidden mb-1.5 flex items-center justify-center p-1.5">
+                                  {frag.image ? (
+                                    <img
+                                      src={frag.image}
+                                      alt={frag.name}
+                                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${frag.color}`} />
+                                  )}
+                                </div>
+                                <div className="w-full">
+                                  <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider truncate">
+                                    {frag.brand}
+                                  </div>
+                                  <div className="text-[11px] font-sans font-bold text-black leading-snug line-clamp-1 group-hover:underline">
+                                    {frag.name}
+                                  </div>
+                                  <div className="text-[9px] font-mono text-emerald-800 font-semibold mt-0.5">
+                                    5ml Decant
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-8 border-t border-black/5 pt-4 flex flex-col gap-2">

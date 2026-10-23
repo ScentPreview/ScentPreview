@@ -1,61 +1,44 @@
 {
-  "bundles": {
-    "bundle-cozy-winter": 0,
-    "bundle-winter-layers-trio": 6,
-    "bundle-master-vault": 0,
-    "bundle-winter-warmth-trio": 4,
-    "bundle-office-rotation": 0,
-    "bundle-zara-classics": 0,
-    "bundle-marine-core": 0,
-    "bundle-day-night": 0,
-    "spotlight-arabian": 6,
-    "bundle-rare-collector": 0
-  },
   "fragrances": {
     "zara-rich-warm-addictive": {
-      "5ml HQ": 0,
       "10ml": 0,
+      "5ml HQ": 0,
       "5ml Normal": 13
     },
-    "zara-seoul-winter": {
-      "5ml HQ": 0,
-      "10ml": 0,
-      "5ml Normal": 0
-    },
-    "lattafa-khamrah": {
-      "5ml HQ": 0,
-      "5ml Normal": 12,
-      "10ml": 0
-    },
     "givenchy-gentleman": {
+      "5ml Normal": 9,
       "10ml": 0,
-      "5ml Normal": 10,
       "5ml HQ": 0
     },
-    "ck-one": {
+    "zara-seoul": {
       "10ml": 0,
-      "5ml Normal": 5,
-      "5ml HQ": 3
-    },
-    "versace-crystal-noir": {
-      "10ml": 0,
-      "5ml Normal": 1,
-      "5ml HQ": 0
+      "5ml Normal": 0,
+      "5ml HQ": 2
     },
     "zara-for-him-black": {
       "5ml Normal": 5,
       "10ml": 0,
       "5ml HQ": 0
     },
-    "zara-intense-dark": {
-      "5ml HQ": 0,
-      "5ml Normal": 4,
-      "10ml": 0
-    },
-    "zara-seoul": {
+    "ck2": {
       "10ml": 0,
-      "5ml HQ": 2,
-      "5ml Normal": 0
+      "5ml HQ": 0,
+      "5ml Normal": 1
+    },
+    "versace-crystal-noir": {
+      "5ml Normal": 0,
+      "10ml": 0,
+      "5ml HQ": 0
+    },
+    "zara-seoul-winter": {
+      "10ml": 0,
+      "5ml Normal": 0,
+      "5ml HQ": 0
+    },
+    "ck-one": {
+      "5ml Normal": 5,
+      "10ml": 0,
+      "5ml HQ": 3
     },
     "la-uno-qaswa": {
       "5ml Normal": 10,
@@ -63,14 +46,31 @@
       "10ml": 0
     },
     "zara-sunrise": {
-      "5ml Normal": 0,
+      "10ml": 1,
       "5ml HQ": 0,
-      "10ml": 1
+      "5ml Normal": 0
     },
-    "ck2": {
-      "5ml Normal": 1,
+    "zara-intense-dark": {
       "10ml": 0,
-      "5ml HQ": 0
+      "5ml HQ": 0,
+      "5ml Normal": 4
+    },
+    "lattafa-khamrah": {
+      "5ml Normal": 12,
+      "5ml HQ": 0,
+      "10ml": 0
     }
+  },
+  "bundles": {
+    "bundle-winter-warmth-trio": 4,
+    "bundle-marine-core": 0,
+    "bundle-cozy-winter": 0,
+    "bundle-zara-classics": 0,
+    "bundle-winter-layers-trio": 6,
+    "bundle-day-night": 0,
+    "bundle-master-vault": 0,
+    "bundle-rare-collector": 0,
+    "bundle-office-rotation": 0,
+    "spotlight-arabian": 6
   }
 }
