@@ -206,7 +206,7 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
     // 4. POST /api/login
     if (pathOnly === "/api/login" && method === "POST") {
       const passcode = String(parsedBody?.passcode || "").trim();
-      if (passcode === "gephelbuiltallofthisforagirl") {
+      if (passcode === "Zayden@233008") {
         return jsonResponse({ success: true, token: "cf_scentpreview_admin_session_2026" });
       }
       return jsonResponse({ error: "Invalid passcode." }, 401);
