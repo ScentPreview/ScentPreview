@@ -194,13 +194,31 @@ const getBundleAesthetic = (id: string) => {
 
 
 // --- ROBUST ERROR HANDLING WRAPPER & CONSOLE PATCH ---
-// Suppress benign Vite WebSocket connection errors from cluttering the logs
+// Suppress benign Vite WebSocket and Firestore transport/offline noise from cluttering logs
+const isBenignTransportLog = (arg: any): boolean => {
+  if (typeof arg !== 'string') return false;
+  return (
+    arg.includes('failed to connect to websocket') ||
+    arg.includes('server connection lost') ||
+    arg.includes('WebChannelConnection') ||
+    arg.includes("RPC 'Listen' stream") ||
+    arg.includes('Could not reach Cloud Firestore backend') ||
+    arg.includes('client will operate in offline mode') ||
+    arg.includes('[code=unavailable]') ||
+    arg.includes('Cloudflare Firestore Bridge Error')
+  );
+};
+
 const originalConsoleError = console.error;
 console.error = (...args) => {
-  if (typeof args[0] === 'string' && args[0].includes('failed to connect to websocket')) {
-    return; // Mute specific benign error
-  }
+  if (args.some(isBenignTransportLog)) return;
   originalConsoleError(...args);
+};
+
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  if (args.some(isBenignTransportLog)) return;
+  originalConsoleWarn(...args);
 };
 
 // Robust fetch wrapper that seamlessly bridges /api/* to Firebase Firestore on Cloudflare Pages
@@ -2660,12 +2678,12 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                   <a
                     href={`upi://pay?pa=chingtham@okhdfcbank&pn=ScentPreview&am=${paymentDetails.total}&cu=INR&tn=Order%20${paymentDetails.orderNumber}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center text-xs font-semibold bg-black hover:bg-stone-800 text-white py-2.5 px-4 rounded transition-colors cursor-pointer text-center font-sans tracking-wide"
+                    className="inline-flex items-center justify-center text-xs font-semibold bg-black hover:bg-stone-800 text-white py-2.5 px-3 sm:px-4 rounded transition-colors cursor-pointer text-center font-sans tracking-wide"
                   >
                     Open UPI App
                   </a>
@@ -3830,7 +3848,7 @@ export default function App() {
                     Woody, aromatic, leather, and intense amber formulations.
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 bg-transparent">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8 lg:gap-10 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Men").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
                       <ScentCard
@@ -3864,7 +3882,7 @@ export default function App() {
                     Floral, sweet, vanilla, and sophisticated amber profiles.
                   </p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 bg-transparent">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8 lg:gap-10 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Women").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
                       <ScentCard
@@ -3915,7 +3933,7 @@ export default function App() {
                 return (
                   <div 
                     key={bundle.id}
-                    className={`bg-white/95 backdrop-blur-sm p-6 sm:p-7 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow ${bundle.isGiftingBundle ? 'lg:col-span-1 border-black/20' : isSpotlight ? 'md:col-span-2' : ''}`}
+                    className={`bg-white/95 backdrop-blur-sm p-4 sm:p-7 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow ${bundle.isGiftingBundle ? 'lg:col-span-1 border-black/20' : isSpotlight ? 'md:col-span-2' : ''}`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-4 text-[10px] font-mono uppercase tracking-widest text-stone-600">
@@ -3939,42 +3957,44 @@ export default function App() {
                         Contains: {bundle.contains}
                       </p>
 
-                      {/* Visual display of what comes in the bundle */}
+                      {/* Visual display of what comes in the bundle - explicitly side by side on all devices including mobile */}
                       {constituents.length > 0 && (
                         <div className="my-4 pt-3.5 border-t border-black/10">
-                          <span className="block text-[10px] font-mono uppercase tracking-wider text-stone-600 mb-2.5 font-bold">
+                          <span className="block text-[10px] font-mono uppercase tracking-wider text-stone-600 mb-2 font-bold">
                             Included in this set ({constituents.length} decants):
                           </span>
-                          <div className={`grid grid-cols-${Math.min(constituents.length, 3)} gap-2 sm:gap-2.5`}>
+                          <div className={`grid ${constituents.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-1.5 sm:gap-2.5 w-full`}>
                             {constituents.map((frag) => (
                               <button
                                 key={frag.id}
                                 type="button"
                                 onClick={() => handleOpenFragranceDetails(frag)}
-                                className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-xl p-2 sm:p-2.5 transition-all cursor-pointer flex flex-col justify-between"
+                                className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-xl p-1.5 sm:p-2.5 transition-all cursor-pointer flex flex-col justify-between"
                                 title={`Click to view ${frag.name}`}
                               >
-                                <div className="aspect-square w-full bg-white rounded-lg border border-stone-200/60 overflow-hidden mb-1.5 flex items-center justify-center p-1.5">
-                                  {frag.image ? (
-                                    <img
-                                      src={frag.image}
-                                      alt={frag.name}
-                                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${frag.color}`} />
-                                  )}
-                                </div>
-                                <div className="w-full">
-                                  <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider truncate">
-                                    {frag.brand}
+                                <div>
+                                  <div className="aspect-square w-full bg-white rounded-lg border border-stone-200/60 overflow-hidden mb-1 sm:mb-1.5 flex items-center justify-center p-1 sm:p-1.5">
+                                    {frag.image ? (
+                                      <img
+                                        src={frag.image}
+                                        alt={frag.name}
+                                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${frag.color}`} />
+                                    )}
                                   </div>
-                                  <div className="text-[11px] font-sans font-bold text-black leading-snug line-clamp-1 group-hover:underline">
-                                    {frag.name}
-                                  </div>
-                                  <div className="text-[9px] font-mono text-emerald-800 font-semibold mt-0.5">
-                                    5ml Decant
+                                  <div className="w-full min-w-0">
+                                    <div className="text-[8px] sm:text-[9px] font-mono text-stone-500 uppercase tracking-wider truncate">
+                                      {frag.brand}
+                                    </div>
+                                    <div className="text-[10px] sm:text-[11px] font-sans font-bold text-black leading-tight line-clamp-1 group-hover:underline mt-0.5">
+                                      {frag.name}
+                                    </div>
+                                    <div className="text-[8px] sm:text-[9px] font-mono text-emerald-800 font-semibold mt-0.5">
+                                      5ml Decant
+                                    </div>
                                   </div>
                                 </div>
                               </button>
