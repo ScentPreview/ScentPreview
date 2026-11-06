@@ -3610,15 +3610,15 @@ export default function App() {
       </section>
 
       {/* 2. Interactive Scent Grid: The Kinetic Catalog */}
-      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-5 md:px-12 pt-8 sm:pt-10 pb-16 md:pb-24">
+      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-3.5 sm:px-6 md:px-10 pt-3 sm:pt-5 pb-10 sm:pb-16">
         
         {/* Section Heading */}
-        <div className="border-b border-stone-200/60 pb-5 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="border-b border-stone-200/60 pb-3 sm:pb-4 mb-5 sm:mb-6 flex flex-col md:flex-row md:items-end justify-between gap-3">
           <div>
-            <span className="text-[10px] font-mono tracking-[0.2em] text-black uppercase font-bold block mb-2">
+            <span className="text-[10px] font-mono tracking-[0.2em] text-black uppercase font-bold block mb-1">
               Curated Decants
             </span>
-            <h2 className="text-3xl md:text-4xl font-serif text-black  tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-black tracking-tight">
               The Kinetic Catalog
             </h2>
           </div>
@@ -3628,8 +3628,8 @@ export default function App() {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-12 max-w-md">
-          <label htmlFor="scent-search" className="block text-[9px] font-sans tracking-[0.15em] uppercase tracking-[0.2em] text-black mb-2 font-bold">
+        <div className="mb-5 sm:mb-6 max-w-md">
+          <label htmlFor="scent-search" className="block text-[9px] font-sans tracking-[0.15em] uppercase text-black mb-1.5 font-bold">
             Search Decants
           </label>
           <div className="relative">
@@ -3639,13 +3639,13 @@ export default function App() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, brand, or ingredients/notes..."
-              className="w-full bg-white/60  border border-stone-200 -full py-3 px-5 pl-6 text-xs font-sans text-black  focus:outline-none focus:ring-1 focus:ring-stone-300 focus:border-stone-200 transition-all placeholder:text-black "
+              className="w-full bg-white/60 border border-stone-200 py-2.5 px-4 pl-4 text-xs font-sans text-black focus:outline-none focus:ring-1 focus:ring-stone-300 focus:border-stone-200 transition-all placeholder:text-stone-400 rounded-xl"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-black hover:text-black  text-xs font-mono transition-colors font-semibold"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black hover:text-black text-xs font-mono transition-colors font-semibold"
               >
                 Clear
               </button>
@@ -3654,13 +3654,13 @@ export default function App() {
         </div>
 
         {/* Sensory Test Call-To-Action Banner */}
-        <div className="mb-16 bg-[#F4F4F2] text-black p-6 sm:p-8 border border-black/5 rounded-3xl shadow-2xl shadow-black/5 overflow-hidden relative group mb-16">
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
-              <span className="text-[9px] font-mono tracking-[0.25em] text-emerald-700 uppercase font-bold block">
+        <div className="mb-6 sm:mb-8 bg-[#F4F4F2] text-black p-4 sm:p-5 border border-black/5 rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden relative group">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1 max-w-xl">
+              <span className="text-[9px] font-mono tracking-[0.2em] text-emerald-700 uppercase font-bold block">
                 INTELLIGENT PROFILE ISOLATION SYSTEM v2
               </span>
-              <p className="text-sm sm:text-base font-sans font-bold text-black leading-relaxed">
+              <p className="text-xs sm:text-sm font-sans font-bold text-black leading-snug">
                 "Can't decide? Take one of our sensory tests to find your signature profile."
               </p>
             </div>
@@ -3668,11 +3668,11 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsQuizListOpen(true)}
-                className="w-full md:w-auto bg-stone-900 hover:bg-black text-white transition-colors px-8 py-4 text-xs font-mono font-bold tracking-wider uppercase cursor-pointer flex items-center justify-center gap-2.5 border border-black/5 shadow-sm rounded-2xl"
+                className="w-full md:w-auto bg-stone-900 hover:bg-black text-white transition-colors px-5 py-2.5 sm:px-6 sm:py-3 text-[11px] font-mono font-bold tracking-wider uppercase cursor-pointer flex items-center justify-center gap-2 border border-black/5 shadow-xs rounded-xl"
               >
-                <Sparkles className="w-4 h-4 text-black  animate-pulse" />
+                <Sparkles className="w-3.5 h-3.5 text-black animate-pulse" />
                 Explore Sensory Quizzes
-                <ChevronRight className="w-4 h-4 text-black " />
+                <ChevronRight className="w-3.5 h-3.5 text-black" />
               </button>
             </div>
           </div>
@@ -3684,26 +3684,26 @@ export default function App() {
           if (giftingBundles.length === 0) return null;
 
           return (
-            <div id="gifting-bundles" className="mb-24 scroll-mt-20">
+            <div id="gifting-bundles" className="mb-10 sm:mb-14 scroll-mt-20">
               {/* Showcase Header */}
-              <div className="mb-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-black/15 pb-5">
+              <div className="mb-5 sm:mb-6">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-black/15 pb-4">
                   <div>
-                    <div className="text-[11px] font-mono tracking-[0.22em] text-neutral-400 uppercase font-bold mb-2">
+                    <div className="text-[10px] font-mono tracking-[0.2em] text-neutral-400 uppercase font-bold mb-1.5">
                       MAIN ATTRACTION · CURATED 3 × 5ML GIFTING SETS
                     </div>
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/50 backdrop-blur-md rounded-2xl sm:rounded-3xl px-5 py-2.5 sm:px-7 sm:py-3.5 shadow-lg">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/50 backdrop-blur-md rounded-xl sm:rounded-2xl px-4 py-2 sm:px-6 sm:py-3 shadow-md">
                       Signature Gifting Trios
                     </h2>
                   </div>
-                  <p className="text-xs sm:text-sm font-sans text-neutral-300 max-w-md border border-white/15 bg-black/40 backdrop-blur-md rounded-2xl px-4 py-3">
+                  <p className="text-xs sm:text-sm font-sans text-neutral-300 max-w-md border border-white/15 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5">
                     Three complementary 5ml decants (15ml total per trio) paired for daytime-to-evening layering and ready-to-gift presentation.
                   </p>
                 </div>
               </div>
 
-              {/* Two Flagship Gifting Trio Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10">
+              {/* Two Flagship Gifting Trio Cards - Side by Side on Mobile & Desktop */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-5 md:gap-6">
                 {giftingBundles.map((bundle) => {
                   const availableSets = getProductStock(bundle.id, "5ml Normal");
                   const isBundleOutOfStock = bundle.isOutOfStock || availableSets <= 0;
@@ -3715,54 +3715,48 @@ export default function App() {
                   return (
                     <div
                       key={bundle.id}
-                      className="bg-white/95 backdrop-blur-md border border-black/15 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between transition-all hover:shadow-2xl"
+                      className="bg-white/95 backdrop-blur-md border border-black/15 rounded-2xl sm:rounded-3xl p-3 sm:p-5 md:p-6 shadow-md flex flex-col justify-between transition-all hover:shadow-xl"
                     >
                       <div>
-                        {/* Top Metadata Row (Clean Unboxed Typography) */}
-                        <div className="flex items-center justify-between gap-2 text-[11px] font-mono tracking-[0.16em] uppercase text-stone-600 pb-4 border-b border-stone-200/80 mb-5">
-                          <div className="flex items-center gap-2 font-bold text-black">
-                            <span>{bundle.gender === "Men" ? "MEN’S BUNDLE" : "WOMEN’S BUNDLE"}</span>
-                            <span aria-hidden="true" className="text-stone-400">·</span>
-                            <span className="text-stone-600 font-normal">3 × 5ML DECANTS (15ML)</span>
+                        {/* Top Metadata Row */}
+                        <div className="flex items-center justify-between gap-1 text-[8px] sm:text-[11px] font-mono tracking-wider uppercase text-stone-600 pb-2 sm:pb-3 border-b border-stone-200/80 mb-2.5 sm:mb-4">
+                          <div className="font-bold text-black truncate">
+                            {bundle.gender === "Men" ? "MEN’S SET" : "WOMEN’S SET"}
                           </div>
-                          <span className={isBundleOutOfStock ? "text-red-600 font-bold" : "text-emerald-800 font-bold"}>
-                            {isBundleOutOfStock ? "SOLD OUT" : `${availableSets} SETS IN STOCK`}
+                          <span className={`shrink-0 font-bold ${isBundleOutOfStock ? "text-red-600" : "text-emerald-800"}`}>
+                            {isBundleOutOfStock ? "SOLD OUT" : `${availableSets} IN STOCK`}
                           </span>
                         </div>
 
-                        {/* Title & Description */}
-                        <div className="mb-6">
-                          <div className="flex items-baseline justify-between gap-4 flex-wrap mb-2">
-                            <h3 className="text-2xl sm:text-3xl font-serif text-black tracking-tight font-bold">
-                              “{bundle.name}”
+                        {/* Title & Price */}
+                        <div className="mb-2.5 sm:mb-4">
+                          <div className="flex items-baseline justify-between gap-1.5 flex-wrap mb-1">
+                            <h3 className="text-xs sm:text-lg md:text-2xl font-serif text-black tracking-tight font-bold leading-tight truncate">
+                              {bundle.name}
                             </h3>
-                            <span className="text-2xl sm:text-3xl font-mono font-bold text-black">
+                            <span className="text-xs sm:text-base md:text-xl font-mono font-bold text-black">
                               ₹{price.toLocaleString("en-IN")}
                             </span>
                           </div>
-                          {bundle.description && (
-                            <p className="text-xs sm:text-sm font-sans text-stone-600 leading-relaxed">
-                              {bundle.description}
-                            </p>
-                          )}
+                          <div className="text-[9px] sm:text-xs font-mono text-stone-500">
+                            3 × 5ml Decants (15ml total)
+                          </div>
                         </div>
 
                         {/* Visual Triptych of the 3 Constituent Perfumes */}
                         {constituents.length > 0 && (
-                          <div className="mb-6">
-                            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-stone-500 font-bold mb-3">
-                              INCLUDED IN THIS TRIO (CLICK ANY SCENT TO INSPECT)
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
+                          <div className="mb-2.5 sm:mb-4">
+                            <div className="grid grid-cols-3 gap-1 sm:gap-2">
                               {constituents.map((frag, idx) => (
                                 <button
                                   key={frag.id}
                                   type="button"
                                   onClick={() => handleOpenFragranceDetails(frag)}
-                                  className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-2xl p-2.5 sm:p-3 transition-all cursor-pointer flex flex-col justify-between"
+                                  className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-lg sm:rounded-xl p-1 sm:p-2 transition-all cursor-pointer flex flex-col justify-between"
+                                  title={`Click to view ${frag.name}`}
                                 >
                                   <div>
-                                    <div className="aspect-square w-full bg-white rounded-xl border border-stone-200/60 overflow-hidden mb-2.5 flex items-center justify-center p-2">
+                                    <div className="aspect-square w-full bg-white rounded-md sm:rounded-lg border border-stone-200/60 overflow-hidden mb-1 flex items-center justify-center p-1">
                                       {frag.image ? (
                                         <img
                                           src={frag.image}
@@ -3771,22 +3765,16 @@ export default function App() {
                                           loading="lazy"
                                         />
                                       ) : (
-                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${frag.color}`} />
+                                        <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${frag.color}`} />
                                       )}
                                     </div>
-                                    <div className="text-[9px] font-mono text-stone-500 uppercase tracking-wider truncate">
-                                      0{idx + 1} · {frag.brand}
-                                    </div>
-                                    <div className="text-xs font-sans font-bold text-black leading-snug line-clamp-1 group-hover:underline mt-0.5">
-                                      {frag.name}
+                                    <div className="text-[8px] sm:text-[10px] font-sans font-bold text-black leading-tight line-clamp-1 group-hover:underline">
+                                      {frag.name.replace(/^SCENTPREVIEW\s+/i, "Sample ")}
                                     </div>
                                   </div>
-                                  <div className="mt-2 pt-1.5 border-t border-stone-200/70">
-                                    <div className="text-[10px] font-mono text-stone-600 truncate">
-                                      5ml Decant
-                                    </div>
-                                    <div className="text-[9px] font-sans text-stone-500 truncate">
-                                      {frag.notes}
+                                  <div className="mt-1 pt-0.5 border-t border-stone-200/70">
+                                    <div className="text-[7px] sm:text-[9px] font-mono text-emerald-800">
+                                      5ml
                                     </div>
                                   </div>
                                 </button>
@@ -3797,28 +3785,19 @@ export default function App() {
                       </div>
 
                       {/* Action Footer */}
-                      <div className="pt-5 border-t border-stone-200/80 space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <button
-                            type="button"
-                            disabled={isBundleOutOfStock}
-                            onClick={() => {
-                              handleAddBundleToCart(bundle, true);
-                              setIsCartOpen(true);
-                            }}
-                            className="w-full py-3.5 px-5 bg-black hover:bg-stone-800 text-white rounded-xl text-xs font-sans font-bold uppercase tracking-[0.14em] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm"
-                          >
-                            {isBundleOutOfStock ? "Sold Out" : "Add Trio to Cart"}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isBundleOutOfStock}
-                            onClick={() => handleBuyBundleNow(bundle)}
-                            className="w-full py-3.5 px-5 bg-stone-100 hover:bg-stone-200 text-black border border-stone-300 rounded-xl text-xs font-sans font-bold uppercase tracking-[0.14em] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                          >
-                            {isBundleOutOfStock ? "Unavailable" : `Buy Now · ₹${price.toLocaleString("en-IN")}`}
-                          </button>
-                        </div>
+                      <div className="pt-2.5 sm:pt-4 border-t border-stone-200/80">
+                        <button
+                          type="button"
+                          disabled={isBundleOutOfStock}
+                          onClick={() => {
+                            handleAddBundleToCart(bundle, true);
+                            setIsCartOpen(true);
+                          }}
+                          className="w-full py-2 sm:py-3 px-2 sm:px-4 bg-black hover:bg-stone-800 text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-sans font-bold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs flex items-center justify-between"
+                        >
+                          <span className="truncate">{isBundleOutOfStock ? "Sold Out" : "Add to Cart"}</span>
+                          <span className="font-mono text-[10px] sm:text-xs shrink-0">₹{price}</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -3830,25 +3809,25 @@ export default function App() {
 
         {/* Brutalist Grid Layout - Categorized by Gender */}
         {filteredCatalog.length > 0 && (
-          <div className="space-y-24">
+          <div className="space-y-10 sm:space-y-14">
             {/* Men's Collection */}
             {filteredCatalog.filter(f => f.gender === "Men").length > 0 && (
               <div>
-                <div className="mb-8">
-                  <span className="text-[10px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-2">
+                <div className="mb-3.5 sm:mb-5">
+                  <span className="text-[9px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-1">
                     MASCULINE PROFILE ARCHIVE
                   </span>
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl sm:rounded-3xl px-5 py-2.5 sm:px-7 sm:py-3 shadow-lg">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl px-4 py-1.5 sm:px-6 sm:py-2.5 shadow-md">
                       Men's Collection
                     </h3>
-                    <div className="h-px bg-black/10 flex-1 min-w-[24px]" />
+                    <div className="h-px bg-black/10 flex-1 min-w-[20px]" />
                   </div>
-                  <p className="text-xs font-sans text-neutral-500 mt-2">
+                  <p className="text-[11px] sm:text-xs font-sans text-neutral-500 mt-1">
                     Woody, aromatic, leather, and intense amber formulations.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8 lg:gap-10 bg-transparent">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 lg:gap-8 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Men").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
                       <ScentCard
@@ -3868,21 +3847,21 @@ export default function App() {
             {/* Women's Collection */}
             {filteredCatalog.filter(f => f.gender === "Women").length > 0 && (
               <div>
-                <div className="mb-8">
-                  <span className="text-[10px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-2">
+                <div className="mb-3.5 sm:mb-5">
+                  <span className="text-[9px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-1">
                     FEMININE PROFILE ARCHIVE
                   </span>
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl sm:rounded-3xl px-5 py-2.5 sm:px-7 sm:py-3 shadow-lg">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl px-4 py-1.5 sm:px-6 sm:py-2.5 shadow-md">
                       Women's Collection
                     </h3>
-                    <div className="h-px bg-black/10 flex-1 min-w-[24px]" />
+                    <div className="h-px bg-black/10 flex-1 min-w-[20px]" />
                   </div>
-                  <p className="text-xs font-sans text-neutral-500 mt-2">
+                  <p className="text-[11px] sm:text-xs font-sans text-neutral-500 mt-1">
                     Floral, sweet, vanilla, and sophisticated amber profiles.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 md:gap-8 lg:gap-10 bg-transparent">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 lg:gap-8 bg-transparent">
                   {filteredCatalog.filter(f => f.gender === "Women").map((fragrance) => (
                     <div key={fragrance.id} className="h-full">
                       <ScentCard
@@ -3903,14 +3882,14 @@ export default function App() {
 
         {/* Curated Capsule Bundles Subsection - Below Main Perfumes */}
         {filteredBundles.length > 0 && (
-          <div id="bundle-capsules" className="mt-20 scroll-mt-24">
+          <div id="bundle-capsules" className="mt-8 sm:mt-12 scroll-mt-20">
             {/* Subsection Heading */}
-            <div className="border-b border-black/10 pb-4 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div className="border-b border-black/10 pb-2.5 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-3">
               <div>
                 <span className="text-[10px] font-mono tracking-[0.2em] text-emerald-800 uppercase font-bold block mb-1">
                   BUNDLE CAPSULES
                 </span>
-                <h3 className="text-3xl sm:text-4xl font-sans font-black text-black uppercase tracking-tight">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-sans font-black text-black uppercase tracking-tight">
                   UNIFIED DECANT SETS
                 </h3>
               </div>
@@ -3919,7 +3898,7 @@ export default function App() {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 bg-transparent">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-5 md:gap-6 bg-transparent">
               {filteredBundles.map((bundle) => {
                 const selectedSize = "5ml Normal";
                 const isSpotlight = bundle.isSpotlight;
@@ -3933,47 +3912,47 @@ export default function App() {
                 return (
                   <div 
                     key={bundle.id}
-                    className={`bg-white/95 backdrop-blur-sm p-4 sm:p-7 rounded-2xl border border-black/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow ${bundle.isGiftingBundle ? 'lg:col-span-1 border-black/20' : isSpotlight ? 'md:col-span-2' : ''}`}
+                    className="bg-white/95 backdrop-blur-sm p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-black/10 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow"
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-4 text-[10px] font-mono uppercase tracking-widest text-stone-600">
-                        <span className="font-bold text-black">
+                      <div className="flex items-center justify-between gap-1 mb-2 text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-stone-600">
+                        <span className="font-bold text-black truncate">
                           {bundle.categoryLabel || (isSpotlight ? "SPOTLIGHT" : "CURATED")}
                         </span>
                         {isBundleOutOfStock ? (
-                          <span className="text-red-600 font-semibold">
+                          <span className="text-red-600 font-semibold shrink-0">
                             SOLD OUT
                           </span>
                         ) : (
-                          <span className="text-emerald-800 font-semibold">
+                          <span className="text-emerald-800 font-semibold shrink-0">
                             {availableBundleStock} IN STOCK
                           </span>
                         )}
                       </div>
-                      <h3 className="text-xl font-sans font-bold text-black tracking-tight mb-2">
+                      <h3 className="text-xs sm:text-base md:text-lg font-sans font-bold text-black tracking-tight mb-1 truncate">
                         {bundle.name}
                       </h3>
-                      <p className="text-xs font-sans text-neutral-600 mb-4 leading-relaxed">
+                      <p className="text-[10px] sm:text-xs font-sans text-neutral-600 mb-2.5 leading-snug line-clamp-2">
                         Contains: {bundle.contains}
                       </p>
 
                       {/* Visual display of what comes in the bundle - explicitly side by side on all devices including mobile */}
                       {constituents.length > 0 && (
-                        <div className="my-4 pt-3.5 border-t border-black/10">
-                          <span className="block text-[10px] font-mono uppercase tracking-wider text-stone-600 mb-2 font-bold">
+                        <div className="my-2.5 pt-2 border-t border-black/10">
+                          <span className="block text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-600 mb-1.5 font-bold">
                             Included in this set ({constituents.length} decants):
                           </span>
-                          <div className={`grid ${constituents.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-1.5 sm:gap-2.5 w-full`}>
+                          <div className={`grid ${constituents.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-1 sm:gap-1.5 w-full`}>
                             {constituents.map((frag) => (
                               <button
                                 key={frag.id}
                                 type="button"
                                 onClick={() => handleOpenFragranceDetails(frag)}
-                                className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-xl p-1.5 sm:p-2.5 transition-all cursor-pointer flex flex-col justify-between"
+                                className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-lg p-1 sm:p-1.5 transition-all cursor-pointer flex flex-col justify-between"
                                 title={`Click to view ${frag.name}`}
                               >
                                 <div>
-                                  <div className="aspect-square w-full bg-white rounded-lg border border-stone-200/60 overflow-hidden mb-1 sm:mb-1.5 flex items-center justify-center p-1 sm:p-1.5">
+                                  <div className="aspect-square w-full bg-white rounded-md border border-stone-200/60 overflow-hidden mb-1 flex items-center justify-center p-0.5 sm:p-1">
                                     {frag.image ? (
                                       <img
                                         src={frag.image}
@@ -3982,17 +3961,14 @@ export default function App() {
                                         loading="lazy"
                                       />
                                     ) : (
-                                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${frag.color}`} />
+                                      <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${frag.color}`} />
                                     )}
                                   </div>
                                   <div className="w-full min-w-0">
-                                    <div className="text-[8px] sm:text-[9px] font-mono text-stone-500 uppercase tracking-wider truncate">
-                                      {frag.brand}
+                                    <div className="text-[8px] sm:text-[9px] font-sans font-bold text-black leading-tight line-clamp-1 group-hover:underline">
+                                      {frag.name.replace(/^SCENTPREVIEW\s+/i, "Sample ")}
                                     </div>
-                                    <div className="text-[10px] sm:text-[11px] font-sans font-bold text-black leading-tight line-clamp-1 group-hover:underline mt-0.5">
-                                      {frag.name}
-                                    </div>
-                                    <div className="text-[8px] sm:text-[9px] font-mono text-emerald-800 font-semibold mt-0.5">
+                                    <div className="text-[7px] sm:text-[8px] font-mono text-emerald-800 font-semibold mt-0.5">
                                       5ml Decant
                                     </div>
                                   </div>
@@ -4004,22 +3980,18 @@ export default function App() {
                       )}
                     </div>
 
-                    <div className="mt-8 border-t border-black/5 pt-4 flex flex-col gap-2">
+                    <div className="mt-3 border-t border-black/5 pt-2">
                       <button
                         disabled={isBundleOutOfStock}
                         onClick={() => {
                           handleAddBundleToCart(bundle, true);
                           setIsCartOpen(true);
                         }}
-                        className="w-full py-2.5 bg-black text-white rounded-xl text-[11px] font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        className="w-full py-2 sm:py-2.5 bg-black text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between px-2.5 sm:px-3 cursor-pointer shadow-xs"
                       >
-                        {isBundleOutOfStock ? "Sold Out" : "Add to cart"}
+                        <span className="truncate">{isBundleOutOfStock ? "Sold Out" : "Add to cart"}</span>
+                        <span className="font-mono font-bold text-[10px] sm:text-xs shrink-0 pl-1">₹{price}</span>
                       </button>
-                      <div className="text-center mt-1">
-                        <span className="font-mono text-xs font-semibold text-neutral-800">
-                          ₹{price}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 );
@@ -4040,7 +4012,7 @@ export default function App() {
         )}
 
         {/* Fine Print / Brand Association Disclaimer */}
-        <div className="mt-16 pt-8 border-t border-black/10 text-center max-w-2xl mx-auto px-4">
+        <div className="mt-8 sm:mt-10 pt-4 sm:pt-6 border-t border-black/10 text-center max-w-2xl mx-auto px-4">
           <p className="text-[10px] font-sans text-neutral-500 leading-relaxed">
             <span className="font-semibold text-neutral-700 uppercase tracking-widest text-[9px] block mb-1">
               Disclaimer & Fine Print
