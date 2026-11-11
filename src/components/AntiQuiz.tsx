@@ -26,8 +26,8 @@ interface QuizFragrance {
 const QUIZ_FRAGRANCES: QuizFragrance[] = [
   {
     id: "givenchy-gentleman",
-    name: "Givenchy Gentleman",
-    brand: "Givenchy",
+    name: "SP 1",
+    brand: "ScentPreview",
     category: "Premium Tier",
     microDesc: "Rich. Iris. Powdery.",
     notes: "Iris / Black Pepper / Leather",
@@ -35,8 +35,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "ck2",
-    name: "Calvin Klein CK2",
-    brand: "Calvin Klein",
+    name: "SP 9",
+    brand: "ScentPreview",
     category: "Premium Tier",
     microDesc: "Cobblestone. Electric. Clean.",
     notes: "Wasabi / Violet Leaf / Wet Cobblestones",
@@ -44,8 +44,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "ck-one",
-    name: "Calvin Klein CK One",
-    brand: "Calvin Klein",
+    name: "SP 8",
+    brand: "ScentPreview",
     category: "Clean Tier",
     microDesc: "Classic. Citrus. Light.",
     notes: "Lemon / Green Tea / Jasmine",
@@ -53,8 +53,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "lattafa-khamrah",
-    name: "Lattafa Khamrah",
-    brand: "Lattafa",
+    name: "SP 6",
+    brand: "ScentPreview",
     category: "Heavy Tier",
     microDesc: "Cinnamon. Dates. Amber.",
     notes: "Cinnamon / Dates / Pure Vanilla",
@@ -62,8 +62,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "la-uno-qaswa",
-    name: "La Uno Qaswa",
-    brand: "La Uno",
+    name: "SP 2",
+    brand: "ScentPreview",
     category: "Dark/Oud Tier",
     microDesc: "Leather. Smoke. Wood.",
     notes: "Oud / Incense / Dark Woods",
@@ -71,8 +71,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "zara-sunrise",
-    name: "Zara Sunrise",
-    brand: "Zara",
+    name: "SP 10",
+    brand: "ScentPreview",
     category: "Fresh Tier",
     microDesc: "Citrus. Ginger. Orange.",
     notes: "Bergamot / Mandarin / Soft Amber",
@@ -80,8 +80,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "zara-for-him-black",
-    name: "Zara For Him Black",
-    brand: "Zara",
+    name: "SP 3",
+    brand: "ScentPreview",
     category: "Dark Tier",
     microDesc: "Cardamom. Iris. Vanilla.",
     notes: "Ginger / Lavender / Cedarwood",
@@ -89,8 +89,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "zara-intense-dark",
-    name: "Zara Intense Dark",
-    brand: "Zara",
+    name: "SP 5",
+    brand: "ScentPreview",
     category: "Heavy Tier",
     microDesc: "Tobacco. Spice. Leather.",
     notes: "Apple / Black Pepper / Tonka Bean",
@@ -98,8 +98,8 @@ const QUIZ_FRAGRANCES: QuizFragrance[] = [
   },
   {
     id: "zara-seoul",
-    name: "Zara Seoul",
-    brand: "Zara",
+    name: "SP 4",
+    brand: "ScentPreview",
     category: "Sport/Daily Tier",
     microDesc: "Tangerine. Lavender. Amber.",
     notes: "Tangerine / Lavender / Amber",
@@ -367,11 +367,11 @@ export default function AntiQuiz({ isOpen, onClose, onAddToCart, stock }: AntiQu
                           : "bg-stone-900 border-stone-800 text-[#B1B7AB]"
                       }`}
                     >
-                      <div className="text-[9px] font-mono tracking-tighter truncate font-medium">
-                        {f.brand}
+                      <div className="text-[10px] font-mono tracking-wider truncate font-bold text-white">
+                        {f.name}
                       </div>
                       <div className={`text-[8px] font-sans truncate ${isEliminated ? "line-through opacity-40" : "text-[#B1B7AB] font-light"}`}>
-                        {f.name.replace("Calvin Klein ", "").replace("Zara ", "")}
+                        {f.notes.split(" / ")[0]}
                       </div>
                     </motion.div>
                   );

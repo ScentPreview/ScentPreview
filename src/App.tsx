@@ -4,10 +4,12 @@ import {
   CATALOG_DATA, 
   BUNDLE_DATA, 
   Fragrance, 
-  CapsuleBundle 
+  CapsuleBundle,
+  SizeType
 } from "./types";
 import ScentCard from "./components/ScentCard";
 import ProductDetailPage from "./components/ProductDetailPage";
+import { ProductShelf, DEFAULT_PRODUCTS } from "./components/ui/skincare-product-shelf";
 import AntiQuiz from "./components/AntiQuiz";
 import AestheticQuiz from "./components/AestheticQuiz";
 import ChordQuiz from "./components/ChordQuiz";
@@ -814,11 +816,11 @@ export default function App() {
       "Shop authentic 5ml and 10ml luxury perfume decants, curated capsule bundles, and interactive scent discovery at ScentPreview. Fast India-wide shipping.";
 
     const pageTitle = selectedDetailFragrance
-      ? `${selectedDetailFragrance.name} (${selectedDetailFragrance.brand}) Decant – ScentPreview`
+      ? `${selectedDetailFragrance.name} Decant – ScentPreview`
       : baseTitle;
 
     const pageDescription = selectedDetailFragrance
-      ? `Buy authentic 5ml & 10ml ${selectedDetailFragrance.name} by ${selectedDetailFragrance.brand} decants at ScentPreview. Notes: ${selectedDetailFragrance.notes}. ${selectedDetailFragrance.description || ""}`
+      ? `Buy authentic 5ml & 10ml ${selectedDetailFragrance.name} decants at ScentPreview. Notes: ${selectedDetailFragrance.notes}. ${selectedDetailFragrance.description || ""}`
       : baseDescription;
 
     const canonicalUrl = selectedDetailFragrance
@@ -991,6 +993,28 @@ export default function App() {
     }
   });
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const filteredShelfProducts = React.useMemo(() => {
+    // Exclude sold out products so shelves only show in-stock items
+    const inStockProducts = DEFAULT_PRODUCTS.filter(p => {
+      const isBundle = p.section === "bundles";
+      const pStock = isBundle ? stock?.bundles?.[p.id] : stock?.fragrances?.[p.id];
+      const isOOS = isBundle
+        ? (Number(pStock) ?? 1) <= 0
+        : pStock ? Object.values(pStock).every(v => (Number(v) || 0) <= 0) : false;
+      return !isOOS;
+    });
+
+    if (!searchQuery.trim()) return inStockProducts;
+    const q = searchQuery.toLowerCase().trim();
+    return inStockProducts.filter(p => 
+      p.name.toLowerCase().includes(q) ||
+      p.short.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      p.tagline.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      p.benefits.some(b => b.toLowerCase().includes(q))
+    );
+  }, [searchQuery, stock]);
   const [selectedNote, setSelectedNote] = useState<string | null>(null);
   const [registrySearchQuery, setRegistrySearchQuery] = useState<string>("");
   const [isCartSuccessOpen, setIsCartSuccessOpen] = useState<boolean>(false);
@@ -2231,17 +2255,17 @@ export default function App() {
       // Recommend other in-stock perfumes
       const otherPerfumes = CATALOG_DATA.filter((f) => {
         if (f.id === fragrance.id) return false;
-        
-        // Solid check if fragrance f is out of stock in state or catalog
-        const isOOS = f.isOutOfStock || !stock?.fragrances[f.id] || Object.values(stock.fragrances[f.id]).every((qty: any) => (Number(qty) || 0) <= 0);
-        if (isOOS) return false;
-
+        if (f.isOutOfStock) return false;
+        const fStock = stock?.fragrances?.[f.id];
+        if (fStock && Object.values(fStock).every((qty: any) => (Number(qty) || 0) <= 0)) {
+          return false;
+        }
         return true;
       }).slice(0, 6);
 
       setCrossSellRecommendation({
         isOpen: true,
-        addedItemName: `${fragrance.brand} ${fragrance.name} (${size})`,
+        addedItemName: `${fragrance.name} (${size})`,
         recommendedPerfumes: otherPerfumes
       });
     }
@@ -2292,8 +2316,11 @@ export default function App() {
     if (!skipRecommendationUpdate) {
       // Recommend other in-stock perfumes
       const otherPerfumes = CATALOG_DATA.filter((f) => {
-        const isOOS = f.isOutOfStock || !stock?.fragrances[f.id] || Object.values(stock.fragrances[f.id]).every((qty: any) => (Number(qty) || 0) <= 0);
-        if (isOOS) return false;
+        if (f.isOutOfStock) return false;
+        const fStock = stock?.fragrances?.[f.id];
+        if (fStock && Object.values(fStock).every((qty: any) => (Number(qty) || 0) <= 0)) {
+          return false;
+        }
         return true;
       }).slice(0, 6);
 
@@ -2887,42 +2914,24 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] text-black font-sans relative selection:bg-amber-100 selection:text-black">
-      {/* Full-Screen Liquid Bars Background */}
-      <div className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden bg-[#0a0c10]">
-        <LiquidBars
-          color="#eceff6"
-          speed={0.7}
-          barCount={7}
-          scale={0.42}
-          waveComplexity={2}
-          waveAmplitude={0.7}
-          reflectionFrequency={18}
-          metallicContrast={2.2}
-          streakIntensity={0.35}
-          highlightWarmth={0.35}
-          opacity={1}
-          className="w-full h-full"
-        />
-      </div>
+    <div className="min-h-screen bg-[#f3f1ed] text-[#111111] font-sans relative selection:bg-[#2F4F4F]/10 selection:text-[#2F4F4F]">
 
       {!isAdminOpen && (
         <>
       {/* Modern High-End Sticky Header Navigation */}
-      <header className="sticky top-0 bg-[#F4F4F2]/95 backdrop-blur-md z-50 border-b border-black/10 shadow-xs">
+      <header className="sticky top-0 bg-[#F7F7F5]/95 backdrop-blur-md z-50 border-b border-[#D9D9D6] shadow-xs">
         <nav className="w-full flex items-center justify-between h-12 sm:h-14 px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto gap-2">
           {/* Brand Identity & Primary Links */}
-          <div className="flex items-center gap-4 sm:gap-8 min-w-0 shrink">
+          <div className="flex items-center gap-3 sm:gap-6 shrink-0">
             <span 
               onClick={() => {
                 setSelectedDetailFragrance(null);
               }}
-              className="text-lg sm:text-xl font-sans font-bold tracking-tight text-black flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:opacity-80 transition-opacity truncate"
+              className="text-sm sm:text-base font-sans font-bold tracking-[0.22em] uppercase text-[#2F4F4F] cursor-pointer hover:opacity-80 transition-opacity shrink-0 whitespace-nowrap select-none"
             >
-              <span className="truncate">Scent Preview</span>
-              <span className="text-[10px] font-mono font-medium px-1.5 sm:px-2 py-0.5 rounded-full bg-black/5 text-neutral-600 shrink-0">0.2</span>
+              scentpreview
             </span>
-            <div className="hidden md:flex items-center gap-6 pl-6 border-l border-black/10 shrink-0">
+            <div className="hidden md:flex items-center gap-6 pl-6 border-l border-[#D9D9D6] shrink-0">
               <button 
                 onClick={() => {
                   setSelectedDetailFragrance(null);
@@ -2965,7 +2974,7 @@ export default function App() {
           {/* Search Bar & Cart Button */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <div className="relative flex items-center">
-              <div className="flex items-center bg-white/80 border border-black/10 rounded-full px-2.5 sm:px-3.5 py-1.5 focus-within:border-black/30 focus-within:bg-white transition-all shadow-xs w-32 xs:w-40 sm:w-56 md:w-64">
+              <div className="flex items-center bg-white/80 border border-black/10 rounded-full px-2.5 sm:px-3.5 py-1.5 focus-within:border-black/30 focus-within:bg-white transition-all shadow-xs w-28 xs:w-36 sm:w-56 md:w-64">
                 <Search className="w-3.5 h-3.5 text-neutral-400 mr-1.5 sm:mr-2 shrink-0" />
                 <input
                   type="text"
@@ -2995,7 +3004,7 @@ export default function App() {
 
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-1.5 sm:gap-2 bg-stone-900 text-white hover:bg-black px-3 sm:px-5 py-2 rounded-full text-[10px] sm:text-[11px] font-sans tracking-[0.12em] uppercase transition-all cursor-pointer font-medium shadow-xs shrink-0 select-none active:scale-95"
+              className="flex items-center gap-1.5 sm:gap-2 bg-[#2F4F4F] text-white hover:bg-[#253f3f] px-3 sm:px-5 py-2 rounded-full text-[10px] sm:text-[11px] font-sans tracking-[0.12em] uppercase transition-all cursor-pointer font-medium shadow-xs shrink-0 select-none active:scale-95"
             >
               <span>Cart</span>
               <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none">
@@ -3022,1005 +3031,75 @@ export default function App() {
         />
       ) : (
         <>
-          {/* Hero Section */}
-          <div className="relative w-full overflow-hidden border-b border-black/10">
+          {/* Minimalist Authentic Landing Hero */}
+          <section className="w-full bg-[#f3f1ed] pt-8 sm:pt-14 pb-4 px-4 sm:px-6 border-b border-[#D9D9D6]/50">
+            <div className="max-w-[1120px] mx-auto text-left">
+              {/* Punchy, converting headline in all green */}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.06] text-[#2F4F4F] max-w-3xl mb-5">
+                Try Before You Buy.
+              </h1>
 
-            {/* Subtle organic ambient glow */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-amber-500/[0.04] blur-[80px] pointer-events-none z-0" />
-
-            <section className="w-full max-w-7xl mx-auto flex flex-col md:flex-row px-4 sm:px-6 lg:px-8 relative z-10 items-center justify-between py-10 sm:py-12 md:py-14">
-              <div className="flex-1 flex flex-col justify-center py-2 sm:py-4 relative z-10 max-w-2xl">
-                <div className="overflow-visible mb-3">
-                  <span className="text-[10px] font-sans font-semibold tracking-[0.2em] text-neutral-200 uppercase border border-white/20 bg-black/40 backdrop-blur-md rounded-full px-3.5 py-1 mb-3 inline-block shadow-sm">
-                    Edition 0.2
-                  </span>
-                  <div className="block">
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-sans font-bold text-white tracking-[-0.03em] leading-[0.96] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl sm:rounded-3xl px-6 py-3.5 sm:px-8 sm:py-4 shadow-lg">
-                      Scent<br className="hidden sm:inline" /> Preview
-                    </h1>
-                  </div>
-                </div>
-                <div className="max-w-md mt-1">
-                  <p className="text-xs sm:text-sm font-sans text-neutral-200 leading-relaxed mb-6 font-normal border border-white/20 bg-black/40 backdrop-blur-md rounded-2xl px-5 py-3 shadow-sm inline-block">
-                    Curated premium fragrance decants. Hand-poured, perfectly measured, and delivered directly to your door.
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                    <button
-                      onClick={() => {
-                        setSelectedDetailFragrance(null);
-                        setTimeout(() => {
-                          document.getElementById("gifting-bundles")?.scrollIntoView({ behavior: "smooth" });
-                        }, 50);
-                      }}
-                      className="border border-white/20 bg-white text-black shadow-md rounded-full px-7 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase hover:bg-neutral-200 transition-all cursor-pointer font-bold"
-                    >
-                      Shop Gifting Trios
-                    </button>
-                    <button
-                      onClick={scrollToCatalog}
-                      className="border border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-black/60 hover:border-white/50 transition-all rounded-full px-6 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase cursor-pointer font-bold shadow-sm"
-                    >
-                      Explore Catalog
-                    </button>
-                    <button
-                      onClick={() => setIsQuizListOpen(true)}
-                      className="border border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-black/60 hover:border-white/50 transition-all rounded-full px-6 py-3.5 text-[11px] font-sans tracking-[0.16em] uppercase cursor-pointer font-bold shadow-sm flex items-center gap-2"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Find your Scent</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-      <section id="buy-now-section" className="hidden">
-        
-        {/* Subtle glowing fluid pattern in background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/5 -full  pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="inline-block px-2.5 py-0.5 text-[8px] font-sans tracking-[0.2em] bg-black text-white font-bold uppercase -full">
-              Acquisition Studio
-            </span>
-            <span className="text-[10px] font-sans tracking-[0.2em] text-black uppercase">
-              Immediate Dispatch
-            </span>
-          </div>
-
-          <h2 className="text-3xl md:text-4xl font-serif tracking-tight mb-4">
-            Direct Olfaction Acquisition
-          </h2>
-          <p className="text-black text-xs md:text-sm font-sans font-light mb-12 max-w-2xl leading-relaxed">
-            Acquire premier decants and curated pairings instantly. Bypass standard cart routing with our premium single-view express checkout. Configured and poured with sterile precision in our cleanroom laboratories.
-          </p>
-
-          <AnimatePresence mode="wait">
-            {!isOrderPlaced ? (
-              <motion.div
-                key="checkout-container"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="w-full"
-              >
-                {!isCheckoutFormVisible ? (
-                  /* STEP 1: ONLY SCENT CUSTOMIZATION SHOWN - CENTERED & MINIMALIST */
-                  <motion.div
-                    key="step-selection"
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    className="max-w-xl mx-auto bg-[#FFFFFF] border border-stone-200/80  p-6 md:p-8"
-                  >
-                    <div className="flex items-center justify-between mb-6">
-                      <span className="block text-[8px] font-sans tracking-[0.2em] text-black uppercase font-bold">
-                        Step 1 of 2 / Configure Your Scent
-                      </span>
-                      <span className="text-[9px] font-mono text-black uppercase">
-                        {selectionType} segment
-                      </span>
-                    </div>
-
-                    {/* Item selector toggle (Fragrances vs Bundles) */}
-                    <div className="grid grid-cols-2 gap-2 mb-6">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectionType("fragrance");
-                          const availFrags = CATALOG_DATA.filter((f) => {
-                            if (f.isOutOfStock) return false;
-                            const fStock = stock?.fragrances[f.id];
-                            return fStock ? Object.values(fStock).some((q) => (Number(q) || 0) > 0) : false;
-                          });
-                          if (availFrags.length > 0) {
-                            const firstFrag = availFrags[0];
-                            setSelectedBuyId(firstFrag.id);
-                            const fStock = stock?.fragrances[firstFrag.id];
-                            const firstSize = (["10ml", "5ml Normal", "5ml HQ"] as const).find(
-                              (s) => !firstFrag.disabledSizes?.includes(s) && (Number(fStock?.[s]) || 0) > 0
-                            ) || "5ml Normal";
-                            setSelectedBuySize(firstSize);
-                          }
-                        }}
-                        className={`py-2.5 px-3 text-xs font-mono  border transition-all cursor-pointer ${
-                          selectionType === "fragrance"
-                            ? "bg-black text-white border-amber-gold font-bold"
-                            : "bg-transparent text-black border-stone-200 hover:text-black "
-                        }`}
-                      >
-                        Individual Scent
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectionType("bundle");
-                          const availBundles = BUNDLE_DATA.filter((b) => !b.isOutOfStock && getProductStock(b.id, "5ml Normal") > 0);
-                          if (availBundles.length > 0) {
-                            setSelectedBuyId(availBundles[0].id);
-                          }
-                          setSelectedBuySize("5ml Normal");
-                        }}
-                        className={`py-2.5 px-3 text-xs font-mono  border transition-all cursor-pointer ${
-                          selectionType === "bundle"
-                            ? "bg-black text-white border-amber-gold font-bold"
-                            : "bg-transparent text-black border-stone-200 hover:text-black "
-                        }`}
-                      >
-                        Curated Bundle
-                      </button>
-                    </div>
-
-                    {/* Product Dropdown - Only In-Stock Buyable Options */}
-                    <div className="mb-6">
-                      <label className="block text-[9px] font-mono text-black uppercase tracking-wider mb-2">
-                        Choose Blend or Set
-                      </label>
-                      <select
-                        value={selectedBuyId}
-                        onChange={(e) => {
-                          const newId = e.target.value;
-                          setSelectedBuyId(newId);
-                          if (selectionType === "fragrance") {
-                            const frag = CATALOG_DATA.find((f) => f.id === newId);
-                            const fStock = stock?.fragrances[newId];
-                            const firstSize = (["10ml", "5ml Normal", "5ml HQ"] as const).find(
-                              (s) => !frag?.disabledSizes?.includes(s) && (Number(fStock?.[s]) || 0) > 0
-                            ) || "5ml Normal";
-                            setSelectedBuySize(firstSize);
-                            const maxStock = getProductStock(newId, firstSize);
-                            setBuyQuantity((q) => Math.max(1, Math.min(maxStock, q)));
-                          } else {
-                            setSelectedBuySize("5ml Normal");
-                            const maxStock = getProductStock(newId, "5ml Normal");
-                            setBuyQuantity((q) => Math.max(1, Math.min(maxStock, q)));
-                          }
-                        }}
-                        className="w-full bg-[#FFFFFF] border border-stone-200  px-4 py-3 text-xs font-sans text-black  focus:outline-none focus:border-amber-gold"
-                      >
-                        {selectionType === "fragrance"
-                          ? CATALOG_DATA.filter((f) => {
-                              if (f.isOutOfStock) return false;
-                              const fStock = stock?.fragrances[f.id];
-                              return fStock ? Object.values(fStock).some((q) => (Number(q) || 0) > 0) : false;
-                            }).map((f) => (
-                              <option key={f.id} value={f.id}>
-                                {f.brand} — {f.name}
-                              </option>
-                            ))
-                          : BUNDLE_DATA.filter((b) => !b.isOutOfStock && getProductStock(b.id, "5ml Normal") > 0).map((b) => (
-                              <option key={b.id} value={b.id}>
-                                ScentPreview Curated — {b.name}
-                              </option>
-                            ))}
-                      </select>
-                    </div>
-
-                    {/* Description or details of the selected item */}
-                    <div className="bg-stone-50 p-3.5 border border-black/5  mb-6">
-                      <span className="block text-[8px] font-sans tracking-[0.2em] text-black uppercase mb-1">
-                        Olfactory Composition
-                      </span>
-                      <p className="text-xs text-black font-sans ">
-                        {selectedProductDescription}
-                      </p>
-                    </div>
-
-                    {/* Size Segment Selector */}
-                    {hasSizeOptions && (
-                      <div className="mb-6">
-                        <span className="block text-[8px] font-sans tracking-[0.15em] uppercase tracking-widest text-black mb-2">
-                          02 / Volume Segment
-                        </span>
-                        <div className="grid grid-cols-3 gap-1 p-1 bg-[#FFFFFF]  border border-stone-200">
-                          {(["10ml", "5ml Normal", "5ml HQ"] as const).map((size) => {
-                            const sizeStock = getProductStock(selectedBuyId, size);
-                            const isSizeOOS = sizeStock <= 0;
-                            return (
-                              <button
-                                key={size}
-                                type="button"
-                                disabled={isSizeOOS}
-                                onClick={() => {
-                                  if (isSizeOOS) return;
-                                  setSelectedBuySize(size);
-                                  setBuyQuantity((q) => Math.max(1, Math.min(sizeStock, q)));
-                                }}
-                                className={`py-2 text-[10px] font-mono transition-all cursor-pointer ${
-                                  selectedBuySize === size
-                                    ? "bg-black text-white font-bold"
-                                    : isSizeOOS
-                                    ? "text-stone-400 line-through cursor-not-allowed bg-stone-100"
-                                    : "text-stone-800 hover:text-black"
-                                }`}
-                              >
-                                {size} {isSizeOOS ? "(0)" : ""}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Quantity controls */}
-                    <div className="flex items-center justify-between pt-4 border-t border-black/5">
-                      <div>
-                        <span className="block text-[8px] font-sans tracking-[0.15em] uppercase tracking-widest text-black">
-                          Quantity
-                        </span>
-                        <span className="text-xs text-black font-sans">Increase quantity</span>
-                      </div>
-                      <div className="flex items-center gap-3 bg-[#FFFFFF] border border-stone-200  p-1">
-                        <button
-                          type="button"
-                          onClick={() => setBuyQuantity((q) => Math.max(1, q - 1))}
-                          className="w-7 h-7 flex items-center justify-center text-black hover:text-black  transition-colors font-mono cursor-pointer text-sm font-semibold"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center font-mono text-sm font-semibold text-black ">
-                          {buyQuantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setBuyQuantity((q) => {
-                            const maxStock = selectedProduct ? getProductStock(selectedProduct.id, selectedBuySize) : 10;
-                            return Math.min(maxStock, q + 1);
-                          })}
-                          className="w-7 h-7 flex items-center justify-center text-black hover:text-black  transition-colors font-mono cursor-pointer text-sm font-semibold"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Cost Preview before checkout */}
-                    <div className="border-t border-black/5 pt-5 mt-4 space-y-3">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-black font-sans tracking-[0.15em] uppercase tracking-wider">Subtotal:</span>
-                        <span className="font-mono text-black text-sm font-bold">₹{buyItemPrice * buyQuantity}.00</span>
-                      </div>
-                      
-                      {(() => {
-                        const maxStock = selectedProduct ? getProductStock(selectedProduct.id, selectedBuySize) : 0;
-                        if (maxStock <= 0) {
-                          return (
-                            <button
-                              type="button"
-                              disabled
-                              className="w-full bg-stone-800 text-white font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-4  cursor-not-allowed border border-stone-750 flex items-center justify-center gap-2"
-                            >
-                              <span>Sold Out / Unavailable</span>
-                            </button>
-                          );
-                        }
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!selectedProduct) return;
-                              const finalQty = Math.min(maxStock, buyQuantity);
-                              setCart([{
-                                id: selectedProduct.id,
-                                name: selectedProduct.name,
-                                brand: selectionType === "fragrance" ? (selectedProduct as Fragrance).brand : "ScentPreview Curated",
-                                size: selectedBuySize,
-                                price: buyItemPrice,
-                                quantity: finalQty
-                              }]);
-                              setIsCheckoutFormVisible(true);
-                            }}
-                            className="w-full bg-[#276152] hover:bg-[#0D3A35] text-black  font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-4  transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer "
-                          >
-                            <span>Configure Delivery Details</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        );
-                      })()}
-                    </div>
-                  </motion.div>
-                ) : (
-                  /* STEP 2: CLEAN SINGLE-STEP CHECKOUT FORM AND SUMMARY */
-                  <motion.div
-                    key="step-checkout"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-8"
-                  >
-                    {/* Left Column: Clean Order Summary */}
-                    <div className="lg:col-span-5">
-                      <div className="bg-white border border-stone-200 p-6 flex flex-col justify-between h-full">
-                        <div>
-                          <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-5">
-                            <span className="text-xs font-sans uppercase tracking-wider text-black font-bold">
-                              Order Summary
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setIsCheckoutFormVisible(false)}
-                              className="text-xs font-mono text-stone-600 hover:text-black cursor-pointer transition-colors"
-                            >
-                              ← Edit Item
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between py-2 border-b border-stone-100 mb-5">
-                            <div>
-                              <span className="block text-[10px] font-mono text-stone-500 uppercase">
-                                {(selectionType === "fragrance" && (selectedProduct as Fragrance)?.brand) || "Curated"}
-                              </span>
-                              <h4 className="text-sm font-sans font-bold text-black">
-                                {selectedProduct?.name}
-                              </h4>
-                              <span className="text-xs font-mono text-stone-600">
-                                {selectionType === "fragrance" ? selectedBuySize : "5ml Normal"} × {buyQuantity}
-                              </span>
-                            </div>
-                            <span className="font-mono text-sm font-bold text-black">
-                              ₹{buyItemPrice * buyQuantity}.00
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2.5 pt-2">
-                          <div className="flex justify-between text-xs font-mono text-stone-700">
-                            <span>Subtotal</span>
-                            <span>₹{buyItemPrice * buyQuantity}.00</span>
-                          </div>
-                          <div className="flex justify-between text-xs font-mono text-stone-700">
-                            <span>Delivery</span>
-                            <span>
-                              {appliedCoupon ? (
-                                <>
-                                  <span className="line-through text-stone-400 mr-1.5">₹116.00</span>
-                                  <span className="text-emerald-700 font-bold">₹0.00</span>
-                                </>
-                              ) : (
-                                `₹${shippingCost}.00`
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs font-mono text-stone-700 py-1.5 border-t border-b border-stone-100">
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={isShippingProtectionEnabled}
-                                onChange={(e) => setIsShippingProtectionEnabled(e.target.checked)}
-                                className="w-3.5 h-3.5 border-stone-300 text-black cursor-pointer accent-black"
-                              />
-                              <span>Shipping Protection (Optional)</span>
-                            </label>
-                            <span>{isShippingProtectionEnabled ? "₹150.00" : "—"}</span>
-                          </div>
-                          {renderCouponSection()}
-                          <div className="flex justify-between text-base font-mono text-black font-bold pt-2 border-t border-stone-200">
-                            <span>Total</span>
-                            <span>₹{checkoutTotal + (isShippingProtectionEnabled ? 150 : 0)}.00</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Column: Single-Step Shipping Form */}
-                    <form
-                      onSubmit={handlePlaceOrder}
-                      className="lg:col-span-7 bg-white border border-stone-200 p-6 flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="border-b border-stone-200 pb-4 mb-5">
-                          <span className="text-xs font-sans uppercase tracking-wider text-black font-bold">
-                            Delivery Details
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <label className="block text-[10px] font-mono text-stone-600 uppercase mb-1">
-                              Full Name
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={checkoutName}
-                              onChange={(e) => setCheckoutName(e.target.value)}
-                              placeholder="Full Name"
-                              className="w-full bg-white border border-stone-200 px-3.5 py-2.5 text-xs text-black focus:outline-none focus:border-black"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-mono text-stone-600 uppercase mb-1">
-                              Phone Number
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={checkoutPhone}
-                              onChange={(e) => setCheckoutPhone(e.target.value)}
-                              placeholder="+91 99999 99999"
-                              className="w-full bg-white border border-stone-200 px-3.5 py-2.5 text-xs text-black focus:outline-none focus:border-black"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mb-4">
-                          <label className="block text-[10px] font-mono text-stone-600 uppercase mb-1">
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            required
-                            value={checkoutEmail}
-                            onChange={(e) => setCheckoutEmail(e.target.value)}
-                            placeholder="you@example.com"
-                            className="w-full bg-white border border-stone-200 px-3.5 py-2.5 text-xs text-black focus:outline-none focus:border-black"
-                          />
-                        </div>
-
-                        <div className="mb-4">
-                          <label className="block text-[10px] font-mono text-stone-600 uppercase mb-1">
-                            Street Address
-                          </label>
-                          <textarea
-                            required
-                            rows={2}
-                            value={checkoutAddress}
-                            onChange={(e) => setCheckoutAddress(e.target.value)}
-                            placeholder="House/Flat No., Building, Street, Area"
-                            className="w-full bg-white border border-stone-200 px-3.5 py-2.5 text-xs text-black focus:outline-none focus:border-black resize-none"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                          <div>
-                            <label className="block text-[10px] font-mono text-stone-600 uppercase mb-1">
-                              State
-                            </label>
-                            <select
-                              required
-                              value={checkoutState}
-                              onChange={(e) => setCheckoutState(e.target.value)}
-                              className="w-full bg-white border border-stone-200 px-3.5 py-2.5 text-xs text-black focus:outline-none focus:border-black font-sans"
-                            >
-                              {INDIAN_STATES_AND_UTS.map((st) => (
-                                <option key={st} value={st}>
-                                  {st}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-mono text-stone-600 uppercase mb-1">
-                              Pincode (6 digits)
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              maxLength={6}
-                              pattern="[1-9][0-9]{5}"
-                              value={checkoutPincode}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, "");
-                                setCheckoutPincode(val);
-                              }}
-                              placeholder="400050"
-                              className="w-full bg-white border border-stone-200 px-3.5 py-2.5 text-xs text-black focus:outline-none focus:border-black font-mono"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-stone-200">
-                        <button
-                          type="submit"
-                          disabled={isProcessingOrder}
-                          className="w-full bg-black hover:bg-stone-800 text-white py-3.5 text-xs font-sans tracking-widest uppercase transition-colors font-bold cursor-pointer disabled:opacity-50"
-                        >
-                          {isProcessingOrder ? "Processing..." : "Continue to Payment"}
-                        </button>
-                      </div>
-                    </form>
-                  </motion.div>
-                )}
-            </motion.div>
-            ) : (
-              <motion.div
-                key="success-screen"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-16 px-6 bg-white border border-stone-200 rounded-xl max-w-xl mx-auto shadow-sm"
-              >
-                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="w-8 h-8 text-emerald-600" />
-                </div>
-                <span className="text-[10px] font-mono text-black uppercase tracking-[0.2em] font-semibold block mb-2">
-                  Order Authorized
-                </span>
-                <h3 className="text-3xl font-serif text-black mb-3">
-                  Pouring Sequence Commenced
-                </h3>
-                <p className="text-black text-sm font-sans mb-6 px-4">
-                  Thank you for your acquisition. The sterile extraction process has begun.
-                </p>
-
-                {/* VELYX Waitlist Section */}
-                <div className="bg-[#FFFFFF] border border-stone-200/80 p-5 my-6 text-left space-y-3">
-                  <div className="flex items-center justify-between border-b border-stone-100 pb-2">
-                    <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-stone-500 font-semibold">
-                      Upcoming Release • Waitlist
-                    </span>
-                    <span className="text-[8px] font-mono text-stone-400 uppercase tracking-widest">
-                      VELYX
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 className="text-xl font-serif text-black mb-1">
-                      VELYX
-                    </h4>
-                    <p className="text-xs text-stone-600 font-sans leading-relaxed">
-                      Join the waitlist for VELYX to receive priority access to limited decants, archive vault drops, and new olfactory releases.
-                    </p>
-                  </div>
-
-                  <a
-                    href="https://velyx-waitlist.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-stone-900 hover:bg-black text-white text-xs font-mono tracking-widest uppercase transition-colors cursor-pointer"
-                  >
-                    <span>Join VELYX Waitlist</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                <button 
-                  onClick={() => { setIsOrderPlaced(false); }} 
-                  className="bg-stone-900 hover:bg-black text-white py-3.5 px-8 rounded-lg text-xs font-mono tracking-wider uppercase font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 mx-auto"
+              {/* Quick Jump Buttons */}
+              <div className="flex flex-wrap items-center gap-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("shelf-men");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#2F4F4F] text-white text-xs font-medium tracking-wide hover:bg-[#253f3f] transition-all cursor-pointer shadow-2xs"
                 >
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Buy More / Return to Studio</span>
+                  Men's Decants
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
-
-      {/* 2. Interactive Scent Grid: The Kinetic Catalog */}
-      <section id="kinetic-catalog" className="max-w-7xl mx-auto px-3.5 sm:px-6 md:px-10 pt-3 sm:pt-5 pb-10 sm:pb-16">
-        
-        {/* Section Heading */}
-        <div className="border-b border-stone-200/60 pb-3 sm:pb-4 mb-5 sm:mb-6 flex flex-col md:flex-row md:items-end justify-between gap-3">
-          <div>
-            <span className="text-[10px] font-mono tracking-[0.2em] text-black uppercase font-bold block mb-1">
-              Curated Decants
-            </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-black tracking-tight">
-              The Kinetic Catalog
-            </h2>
-          </div>
-          <p className="text-black text-xs font-sans max-w-sm">
-            Staggered architecture showcasing premier fragrance extractions. Select individual sizes dynamically to view instantaneous odometer price adjustments.
-          </p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-5 sm:mb-6 max-w-md">
-          <label htmlFor="scent-search" className="block text-[9px] font-sans tracking-[0.15em] uppercase text-black mb-1.5 font-bold">
-            Search Decants
-          </label>
-          <div className="relative">
-            <input
-              id="scent-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, brand, or ingredients/notes..."
-              className="w-full bg-white/60 border border-stone-200 py-2.5 px-4 pl-4 text-xs font-sans text-black focus:outline-none focus:ring-1 focus:ring-stone-300 focus:border-stone-200 transition-all placeholder:text-stone-400 rounded-xl"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black hover:text-black text-xs font-mono transition-colors font-semibold"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Sensory Test Call-To-Action Banner */}
-        <div className="mb-6 sm:mb-8 bg-[#F4F4F2] text-black p-4 sm:p-5 border border-black/5 rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden relative group">
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1 max-w-xl">
-              <span className="text-[9px] font-mono tracking-[0.2em] text-emerald-700 uppercase font-bold block">
-                INTELLIGENT PROFILE ISOLATION SYSTEM v2
-              </span>
-              <p className="text-xs sm:text-sm font-sans font-bold text-black leading-snug">
-                "Can't decide? Take one of our sensory tests to find your signature profile."
-              </p>
-            </div>
-            <div className="shrink-0 w-full md:w-auto">
-              <button
-                type="button"
-                onClick={() => setIsQuizListOpen(true)}
-                className="w-full md:w-auto bg-stone-900 hover:bg-black text-white transition-colors px-5 py-2.5 sm:px-6 sm:py-3 text-[11px] font-mono font-bold tracking-wider uppercase cursor-pointer flex items-center justify-center gap-2 border border-black/5 shadow-xs rounded-xl"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-black animate-pulse" />
-                Explore Sensory Quizzes
-                <ChevronRight className="w-3.5 h-3.5 text-black" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* MAIN ATTRACTION: Curated Gifting Bundles Showcase */}
-        {(() => {
-          const giftingBundles = filteredBundles.filter((b) => b.isGiftingBundle);
-          if (giftingBundles.length === 0) return null;
-
-          return (
-            <div id="gifting-bundles" className="mb-10 sm:mb-14 scroll-mt-20">
-              {/* Showcase Header */}
-              <div className="mb-5 sm:mb-6">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 border-b border-black/15 pb-4">
-                  <div>
-                    <div className="text-[10px] font-mono tracking-[0.2em] text-neutral-400 uppercase font-bold mb-1.5">
-                      MAIN ATTRACTION · CURATED 3 × 5ML GIFTING SETS
-                    </div>
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/50 backdrop-blur-md rounded-xl sm:rounded-2xl px-4 py-2 sm:px-6 sm:py-3 shadow-md">
-                      Signature Gifting Trios
-                    </h2>
-                  </div>
-                  <p className="text-xs sm:text-sm font-sans text-neutral-300 max-w-md border border-white/15 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl px-3.5 py-2 sm:px-4 sm:py-2.5">
-                    Three complementary 5ml decants (15ml total per trio) paired for daytime-to-evening layering and ready-to-gift presentation.
-                  </p>
-                </div>
-              </div>
-
-              {/* Two Flagship Gifting Trio Cards - Side by Side on Mobile & Desktop */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-5 md:gap-6">
-                {giftingBundles.map((bundle) => {
-                  const availableSets = getProductStock(bundle.id, "5ml Normal");
-                  const isBundleOutOfStock = bundle.isOutOfStock || availableSets <= 0;
-                  const price = bundle.fixedPrice ?? bundle.prices?.["5ml Normal"] ?? 0;
-                  const constituents = (bundle.constituentIds || [])
-                    .map((cid) => CATALOG_DATA.find((f) => f.id === cid))
-                    .filter((f): f is Fragrance => Boolean(f));
-
-                  return (
-                    <div
-                      key={bundle.id}
-                      className="bg-white/95 backdrop-blur-md border border-black/15 rounded-2xl sm:rounded-3xl p-3 sm:p-5 md:p-6 shadow-md flex flex-col justify-between transition-all hover:shadow-xl"
-                    >
-                      <div>
-                        {/* Top Metadata Row */}
-                        <div className="flex items-center justify-between gap-1 text-[8px] sm:text-[11px] font-mono tracking-wider uppercase text-stone-600 pb-2 sm:pb-3 border-b border-stone-200/80 mb-2.5 sm:mb-4">
-                          <div className="font-bold text-black truncate">
-                            {bundle.gender === "Men" ? "MEN’S SET" : "WOMEN’S SET"}
-                          </div>
-                          <span className={`shrink-0 font-bold ${isBundleOutOfStock ? "text-red-600" : "text-emerald-800"}`}>
-                            {isBundleOutOfStock ? "SOLD OUT" : `${availableSets} IN STOCK`}
-                          </span>
-                        </div>
-
-                        {/* Title & Price */}
-                        <div className="mb-2.5 sm:mb-4">
-                          <div className="flex items-baseline justify-between gap-1.5 flex-wrap mb-1">
-                            <h3 className="text-xs sm:text-lg md:text-2xl font-serif text-black tracking-tight font-bold leading-tight truncate">
-                              {bundle.name}
-                            </h3>
-                            <span className="text-xs sm:text-base md:text-xl font-mono font-bold text-black">
-                              ₹{price.toLocaleString("en-IN")}
-                            </span>
-                          </div>
-                          <div className="text-[9px] sm:text-xs font-mono text-stone-500">
-                            3 × 5ml Decants (15ml total)
-                          </div>
-                        </div>
-
-                        {/* Visual Triptych of the 3 Constituent Perfumes */}
-                        {constituents.length > 0 && (
-                          <div className="mb-2.5 sm:mb-4">
-                            <div className="grid grid-cols-3 gap-1 sm:gap-2">
-                              {constituents.map((frag, idx) => (
-                                <button
-                                  key={frag.id}
-                                  type="button"
-                                  onClick={() => handleOpenFragranceDetails(frag)}
-                                  className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-lg sm:rounded-xl p-1 sm:p-2 transition-all cursor-pointer flex flex-col justify-between"
-                                  title={`Click to view ${frag.name}`}
-                                >
-                                  <div>
-                                    <div className="aspect-square w-full bg-white rounded-md sm:rounded-lg border border-stone-200/60 overflow-hidden mb-1 flex items-center justify-center p-1">
-                                      {frag.image ? (
-                                        <img
-                                          src={frag.image}
-                                          alt={frag.name}
-                                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                                          loading="lazy"
-                                        />
-                                      ) : (
-                                        <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${frag.color}`} />
-                                      )}
-                                    </div>
-                                    <div className="text-[8px] sm:text-[10px] font-sans font-bold text-black leading-tight line-clamp-1 group-hover:underline">
-                                      {frag.name.replace(/^SCENTPREVIEW\s+/i, "Sample ")}
-                                    </div>
-                                  </div>
-                                  <div className="mt-1 pt-0.5 border-t border-stone-200/70">
-                                    <div className="text-[7px] sm:text-[9px] font-mono text-emerald-800">
-                                      5ml
-                                    </div>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action Footer */}
-                      <div className="pt-2.5 sm:pt-4 border-t border-stone-200/80">
-                        <button
-                          type="button"
-                          disabled={isBundleOutOfStock}
-                          onClick={() => {
-                            handleAddBundleToCart(bundle, true);
-                            setIsCartOpen(true);
-                          }}
-                          className="w-full py-2 sm:py-3 px-2 sm:px-4 bg-black hover:bg-stone-800 text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-sans font-bold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs flex items-center justify-between"
-                        >
-                          <span className="truncate">{isBundleOutOfStock ? "Sold Out" : "Add to Cart"}</span>
-                          <span className="font-mono text-[10px] sm:text-xs shrink-0">₹{price}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("shelf-women");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-4 py-2 rounded-xl bg-white border border-[#D9D9D6] text-[#2F4F4F] text-xs font-medium tracking-wide hover:bg-[#EFEDE6] transition-all cursor-pointer shadow-2xs"
+                >
+                  Women's Decants
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("shelf-bundles");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-4 py-2 rounded-xl bg-white border border-[#D9D9D6] text-[#2F4F4F] text-xs font-medium tracking-wide hover:bg-[#EFEDE6] transition-all cursor-pointer shadow-2xs"
+                >
+                  Curated Trios
+                </button>
               </div>
             </div>
-          );
-        })()}
+          </section>
 
-        {/* Brutalist Grid Layout - Categorized by Gender */}
-        {filteredCatalog.length > 0 && (
-          <div className="space-y-10 sm:space-y-14">
-            {/* Men's Collection */}
-            {filteredCatalog.filter(f => f.gender === "Men").length > 0 && (
-              <div>
-                <div className="mb-3.5 sm:mb-5">
-                  <span className="text-[9px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-1">
-                    MASCULINE PROFILE ARCHIVE
-                  </span>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-lg sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl px-4 py-1.5 sm:px-6 sm:py-2.5 shadow-md">
-                      Men's Collection
-                    </h3>
-                    <div className="h-px bg-black/10 flex-1 min-w-[20px]" />
-                  </div>
-                  <p className="text-[11px] sm:text-xs font-sans text-neutral-500 mt-1">
-                    Woody, aromatic, leather, and intense amber formulations.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 lg:gap-8 bg-transparent">
-                  {filteredCatalog.filter(f => f.gender === "Men").map((fragrance) => (
-                    <div key={fragrance.id} className="h-full">
-                      <ScentCard
-                        fragrance={fragrance}
-                        onAddToCart={handleAddToCart}
-                        onBuyNow={handleBuyNow}
-                        onNoteClick={setSelectedNote}
-                        onOpenDetails={handleOpenFragranceDetails}
-                        fragranceStock={stock?.fragrances[fragrance.id]}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Women's Collection */}
-            {filteredCatalog.filter(f => f.gender === "Women").length > 0 && (
-              <div>
-                <div className="mb-3.5 sm:mb-5">
-                  <span className="text-[9px] font-mono tracking-[0.2em] text-neutral-500 uppercase font-bold block mb-1">
-                    FEMININE PROFILE ARCHIVE
-                  </span>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-lg sm:text-2xl md:text-3xl font-sans font-bold text-white tracking-[-0.02em] inline-block border border-white/20 bg-black/40 backdrop-blur-md rounded-xl sm:rounded-2xl px-4 py-1.5 sm:px-6 sm:py-2.5 shadow-md">
-                      Women's Collection
-                    </h3>
-                    <div className="h-px bg-black/10 flex-1 min-w-[20px]" />
-                  </div>
-                  <p className="text-[11px] sm:text-xs font-sans text-neutral-500 mt-1">
-                    Floral, sweet, vanilla, and sophisticated amber profiles.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-4 md:gap-6 lg:gap-8 bg-transparent">
-                  {filteredCatalog.filter(f => f.gender === "Women").map((fragrance) => (
-                    <div key={fragrance.id} className="h-full">
-                      <ScentCard
-                        fragrance={fragrance}
-                        onAddToCart={handleAddToCart}
-                        onBuyNow={handleBuyNow}
-                        onNoteClick={setSelectedNote}
-                        onOpenDetails={handleOpenFragranceDetails}
-                        fragranceStock={stock?.fragrances[fragrance.id]}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Curated Capsule Bundles Subsection - Below Main Perfumes */}
-        {filteredBundles.length > 0 && (
-          <div id="bundle-capsules" className="mt-8 sm:mt-12 scroll-mt-20">
-            {/* Subsection Heading */}
-            <div className="border-b border-black/10 pb-2.5 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-3">
-              <div>
-                <span className="text-[10px] font-mono tracking-[0.2em] text-emerald-800 uppercase font-bold block mb-1">
-                  BUNDLE CAPSULES
-                </span>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-sans font-black text-black uppercase tracking-tight">
-                  UNIFIED DECANT SETS
-                </h3>
-              </div>
-              <p className="text-xs font-sans text-neutral-600 max-w-sm">
-                Curated multi-scent pairings hand-selected for synergy and exceptional value.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-5 md:gap-6 bg-transparent">
-              {filteredBundles.map((bundle) => {
-                const selectedSize = "5ml Normal";
-                const isSpotlight = bundle.isSpotlight;
-                const price = isSpotlight ? bundle.fixedPrice : (bundle.prices ? bundle.prices[selectedSize] : 0);
-                const availableBundleStock = getProductStock(bundle.id, selectedSize);
-                const isBundleOutOfStock = bundle.isOutOfStock || availableBundleStock <= 0;
-                const constituents = (bundle.constituentIds || [])
-                  .map((cid) => CATALOG_DATA.find((f) => f.id === cid))
-                  .filter((f): f is Fragrance => Boolean(f));
-
-                return (
-                  <div 
-                    key={bundle.id}
-                    className="bg-white/95 backdrop-blur-sm p-3 sm:p-5 rounded-xl sm:rounded-2xl border border-black/10 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 mb-2 text-[8px] sm:text-[10px] font-mono uppercase tracking-wider text-stone-600">
-                        <span className="font-bold text-black truncate">
-                          {bundle.categoryLabel || (isSpotlight ? "SPOTLIGHT" : "CURATED")}
-                        </span>
-                        {isBundleOutOfStock ? (
-                          <span className="text-red-600 font-semibold shrink-0">
-                            SOLD OUT
-                          </span>
-                        ) : (
-                          <span className="text-emerald-800 font-semibold shrink-0">
-                            {availableBundleStock} IN STOCK
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-xs sm:text-base md:text-lg font-sans font-bold text-black tracking-tight mb-1 truncate">
-                        {bundle.name}
-                      </h3>
-                      <p className="text-[10px] sm:text-xs font-sans text-neutral-600 mb-2.5 leading-snug line-clamp-2">
-                        Contains: {bundle.contains}
-                      </p>
-
-                      {/* Visual display of what comes in the bundle - explicitly side by side on all devices including mobile */}
-                      {constituents.length > 0 && (
-                        <div className="my-2.5 pt-2 border-t border-black/10">
-                          <span className="block text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-stone-600 mb-1.5 font-bold">
-                            Included in this set ({constituents.length} decants):
-                          </span>
-                          <div className={`grid ${constituents.length === 2 ? "grid-cols-2" : "grid-cols-3"} gap-1 sm:gap-1.5 w-full`}>
-                            {constituents.map((frag) => (
-                              <button
-                                key={frag.id}
-                                type="button"
-                                onClick={() => handleOpenFragranceDetails(frag)}
-                                className="group text-left bg-stone-50 hover:bg-stone-100/90 border border-stone-200/90 rounded-lg p-1 sm:p-1.5 transition-all cursor-pointer flex flex-col justify-between"
-                                title={`Click to view ${frag.name}`}
-                              >
-                                <div>
-                                  <div className="aspect-square w-full bg-white rounded-md border border-stone-200/60 overflow-hidden mb-1 flex items-center justify-center p-0.5 sm:p-1">
-                                    {frag.image ? (
-                                      <img
-                                        src={frag.image}
-                                        alt={frag.name}
-                                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                                        loading="lazy"
-                                      />
-                                    ) : (
-                                      <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${frag.color}`} />
-                                    )}
-                                  </div>
-                                  <div className="w-full min-w-0">
-                                    <div className="text-[8px] sm:text-[9px] font-sans font-bold text-black leading-tight line-clamp-1 group-hover:underline">
-                                      {frag.name.replace(/^SCENTPREVIEW\s+/i, "Sample ")}
-                                    </div>
-                                    <div className="text-[7px] sm:text-[8px] font-mono text-emerald-800 font-semibold mt-0.5">
-                                      5ml Decant
-                                    </div>
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-3 border-t border-black/5 pt-2">
-                      <button
-                        disabled={isBundleOutOfStock}
-                        onClick={() => {
-                          handleAddBundleToCart(bundle, true);
-                          setIsCartOpen(true);
-                        }}
-                        className="w-full py-2 sm:py-2.5 bg-black text-white rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-sans font-medium hover:bg-neutral-800 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-between px-2.5 sm:px-3 cursor-pointer shadow-xs"
-                      >
-                        <span className="truncate">{isBundleOutOfStock ? "Sold Out" : "Add to cart"}</span>
-                        <span className="font-mono font-bold text-[10px] sm:text-xs shrink-0 pl-1">₹{price}</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {filteredCatalog.length === 0 && filteredBundles.length === 0 && (
-          <div className="text-center py-24 bg-white/40 border border-stone-200/50 ">
-            <span className="block font-sans font-bold text-black text-lg mb-2">
-              No matching decants or bundles found
-            </span>
-            <span className="text-[10px] font-mono text-black uppercase tracking-widest">
-              Try search parameters such as "cinnamon", "zara", or "duo"
-            </span>
-          </div>
-        )}
-
-        {/* Fine Print / Brand Association Disclaimer */}
-        <div className="mt-8 sm:mt-10 pt-4 sm:pt-6 border-t border-black/10 text-center max-w-2xl mx-auto px-4">
-          <p className="text-[10px] font-sans text-neutral-500 leading-relaxed">
-            <span className="font-semibold text-neutral-700 uppercase tracking-widest text-[9px] block mb-1">
-              Disclaimer & Fine Print
-            </span>
-            Each fragrance is an independent <strong>SP Decant</strong> hand-rebottled by Scent Preview. We have no association, affiliation, partnership, or endorsement with any of the brands sold on this site. Brand names and trademarks are used only to identify products and remain the property of their respective owners.
-          </p>
-        </div>
-      </section>
+          <ProductShelf
+            products={filteredShelfProducts}
+            currency="₹"
+            stock={stock}
+            hideHeader={true}
+            bagCount={cart.reduce((sum, i) => sum + i.quantity, 0)}
+            onOpenBag={() => setIsCartOpen(true)}
+            onOpenDetails={(p) => {
+              const found = CATALOG_DATA.find((f) => f.id === p.id);
+              if (found) handleOpenFragranceDetails(found);
+            }}
+            onAddToCart={(product, size, qty) => {
+              const found = CATALOG_DATA.find((f) => f.id === product.id);
+              if (found) {
+                handleAddToCart(found, size as SizeType, qty);
+              } else {
+                const foundBundle = BUNDLE_DATA.find((b) => b.id === product.id);
+                if (foundBundle) {
+                  for (let i = 0; i < qty; i++) {
+                    handleAddBundleToCart(foundBundle);
+                  }
+                }
+              }
+            }}
+          />
         </>
       )}
 
@@ -4028,10 +3107,10 @@ export default function App() {
       <footer className="bg-[#FFFFFF] text-black  py-16 px-6 md:px-12 border-t border-black/5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
-            <span className="text-xl font-sans font-bold text-black font-bold">
-              SP 0.2
+            <span className="text-lg sm:text-xl font-sans font-bold tracking-[0.18em] text-[#2F4F4F] uppercase block">
+              SCENTPREVIEW <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-[#EFEDE6] text-[#2F4F4F] align-middle">0.2</span>
             </span>
-            <span className="block text-[10px] font-mono text-black mt-2 uppercase tracking-widest">
+            <span className="block text-[10px] font-mono text-[#8A8A8A] mt-2 uppercase tracking-widest">
               © 2026 ScentPreview. All Rights Reserved.
             </span>
             <span className="block text-[9px] font-sans text-neutral-500 mt-1">
@@ -4388,6 +3467,49 @@ export default function App() {
                             </AnimatePresence>
                           </div>
                         )}
+
+                        {/* Quick recommendations inside Cart Drawer */}
+                        {(() => {
+                          const cartIds = new Set(cart.map(i => i.id));
+                          const drawerRecommendations = CATALOG_DATA.filter(f => !cartIds.has(f.id) && !f.isOutOfStock).slice(0, 3);
+                          if (drawerRecommendations.length === 0) return null;
+                          return (
+                            <div className="mt-5 pt-4 border-t border-[#D9D9D6]">
+                              <span className="block text-[11px] font-medium tracking-[0.16em] uppercase text-[#2F4F4F] mb-3">
+                                You May Also Want To Buy
+                              </span>
+                              <div className="space-y-2">
+                                {drawerRecommendations.map((rec) => {
+                                  const sizeKey = "5ml Normal";
+                                  const recPrice = rec.prices[sizeKey] || Object.values(rec.prices)[0] || 400;
+                                  return (
+                                    <div key={rec.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[#EFEDE6] border border-[#D9D9D6]">
+                                      <div className="flex items-center gap-2.5 min-w-0">
+                                        {rec.image && (
+                                          <div className="w-9 h-9 flex items-center justify-center shrink-0">
+                                            <img src={rec.image} alt={rec.name} className="max-h-full max-w-full object-contain filter drop-shadow-2xs" />
+                                          </div>
+                                        )}
+                                        <div className="min-w-0">
+                                          <span className="text-[9px] uppercase tracking-wider text-[#8A8A8A] block truncate">{rec.brand}</span>
+                                          <span className="text-xs font-semibold text-[#111111] block truncate">{rec.name}</span>
+                                          <span className="text-[10px] text-[#2F4F4F] font-bold">5ml · ₹{recPrice}</span>
+                                        </div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleAddToCart(rec, sizeKey, 1, true)}
+                                        className="px-2.5 py-1 text-xs font-medium text-white bg-[#2F4F4F] hover:bg-[#253f3f] rounded-lg transition-colors cursor-pointer shrink-0"
+                                      >
+                                        + Add
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Cart Footer */}
@@ -5289,7 +4411,7 @@ export default function App() {
                                 type="text"
                                 required
                                 list="admin-perfume-variants"
-                                placeholder="e.g. Lattafa Khamrah, Calvin Klein CK One"
+                                placeholder="e.g. SP 1, SP 6, SP 8"
                                 value={adminManualVariantName}
                                 onChange={(e) => setAdminManualVariantName(e.target.value)}
                                 className="w-full bg-[#FFFFFF] border border-stone-200  px-3 py-2 text-xs text-black  focus:outline-none focus:border-stone-700"
@@ -6208,29 +5330,30 @@ export default function App() {
       {/* Cross-Sell up-sell recommendation modal */}
       <AnimatePresence>
         {crossSellRecommendation.isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setCrossSellRecommendation(prev => ({ ...prev, isOpen: false }))}
-              className="fixed inset-0 bg-[#FFFFFF]/75  z-40"
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-[70]"
             />
 
             {/* Modal Container */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="relative bg-[#FFFFFF] border border-stone-200 text-black   max-w-md w-full z-50 max-h-[85vh] flex flex-col overflow-hidden p-5 sm:p-6"
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative bg-[#F7F7F5] border border-[#D9D9D6] text-[#111111] max-w-md w-full z-[71] max-h-[85vh] flex flex-col overflow-hidden p-5 sm:p-6 rounded-2xl shadow-2xl"
             >
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setCrossSellRecommendation(prev => ({ ...prev, isOpen: false }))}
-                className="absolute right-4 top-4 text-black hover:text-white p-1 transition-colors cursor-pointer z-10"
+                className="absolute right-4 top-4 text-[#8A8A8A] hover:text-[#2F4F4F] p-1.5 transition-colors cursor-pointer z-10 rounded-full hover:bg-[#EFEDE6]"
+                aria-label="Close recommendations"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -6246,11 +5369,13 @@ export default function App() {
                 }}
                 className="text-center flex-shrink-0 overflow-hidden transition-all duration-150 ease-out"
               >
-                <div className="w-10 h-10 bg-emerald-500/10 text-emerald-700 -full flex items-center justify-center mx-auto mb-2 border border-emerald-500/20">
-                  <Check className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-full bg-[#EFEDE6] text-[#2F4F4F] flex items-center justify-center mx-auto mb-2 border border-[#D9D9D6]">
+                  <Check className="w-5 h-5 stroke-[2.5]" />
                 </div>
-                <h3 className="font-sans font-bold text-black  text-base">Added to Cart!</h3>
-                <p className="text-[11px] text-black font-mono tracking-wide mt-1 truncate max-w-full px-2.5 bg-stone-50 py-1  inline-block">
+                <h3 className="font-sans font-bold text-[#111111] text-base">
+                  Added to <span className="text-[#2F4F4F]">Bag</span>
+                </h3>
+                <p className="text-xs text-[#8A8A8A] mt-1 truncate max-w-full px-3 py-1 bg-[#EFEDE6] rounded-full inline-block border border-[#D9D9D6]/60">
                   {crossSellRecommendation.addedItemName}
                 </p>
               </div>
@@ -6263,45 +5388,50 @@ export default function App() {
                   marginTop: recommendationScrollTop >= 80 ? "0px" : "12px",
                   marginBottom: recommendationScrollTop >= 80 ? "0px" : "12px",
                 }}
-                className="border-t border-stone-200 flex-shrink-0 transition-all duration-150 ease-out" 
+                className="border-t border-[#D9D9D6] flex-shrink-0 transition-all duration-150 ease-out" 
               />
 
               {/* Recommendations Section - Fully Scrollable */}
               <div 
                 onScroll={(e) => setRecommendationScrollTop(e.currentTarget.scrollTop)}
-                className="flex-1 overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-stone-800 scrollbar-track-transparent"
+                className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[#D9D9D6] scrollbar-track-transparent"
               >
-                <span className="block text-[9px] font-sans tracking-[0.15em] uppercase tracking-widest text-black text-center mb-3 sticky top-0 bg-[#FFFFFF] py-1 z-10">
-                  You Might Want To Consider Adding:
+                <span className="block text-[11px] font-sans tracking-[0.16em] uppercase text-[#2F4F4F] font-bold text-center mb-3 sticky top-0 bg-[#F7F7F5] py-1 z-10">
+                  You May Also Want To Buy
                 </span>
 
                 <div className="space-y-2.5">
                   {crossSellRecommendation.recommendedPerfumes.map((perfume) => {
-                    // Determine available sizes for buttons
                     const sizes = [
                       { key: "5ml Normal", label: "5ml" },
                       { key: "10ml", label: "10ml" }
                     ].filter(sizeObj => !perfume.disabledSizes?.includes(sizeObj.key));
 
                     return (
-                      <div key={perfume.id} className="bg-stone-50 border border-stone-200 p-2.5  flex items-center justify-between gap-3 hover:border-stone-700 transition-colors">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-8 h-8 -full bg-gradient-to-br ${perfume.color} flex-shrink-0 flex items-center justify-center border border-white/5`}>
-                            <span className="text-[8px] font-mono text-black /50 font-bold uppercase">
-                              {perfume.brand.substring(0, 2)}
-                            </span>
-                          </div>
+                      <div key={perfume.id} className="bg-white border border-[#D9D9D6] p-3 rounded-xl flex items-center justify-between gap-3 hover:border-[#2F4F4F] transition-colors shadow-2xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {perfume.image ? (
+                            <div className="w-10 h-10 bg-[#EFEDE6] rounded-lg p-1 shrink-0 flex items-center justify-center">
+                              <img src={perfume.image} alt={perfume.name} className="max-h-full max-w-full object-contain filter drop-shadow-xs" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-[#EFEDE6] flex-shrink-0 flex items-center justify-center border border-[#D9D9D6]">
+                              <span className="text-[10px] font-bold text-[#2F4F4F] uppercase">
+                                {perfume.brand.substring(0, 2)}
+                              </span>
+                            </div>
+                          )}
                           <div className="min-w-0">
-                            <h4 className="font-sans font-bold text-black  text-xs leading-tight truncate">
+                            <h4 className="font-sans font-bold text-[#111111] text-xs leading-tight truncate">
                               {perfume.name}
                             </h4>
-                            <span className="text-[9px] font-mono text-black uppercase tracking-widest block mt-0.5">
+                            <span className="text-[10px] text-[#8A8A8A] uppercase tracking-wider block mt-0.5">
                               {perfume.brand}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
                           {sizes.map((sizeObj) => {
                             const price = perfume.prices[sizeObj.key as keyof typeof perfume.prices];
                             const added = cart.some(item => item.id === perfume.id && item.size === sizeObj.key);
@@ -6314,19 +5444,19 @@ export default function App() {
                                   handleAddToCart(perfume, sizeObj.key as any, 1, true);
                                   setCrossSellRecommendation(prev => ({
                                     ...prev,
-                                    addedItemName: `${perfume.brand} ${perfume.name} {sizeObj.label}`
+                                    addedItemName: `${perfume.brand} ${perfume.name} (${sizeObj.label})`
                                   }));
                                 }}
-                                className={`px-2 py-1 border font-sans text-[10px] uppercase font-bold  transition-all flex flex-col items-center justify-center min-w-[50px] ${
+                                className={`px-2.5 py-1.5 rounded-lg font-sans text-[11px] font-medium transition-all flex flex-col items-center justify-center min-w-[54px] cursor-pointer ${
                                   added 
-                                    ? "bg-emerald-950/45 border-emerald-900/40 text-emerald-700 cursor-default" 
-                                    : "bg-stone-850 hover:bg-black hover:text-white border-stone-200 hover:border-transparent text-white cursor-pointer"
+                                    ? "bg-[#EFEDE6] text-[#2F4F4F] border border-[#2F4F4F]/40 cursor-default" 
+                                    : "bg-[#2F4F4F] hover:bg-[#253f3f] text-white"
                                 }`}
                               >
-                                <span className="text-[8px] font-medium tracking-tight">
-                                  {added ? "In Cart" : sizeObj.label}
+                                <span className="text-[9px] font-medium leading-none">
+                                  {added ? "In Bag" : `+ ${sizeObj.label}`}
                                 </span>
-                                <span className="text-[8px] mt-0.5 opacity-90 font-bold">₹{price}</span>
+                                <span className="text-[10px] mt-0.5 font-bold leading-none">₹{price}</span>
                               </button>
                             );
                           })}
@@ -6338,11 +5468,11 @@ export default function App() {
               </div>
 
               {/* Footer actions */}
-              <div className="mt-4 pt-3 border-t border-stone-200 flex items-center gap-3 flex-shrink-0">
+              <div className="mt-4 pt-3 border-t border-[#D9D9D6] flex items-center gap-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setCrossSellRecommendation(prev => ({ ...prev, isOpen: false }))}
-                  className="flex-1 py-2.5 bg-[#FFFFFF] hover:bg-stone-850 border border-stone-200 hover:border-stone-700 text-black hover:text-black   text-xs font-sans tracking-[0.15em] uppercase tracking-wider transition-all cursor-pointer"
+                  className="flex-1 py-2.5 bg-white hover:bg-[#EFEDE6] border border-[#D9D9D6] text-[#2F4F4F] rounded-xl text-xs font-medium tracking-wide transition-colors cursor-pointer"
                 >
                   Continue Browsing
                 </button>
@@ -6352,9 +5482,9 @@ export default function App() {
                     setCrossSellRecommendation(prev => ({ ...prev, isOpen: false }));
                     setIsCartOpen(true);
                   }}
-                  className="flex-1 py-2.5 bg-black hover:bg-amber-450 text-white  text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer text-center  shadow-amber-gold/5"
+                  className="flex-1 py-2.5 bg-[#2F4F4F] hover:bg-[#253f3f] text-white rounded-xl text-xs font-medium tracking-wide transition-colors cursor-pointer text-center"
                 >
-                  View My Cart
+                  View My Bag
                 </button>
               </div>
             </motion.div>

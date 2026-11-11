@@ -1,181 +1,558 @@
 [
   {
-    "orderNumber": "SP-ADMIN-TEST99",
-    "items": [
-      {
-        "name": "Lattafa Khamrah",
-        "size": "5ml Normal",
-        "quantity": 2
-      }
-    ],
-    "total": 748,
-    "name": "Walk-in Customer / N/A",
-    "email": "notapplicable@scentpreview.com",
-    "address": "Not Applicable",
-    "phone": "N/A",
-    "state": "N/A",
-    "pincode": "000000",
-    "shippingProtection": false,
-    "status": "deleted",
-    "createdAt": "2026-10-06T07:22:30.515Z",
     "stockReduced": false,
-    "ip": "127.0.0.1",
-    "userAgent": "node"
-  },
-  {
-    "shippingProtection": false,
-    "orderNumber": "SP-ADMIN-502695",
-    "stockReduced": true,
-    "email": "notapplicable@scentpreview.com",
-    "phone": "N/A",
     "state": "N/A",
+    "skipStockReduction": true,
+    "createdAt": "2026-10-27T17:06:26.127Z",
     "items": [
       {
+        "name": "SCENTPREVIEW Sample No. 2",
         "quantity": 1,
-        "name": "Kamrah ",
         "size": "5ml Normal"
       }
     ],
-    "total": 482,
-    "pincode": "000000",
+    "phone": "N/A",
+    "total": 332,
     "address": "Not Applicable",
-    "name": "Walk-in Customer / N/A",
-    "createdAt": "2026-10-02T12:28:02.204Z",
-    "status": "deleted"
-  },
-  {
-    "createdAt": "2026-10-02T12:28:02.042Z",
-    "shippingProtection": false,
-    "stockReduced": true,
-    "total": 482,
     "email": "notapplicable@scentpreview.com",
-    "pincode": "000000",
-    "orderNumber": "SP-ADMIN-774260",
-    "phone": "N/A",
-    "status": "deleted",
-    "state": "N/A",
-    "items": [
-      {
-        "name": "Kamrah ",
-        "quantity": 1,
-        "size": "5ml Normal"
-      }
-    ],
-    "name": "Walk-in Customer / N/A",
-    "address": "Not Applicable"
-  },
-  {
-    "email": "notapplicable@scentpreview.com",
-    "createdAt": "2026-10-02T12:28:01.879Z",
-    "phone": "N/A",
-    "state": "N/A",
-    "items": [
-      {
-        "name": "Kamrah ",
-        "quantity": 1,
-        "size": "5ml Normal"
-      }
-    ],
-    "orderNumber": "SP-ADMIN-554516",
-    "status": "deleted",
-    "address": "Not Applicable",
-    "stockReduced": true,
+    "orderNumber": "SP-ADMIN-408993",
+    "status": "paid",
     "shippingProtection": false,
-    "total": 482,
     "name": "Walk-in Customer / N/A",
     "pincode": "000000"
   },
   {
-    "name": "Walk-in Customer / N/A",
+    "createdAt": "2026-10-27T17:05:51.776Z",
+    "status": "deleted",
     "pincode": "000000",
-    "total": 482,
+    "total": 332,
+    "shippingProtection": false,
+    "orderNumber": "SP-ADMIN-200937",
+    "name": "Walk-in Customer / N/A",
+    "email": "notapplicable@scentpreview.com",
     "address": "Not Applicable",
     "items": [
       {
-        "size": "5ml Normal",
         "quantity": 1,
-        "name": "Kamrah "
+        "size": "5ml Normal",
+        "name": "SCENTPREVIEW Sample No. 6"
       }
     ],
-    "state": "N/A",
-    "email": "notapplicable@scentpreview.com",
-    "shippingProtection": false,
+    "stockReduced": false,
     "phone": "N/A",
-    "status": "deleted",
-    "orderNumber": "SP-ADMIN-569582",
-    "createdAt": "2026-10-02T12:28:01.511Z",
-    "stockReduced": true
+    "skipStockReduction": true,
+    "state": "N/A"
   },
   {
+    "state": "N/A",
+    "shippingProtection": false,
+    "address": "Not Applicable",
+    "createdAt": "2026-10-26T06:52:31.166Z",
+    "phone": "N/A",
     "pincode": "000000",
+    "stockReduced": false,
+    "orderNumber": "SP-ADMIN-836955",
     "items": [
       {
-        "size": "5ml Normal",
         "quantity": 1,
-        "name": "Kamrah "
+        "size": "5ml Normal",
+        "name": "SCENTPREVIEW Sample No. 6"
       }
     ],
-    "state": "N/A",
-    "name": "Walk-in Customer / N/A",
     "email": "notapplicable@scentpreview.com",
-    "phone": "N/A",
-    "orderNumber": "SP-ADMIN-221650",
-    "address": "Not Applicable",
-    "stockReduced": true,
+    "skipStockReduction": true,
     "status": "deleted",
-    "shippingProtection": false,
     "total": 482,
-    "createdAt": "2026-10-02T12:27:59.815Z"
+    "name": "Walk-in Customer / N/A"
   },
   {
-    "status": "deleted",
     "subtotal": 1165,
-    "pincode": "110078",
+    "state": "Maharashtra",
     "items": [
       {
+        "quantity": 1,
         "name": "Givenchy Gentleman",
+        "size": "5ml Normal"
+      }
+    ],
+    "phone": "294812984712",
+    "status": "deleted",
+    "createdAt": "2026-10-22T18:15:54.718Z",
+    "shippingProtection": false,
+    "address": "qwiorhqworhqwoi",
+    "total": 1281,
+    "stockReduced": true,
+    "email": "gephelchingtham08@gmail.com",
+    "name": "geph",
+    "orderNumber": "SP-2026-435266",
+    "pincode": "193741"
+  },
+  {
+    "stockReduced": true,
+    "orderNumber": "SP-2026-365792",
+    "state": "Maharashtra",
+    "name": "Gephel Chingtham",
+    "phone": "124121412421",
+    "items": [
+      {
+        "name": "Calvin Klein CK One",
+        "size": "5ml Normal",
+        "quantity": 1
+      }
+    ],
+    "createdAt": "2026-10-22T18:04:33.103Z",
+    "email": "1241243214@gmail.com",
+    "status": "deleted",
+    "pincode": "209412",
+    "total": 643,
+    "shippingProtection": false,
+    "address": "13512421",
+    "subtotal": 527
+  },
+  {
+    "ip": "117.194.167.82",
+    "shippingProtection": false,
+    "orderNumber": "SP-ADMIN-748766",
+    "total": 1046,
+    "email": "notapplicable@scentpreview.com",
+    "createdAt": "2026-10-16T03:20:57.356Z",
+    "items": [
+      {
+        "size": "5ml Normal",
+        "name": "Arabic Bundle",
+        "quantity": 2
+      }
+    ],
+    "stockReduced": false,
+    "status": "paid",
+    "phone": "N/A",
+    "pincode": "000000",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "name": "Walk-in Customer / N/A",
+    "state": "N/A",
+    "address": "Not Applicable"
+  },
+  {
+    "email": "scentpreview@gmail.com",
+    "subtotal": 1799,
+    "total": 1915,
+    "address": "Hdudj",
+    "name": "Gephel",
+    "ip": "117.194.168.57",
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1 Mobile/15E148 Safari/604.1",
+    "shippingProtection": false,
+    "createdAt": "2026-10-12T09:00:03.880Z",
+    "pincode": "737373",
+    "state": "Maharashtra",
+    "status": "deleted",
+    "stockReduced": false,
+    "orderNumber": "SP-2026-636927",
+    "phone": "₹47938383838",
+    "items": [
+      {
+        "size": "5ml Normal",
+        "name": "Winter Layers Trio",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "subtotal": 1631,
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36",
+    "address": "Bank of India building,Opposite Maskey petrol pump,M.P..Golai,Tadong,East Sikkimkk",
+    "orderNumber": "SP-2026-633337",
+    "createdAt": "2026-10-11T14:27:08.213Z",
+    "pincode": "737101",
+    "email": "palzordeki@gmail.com",
+    "shippingProtection": false,
+    "total": 1747,
+    "phone": "+919434164423",
+    "name": "Deki Palzor",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "5ml Normal",
+        "name": "Zara Rich Warm Addictive"
+      },
+      {
+        "quantity": 1,
+        "name": "Winter Warmth Trio",
+        "size": "5ml Normal"
+      }
+    ],
+    "status": "paid",
+    "stockReduced": false,
+    "state": "Sikkim",
+    "skipStockReduction": true,
+    "ip": "106.219.133.122"
+  },
+  {
+    "createdAt": "2026-10-09T07:42:28.466Z",
+    "stockReduced": false,
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "skipStockReduction": true,
+    "name": "Pema lhamu lepcha ",
+    "status": "paid",
+    "email": "pemalhamulepcha@gmail.com",
+    "ip": "47.11.130.123",
+    "total": 1508,
+    "pincode": "737101",
+    "shippingProtection": false,
+    "phone": "7318829103",
+    "items": [
+      {
+        "name": "Calvin Klein CK One",
+        "size": "5ml Normal",
+        "quantity": 1
+      },
+      {
+        "quantity": 1,
+        "size": "5ml Normal",
+        "name": "Givenchy Gentleman"
+      }
+    ],
+    "discount": 300,
+    "state": "Sikkim",
+    "address": "Samman Bhawan \nRidge park ",
+    "subtotal": 1692,
+    "orderNumber": "SP-2026-890699"
+  },
+  {
+    "name": "Soniya subba",
+    "ip": "152.56.133.198",
+    "email": "soniyasubba79@gmail.com",
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23F77 Instagram 447.0.0.34.80 (iPhone14,5; iOS 26_5; en_GB; en-GB; scale=3.00; 1170x2532; IABMV/1; 1065993616) Safari/604.1",
+    "createdAt": "2026-10-09T07:35:41.555Z",
+    "skipStockReduction": true,
+    "total": 2219,
+    "orderNumber": "SP-2026-444783",
+    "status": "paid",
+    "phone": "8348279777",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "5ml Normal",
+        "name": "Givenchy Gentleman"
+      },
+      {
+        "name": "Versace Crystal Noir",
+        "size": "5ml Normal",
+        "quantity": 1
+      },
+      {
+        "name": "Zara Rich Warm Addictive",
+        "quantity": 1,
+        "size": "5ml Normal"
+      },
+      {
+        "name": "La Uno Qaswa",
         "quantity": 1,
         "size": "5ml Normal"
       }
     ],
-    "state": "Maharashtra",
-    "phone": "+916395707450",
-    "email": "uditrana69@gmail.com",
-    "name": "Monu",
+    "pincode": "737101",
+    "discount": 625,
     "shippingProtection": false,
-    "createdAt": "2026-09-23T18:20:26.184Z",
-    "address": "Kejjdndbdbbd",
-    "stockReduced": true,
-    "discount": 100,
-    "orderNumber": "SP-2026-626967",
-    "total": 1181
+    "state": "Sikkim",
+    "stockReduced": false,
+    "address": "White Hall Samman Bhawan gangtok",
+    "subtotal": 2728
   },
   {
-    "phone": "+91 62953 62337",
+    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+    "state": "Sikkim",
     "pincode": "737101",
-    "status": "deleted",
-    "createdAt": "2026-09-21T13:02:45.938Z",
-    "email": "gephelchingtham08@gmail.com",
+    "subtotal": 1464,
+    "shippingProtection": false,
+    "createdAt": "2026-10-09T07:35:38.886Z",
+    "address": "Cafe royale \nBelow palace gate \nKazi road  \n",
+    "phone": "7318829103",
+    "stockReduced": true,
     "items": [
       {
         "size": "5ml Normal",
+        "name": "Versace Crystal Noir",
+        "quantity": 1
+      },
+      {
+        "name": "Calvin Klein CK2",
+        "quantity": 1,
+        "size": "5ml Normal"
+      }
+    ],
+    "discount": 100,
+    "name": "Pema lhamu lepcha ",
+    "ip": "47.11.130.123",
+    "email": "pemalhamulepcha@gmail.com",
+    "total": 1480,
+    "status": "deleted",
+    "orderNumber": "SP-2026-321955"
+  },
+  {
+    "shippingProtection": false,
+    "stockReduced": false,
+    "status": "paid",
+    "state": "N/A",
+    "orderNumber": "SP-ADMIN-761933",
+    "items": [
+      {
+        "size": "5ml Normal",
+        "quantity": 3,
+        "name": "Zara"
+      }
+    ],
+    "phone": "N/A",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "total": 1550,
+    "skipStockReduction": true,
+    "address": "Not Applicable",
+    "createdAt": "2026-10-08T08:32:35.600Z",
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A",
+    "ip": "117.194.173.57",
+    "pincode": "000000"
+  },
+  {
+    "createdAt": "2026-10-07T06:23:03.507Z",
+    "state": "West Bengal",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    "stockReduced": false,
+    "orderNumber": "SP-2026-700780",
+    "subtotal": 482,
+    "phone": "87594 53936 ",
+    "items": [
+      {
         "name": "Lattafa Khamrah",
+        "size": "5ml Normal",
         "quantity": 1
       }
     ],
-    "state": "Sikkim",
-    "shippingProtection": true,
-    "address": "Zayden@08\n",
-    "stockReduced": true,
-    "orderNumber": "SP-2026-421374",
-    "total": 748,
-    "name": "Gephel Chingtham"
+    "email": "kunchokyesel36@gmail.com",
+    "address": "Barsana garden apartment block 6A2 ",
+    "status": "deleted",
+    "total": 598,
+    "name": "Kunchok yesel ",
+    "shippingProtection": false,
+    "ip": "117.194.168.205",
+    "pincode": "734010"
   },
   {
+    "address": "Not Applicable",
+    "total": 748,
+    "pincode": "000000",
+    "stockReduced": false,
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A",
+    "items": [
+      {
+        "size": "5ml Normal",
+        "quantity": 2,
+        "name": "Lattafa Khamrah"
+      }
+    ],
+    "phone": "N/A",
+    "orderNumber": "SP-ADMIN-TEST99",
+    "ip": "127.0.0.1",
+    "status": "deleted",
+    "createdAt": "2026-10-06T07:22:30.515Z",
+    "userAgent": "node",
+    "shippingProtection": false,
+    "state": "N/A"
+  },
+  {
+    "orderNumber": "SP-ADMIN-502695",
+    "total": 482,
+    "address": "Not Applicable",
+    "shippingProtection": false,
+    "status": "deleted",
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A",
+    "createdAt": "2026-10-02T12:28:02.204Z",
     "stockReduced": true,
     "pincode": "000000",
+    "state": "N/A",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "5ml Normal",
+        "name": "Kamrah "
+      }
+    ],
+    "phone": "N/A"
+  },
+  {
+    "address": "Not Applicable",
+    "pincode": "000000",
+    "total": 482,
+    "stockReduced": true,
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A",
+    "items": [
+      {
+        "name": "Kamrah ",
+        "size": "5ml Normal",
+        "quantity": 1
+      }
+    ],
+    "phone": "N/A",
+    "orderNumber": "SP-ADMIN-774260",
+    "status": "deleted",
+    "createdAt": "2026-10-02T12:28:02.042Z",
+    "state": "N/A",
+    "shippingProtection": false
+  },
+  {
+    "state": "N/A",
+    "name": "Walk-in Customer / N/A",
+    "shippingProtection": false,
+    "phone": "N/A",
+    "items": [
+      {
+        "size": "5ml Normal",
+        "name": "Kamrah ",
+        "quantity": 1
+      }
+    ],
+    "email": "notapplicable@scentpreview.com",
+    "address": "Not Applicable",
+    "orderNumber": "SP-ADMIN-554516",
+    "total": 482,
+    "createdAt": "2026-10-02T12:28:01.879Z",
+    "pincode": "000000",
+    "status": "deleted",
+    "stockReduced": true
+  },
+  {
+    "items": [
+      {
+        "quantity": 1,
+        "name": "Kamrah ",
+        "size": "5ml Normal"
+      }
+    ],
+    "phone": "N/A",
+    "orderNumber": "SP-ADMIN-569582",
+    "state": "N/A",
+    "stockReduced": true,
+    "address": "Not Applicable",
+    "total": 482,
+    "shippingProtection": false,
+    "pincode": "000000",
+    "status": "deleted",
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A",
+    "createdAt": "2026-10-02T12:28:01.511Z"
+  },
+  {
+    "state": "N/A",
+    "pincode": "000000",
+    "name": "Walk-in Customer / N/A",
+    "address": "Not Applicable",
+    "phone": "N/A",
+    "orderNumber": "SP-ADMIN-221650",
     "status": "deleted",
     "shippingProtection": false,
+    "items": [
+      {
+        "name": "Kamrah ",
+        "size": "5ml Normal",
+        "quantity": 1
+      }
+    ],
+    "email": "notapplicable@scentpreview.com",
+    "createdAt": "2026-10-02T12:27:59.815Z",
+    "total": 482,
+    "stockReduced": true
+  },
+  {
+    "items": [
+      {
+        "quantity": 1,
+        "size": "5ml Normal",
+        "name": "Givenchy Gentleman"
+      }
+    ],
+    "pincode": "110078",
+    "phone": "+916395707450",
+    "shippingProtection": false,
+    "name": "Monu",
+    "stockReduced": true,
+    "createdAt": "2026-09-23T18:20:26.184Z",
+    "address": "Kejjdndbdbbd",
+    "state": "Maharashtra",
+    "discount": 100,
+    "status": "deleted",
+    "total": 1181,
+    "orderNumber": "SP-2026-626967",
+    "subtotal": 1165,
+    "email": "uditrana69@gmail.com"
+  },
+  {
+    "createdAt": "2026-09-21T13:02:45.938Z",
+    "state": "Sikkim",
+    "stockReduced": true,
+    "orderNumber": "SP-2026-421374",
+    "phone": "+91 62953 62337",
+    "items": [
+      {
+        "quantity": 1,
+        "name": "Lattafa Khamrah",
+        "size": "5ml Normal"
+      }
+    ],
+    "email": "gephelchingtham08@gmail.com",
+    "address": "Zayden@08\n",
+    "total": 748,
+    "status": "deleted",
+    "name": "Gephel Chingtham",
+    "shippingProtection": true,
+    "pincode": "737101"
+  },
+  {
+    "email": "notapplicable@scentpreview.com",
+    "orderNumber": "SP-ADMIN-185637",
+    "stockReduced": true,
+    "total": 781,
+    "name": "Walk-in Customer / N/A",
+    "address": "Not Applicable",
+    "state": "N/A",
+    "shippingProtection": false,
+    "createdAt": "2026-08-01T15:59:22.994Z",
+    "pincode": "000000",
+    "phone": "N/A",
+    "status": "deleted",
+    "items": [
+      {
+        "name": "CK2",
+        "size": "10ml",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "items": [
+      {
+        "size": "10ml",
+        "name": "CK2",
+        "quantity": 1
+      }
+    ],
+    "phone": "N/A",
+    "createdAt": "2026-08-01T15:59:22.774Z",
+    "stockReduced": true,
+    "name": "Walk-in Customer / N/A",
+    "status": "deleted",
+    "state": "N/A",
+    "address": "Not Applicable",
+    "shippingProtection": false,
+    "pincode": "000000",
+    "total": 781,
+    "orderNumber": "SP-ADMIN-223380",
+    "email": "notapplicable@scentpreview.com"
+  },
+  {
+    "status": "deleted",
+    "stockReduced": true,
     "items": [
       {
         "quantity": 1,
@@ -183,41 +560,25 @@
         "name": "CK2"
       }
     ],
-    "state": "N/A",
-    "phone": "N/A",
-    "address": "Not Applicable",
-    "email": "notapplicable@scentpreview.com",
-    "createdAt": "2026-08-01T15:59:22.994Z",
-    "total": 781,
-    "orderNumber": "SP-ADMIN-185637",
-    "name": "Walk-in Customer / N/A"
-  },
-  {
-    "phone": "N/A",
     "pincode": "000000",
-    "status": "deleted",
-    "email": "notapplicable@scentpreview.com",
-    "items": [
-      {
-        "name": "CK2",
-        "size": "10ml",
-        "quantity": 1
-      }
-    ],
+    "phone": "N/A",
+    "createdAt": "2026-08-01T15:59:22.142Z",
     "state": "N/A",
-    "orderNumber": "SP-ADMIN-223380",
-    "createdAt": "2026-08-01T15:59:22.774Z",
-    "stockReduced": true,
-    "address": "Not Applicable",
     "name": "Walk-in Customer / N/A",
+    "address": "Not Applicable",
     "shippingProtection": false,
-    "total": 781
+    "orderNumber": "SP-ADMIN-921926",
+    "total": 781,
+    "email": "notapplicable@scentpreview.com"
   },
   {
-    "stockReduced": true,
+    "address": "Not Applicable",
+    "orderNumber": "SP-ADMIN-427860",
+    "createdAt": "2026-08-01T15:59:20.366Z",
+    "pincode": "000000",
+    "email": "notapplicable@scentpreview.com",
     "shippingProtection": false,
     "total": 781,
-    "email": "notapplicable@scentpreview.com",
     "phone": "N/A",
     "items": [
       {
@@ -226,151 +587,128 @@
         "size": "10ml"
       }
     ],
-    "pincode": "000000",
-    "state": "N/A",
-    "orderNumber": "SP-ADMIN-921926",
     "name": "Walk-in Customer / N/A",
-    "createdAt": "2026-08-01T15:59:22.142Z",
-    "address": "Not Applicable",
-    "status": "deleted"
+    "stockReduced": false,
+    "state": "N/A",
+    "status": "paid",
+    "skipStockReduction": true
   },
   {
-    "address": "Not Applicable",
-    "stockReduced": true,
-    "phone": "N/A",
-    "email": "notapplicable@scentpreview.com",
-    "pincode": "000000",
-    "createdAt": "2026-08-01T15:59:20.366Z",
-    "items": [
-      {
-        "name": "CK2",
-        "size": "10ml",
-        "quantity": 1
-      }
-    ],
-    "name": "Walk-in Customer / N/A",
-    "shippingProtection": false,
-    "state": "N/A",
-    "total": 781,
-    "status": "paid",
-    "orderNumber": "SP-ADMIN-427860"
-  },
-  {
-    "address": "5th floor, opp IDBI bank, Gangtok, Sikkim",
-    "total": 858,
-    "createdAt": "2026-07-19T07:14:09.326Z",
-    "stockReduced": true,
-    "pincode": "737101",
-    "orderNumber": "SP-2026-483064",
-    "status": "paid",
-    "shippingProtection": false,
-    "phone": "9609871078",
-    "email": "zanymustang@gmail.com",
-    "name": "Tshering Namgyal Bhutia",
-    "state": "Sikkim",
+    "stockReduced": false,
     "items": [
       {
         "name": "Givenchy Gentleman",
+        "quantity": 1,
+        "size": "5ml Normal"
+      }
+    ],
+    "createdAt": "2026-07-19T07:14:09.326Z",
+    "status": "paid",
+    "phone": "9609871078",
+    "shippingProtection": false,
+    "state": "Sikkim",
+    "name": "Tshering Namgyal Bhutia",
+    "orderNumber": "SP-2026-483064",
+    "pincode": "737101",
+    "total": 858,
+    "email": "zanymustang@gmail.com",
+    "skipStockReduction": true,
+    "address": "5th floor, opp IDBI bank, Gangtok, Sikkim"
+  },
+  {
+    "status": "deleted",
+    "phone": "9609871078",
+    "items": [
+      {
         "size": "5ml Normal",
-        "quantity": 1
+        "quantity": 1,
+        "name": "Calvin Klein CK One"
+      }
+    ],
+    "state": "Sikkim",
+    "createdAt": "2026-07-19T07:10:54.304Z",
+    "shippingProtection": false,
+    "stockReduced": true,
+    "name": "Tshering namgyal bhutia",
+    "address": "5th floor, opp Idbi Bank, Gangtok, Sikkim",
+    "orderNumber": "SP-2026-109341",
+    "email": "zanymustang@gmail.com",
+    "pincode": "737101",
+    "total": 441
+  },
+  {
+    "state": "N/A",
+    "name": "Walk-in Customer / N/A",
+    "shippingProtection": false,
+    "phone": "N/A",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "10ml",
+        "name": "Seoul winter, for him black"
+      }
+    ],
+    "address": "Not Applicable",
+    "email": "notapplicable@scentpreview.com",
+    "orderNumber": "SP-ADMIN-346374",
+    "total": 631,
+    "createdAt": "2026-07-19T04:36:38.147Z",
+    "pincode": "000000",
+    "skipStockReduction": true,
+    "status": "paid",
+    "stockReduced": false
+  },
+  {
+    "email": "keditsuketho0@gmail.com",
+    "address": "Neingulie Memorial Highschool premises, Neisatuo Colony, Dimapur,",
+    "total": 1940,
+    "name": "Kethoselhou Keditsu",
+    "shippingProtection": false,
+    "pincode": "797112",
+    "createdAt": "2026-07-10T18:40:27.973Z",
+    "state": "Nagaland",
+    "status": "deleted",
+    "stockReduced": true,
+    "orderNumber": "SP-ADMIN-756894",
+    "phone": "9436407147",
+    "items": [
+      {
+        "quantity": 1,
+        "name": "Calvin Klein One",
+        "size": "10ml"
       }
     ]
   },
   {
-    "state": "Sikkim",
-    "shippingProtection": false,
-    "items": [
-      {
-        "quantity": 1,
-        "name": "Calvin Klein CK One",
-        "size": "5ml Normal"
-      }
-    ],
-    "email": "zanymustang@gmail.com",
-    "phone": "9609871078",
-    "stockReduced": true,
-    "status": "deleted",
-    "createdAt": "2026-07-19T07:10:54.304Z",
-    "orderNumber": "SP-2026-109341",
-    "name": "Tshering namgyal bhutia",
-    "address": "5th floor, opp Idbi Bank, Gangtok, Sikkim",
-    "total": 441,
-    "pincode": "737101"
-  },
-  {
-    "address": "Not Applicable",
-    "email": "notapplicable@scentpreview.com",
-    "createdAt": "2026-07-19T04:36:38.147Z",
-    "phone": "N/A",
-    "state": "N/A",
-    "items": [
-      {
-        "name": "Seoul winter, for him black",
-        "quantity": 1,
-        "size": "10ml"
-      }
-    ],
-    "pincode": "000000",
-    "status": "paid",
-    "stockReduced": true,
-    "shippingProtection": false,
-    "orderNumber": "SP-ADMIN-346374",
-    "total": 631,
-    "name": "Walk-in Customer / N/A"
-  },
-  {
-    "address": "Neingulie Memorial Highschool premises, Neisatuo Colony, Dimapur,",
-    "total": 1940,
-    "name": "Kethoselhou Keditsu",
-    "orderNumber": "SP-ADMIN-756894",
-    "status": "deleted",
-    "pincode": "797112",
-    "shippingProtection": false,
-    "stockReduced": true,
-    "items": [
-      {
-        "name": "Calvin Klein One",
-        "quantity": 1,
-        "size": "10ml"
-      }
-    ],
-    "state": "Nagaland",
-    "createdAt": "2026-07-10T18:40:27.973Z",
     "email": "keditsuketho0@gmail.com",
-    "phone": "9436407147"
-  },
-  {
     "total": 1940,
-    "stockReduced": true,
+    "address": "Neingulie Memorial Highschool premises, Neisatuo Colony, Dimapur,",
+    "phone": "9436407147",
+    "name": "Kethoselhou Keditsu",
+    "items": [
+      {
+        "size": "10ml",
+        "name": "Calvin Klein One",
+        "quantity": 1
+      }
+    ],
+    "pincode": "797112",
     "orderNumber": "SP-ADMIN-972796",
-    "shippingProtection": false,
-    "name": "Kethoselhou Keditsu",
     "status": "deleted",
+    "state": "Nagaland",
+    "shippingProtection": false,
     "createdAt": "2026-07-10T18:40:27.774Z",
-    "pincode": "797112",
-    "address": "Neingulie Memorial Highschool premises, Neisatuo Colony, Dimapur,",
-    "phone": "9436407147",
-    "email": "keditsuketho0@gmail.com",
-    "items": [
-      {
-        "name": "Calvin Klein One",
-        "size": "10ml",
-        "quantity": 1
-      }
-    ],
-    "state": "Nagaland"
+    "stockReduced": true
   },
   {
-    "stockReduced": true,
-    "address": "Neingulie Memorial Highschool premises, Neisatuo Colony, Dimapur,",
-    "total": 1940,
-    "status": "deleted",
-    "pincode": "797112",
     "createdAt": "2026-07-10T18:40:27.210Z",
-    "shippingProtection": false,
+    "total": 1940,
+    "pincode": "797112",
+    "orderNumber": "SP-ADMIN-658299",
     "email": "keditsuketho0@gmail.com",
-    "name": "Kethoselhou Keditsu",
-    "phone": "9436407147",
+    "address": "Neingulie Memorial Highschool premises, Neisatuo Colony, Dimapur,",
+    "shippingProtection": false,
+    "stockReduced": true,
     "state": "Nagaland",
     "items": [
       {
@@ -379,66 +717,61 @@
         "size": "10ml"
       }
     ],
-    "orderNumber": "SP-ADMIN-658299"
+    "name": "Kethoselhou Keditsu",
+    "phone": "9436407147",
+    "status": "deleted"
   },
   {
+    "name": "Kethoselhou Keditsu",
+    "orderNumber": "SP-2026-605077",
     "phone": "9436407147",
-    "email": "keditsuketho0@gmail.com",
-    "pincode": "797112",
-    "state": "Nagaland",
     "items": [
       {
+        "quantity": 1,
         "name": "Calvin Klein CK One",
-        "size": "10ml",
-        "quantity": 1
+        "size": "10ml"
       },
       {
-        "size": "10ml",
         "quantity": 1,
+        "size": "10ml",
         "name": "Givenchy Gentleman"
       }
     ],
-    "status": "paid",
-    "address": "Neingullie Memorial Highschool premises,Neisatuo Colony ,Dimapur",
-    "name": "Kethoselhou Keditsu",
     "shippingProtection": false,
-    "stockReduced": true,
-    "total": 1940,
+    "state": "Nagaland",
+    "pincode": "797112",
     "createdAt": "2026-07-10T18:27:44.968Z",
-    "orderNumber": "SP-2026-605077"
+    "stockReduced": false,
+    "status": "paid",
+    "email": "keditsuketho0@gmail.com",
+    "address": "Neingullie Memorial Highschool premises,Neisatuo Colony ,Dimapur",
+    "skipStockReduction": true,
+    "total": 1940
   },
   {
+    "orderNumber": "SP-2026-400912",
+    "status": "deleted",
     "state": "Nagaland",
     "items": [
       {
+        "quantity": 1,
         "size": "5ml Normal",
-        "name": "Lattafa Khamrah",
-        "quantity": 1
+        "name": "Lattafa Khamrah"
       }
     ],
-    "address": "Neingullie Memorial Highschool premises,Neisatuo Colony ,Dimapur",
-    "phone": "9436407147",
     "name": "Kethoselhou Keditsu",
+    "phone": "9436407147",
+    "total": 748,
+    "shippingProtection": true,
+    "address": "Neingullie Memorial Highschool premises,Neisatuo Colony ,Dimapur",
     "email": "keditsuketho0@gmail.com",
-    "pincode": "797112",
     "stockReduced": true,
     "createdAt": "2026-07-10T15:11:14.797Z",
-    "orderNumber": "SP-2026-400912",
-    "status": "deleted",
-    "total": 748,
-    "shippingProtection": true
+    "pincode": "797112"
   },
   {
-    "status": "paid",
-    "shippingProtection": false,
-    "name": "Walk-in Customer / N/A",
-    "total": 498,
-    "stockReduced": true,
-    "pincode": "000000",
-    "phone": "N/A",
-    "email": "notapplicable@scentpreview.com",
-    "state": "N/A",
     "orderNumber": "SP-ADMIN-246269",
+    "stockReduced": false,
     "items": [
       {
         "quantity": 1,
@@ -446,15 +779,19 @@
         "name": "Latafa Kamarah"
       }
     ],
+    "status": "paid",
+    "pincode": "000000",
+    "phone": "N/A",
+    "shippingProtection": false,
+    "state": "N/A",
+    "address": "Not Applicable",
+    "total": 498,
     "createdAt": "2026-07-10T08:49:47.892Z",
-    "address": "Not Applicable"
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A",
+    "skipStockReduction": true
   },
   {
-    "shippingProtection": false,
-    "address": "Not Applicable",
-    "name": "Walk-in Customer / N/A",
-    "total": 748,
-    "pincode": "000000",
     "items": [
       {
         "name": "CK2",
@@ -462,208 +799,132 @@
         "quantity": 1
       }
     ],
-    "state": "N/A",
+    "skipStockReduction": true,
+    "address": "Not Applicable",
     "createdAt": "2026-07-10T08:47:54.419Z",
     "phone": "N/A",
-    "email": "notapplicable@scentpreview.com",
+    "pincode": "000000",
+    "state": "N/A",
+    "stockReduced": false,
+    "shippingProtection": false,
+    "orderNumber": "SP-ADMIN-330237",
+    "total": 748,
     "status": "paid",
-    "stockReduced": true,
-    "orderNumber": "SP-ADMIN-330237"
+    "email": "notapplicable@scentpreview.com",
+    "name": "Walk-in Customer / N/A"
   },
   {
+    "total": 748,
+    "shippingProtection": true,
+    "email": "geph@gmail.com",
+    "orderNumber": "SP-2026-204603",
     "stockReduced": true,
     "createdAt": "2026-07-08T07:52:49.752Z",
-    "pincode": "737101",
+    "address": "Gangtok",
     "state": "Sikkim",
     "items": [
       {
         "name": "Lattafa Khamrah",
-        "quantity": 1,
-        "size": "5ml Normal"
-      }
-    ],
-    "address": "Gangtok",
-    "email": "geph@gmail.com",
-    "phone": "6295362337",
-    "shippingProtection": true,
-    "name": "Gephel ",
-    "total": 748,
-    "orderNumber": "SP-2026-204603",
-    "status": "deleted"
-  },
-  {
-    "phone": "9632161828",
-    "createdAt": "2026-07-07T15:46:50.473Z",
-    "email": "norchenla@gmail.com",
-    "shippingProtection": false,
-    "stockReduced": true,
-    "items": [
-      {
-        "name": "Calvin Klein CK One",
-        "size": "10ml",
+        "size": "5ml Normal",
         "quantity": 1
       }
     ],
+    "pincode": "737101",
+    "name": "Gephel ",
+    "phone": "6295362337",
+    "status": "deleted"
+  },
+  {
+    "shippingProtection": false,
+    "status": "paid",
+    "email": "norchenla@gmail.com",
+    "total": 628,
+    "phone": "9632161828",
+    "name": "Norchenla Namka",
+    "createdAt": "2026-07-07T15:46:50.473Z",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "10ml",
+        "name": "Calvin Klein CK One"
+      }
+    ],
+    "skipStockReduction": true,
+    "stockReduced": false,
     "address": "Arithang, Gangtok",
     "state": "Sikkim",
-    "pincode": "737101",
-    "name": "Norchenla Namka",
-    "status": "paid",
     "orderNumber": "SP-2026-684070",
-    "total": 628
-  },
-  {
-    "pincode": "737101",
-    "name": "LAKHI",
-    "status": "deleted",
-    "total": 568,
-    "shippingProtection": false,
-    "address": "KCKhim",
-    "orderNumber": "SP-2026-917011",
-    "createdAt": "2026-07-07T15:45:29.573Z",
-    "items": [
-      {
-        "name": "Zara Sunrise",
-        "quantity": 1,
-        "size": "10ml"
-      }
-    ],
-    "state": "Sikkim",
-    "phone": "9475997943",
-    "email": "chingapa@gmail.com",
-    "stockReduced": true
-  },
-  {
-    "email": "chingapa@gmail.com",
-    "phone": "9475997943",
-    "shippingProtection": false,
-    "status": "deleted",
-    "items": [
-      {
-        "size": "5ml Normal",
-        "quantity": 1,
-        "name": "Lattafa Khamrah"
-      }
-    ],
-    "state": "Sikkim",
-    "createdAt": "2026-07-07T15:43:29.242Z",
-    "stockReduced": true,
-    "address": "KC khim",
-    "orderNumber": "SP-2026-224130",
-    "pincode": "737101",
-    "name": "LAKHI",
-    "total": 448
-  },
-  {
-    "stockReduced": true,
-    "phone": "9475997943",
-    "email": "chingapa@gmail.com",
-    "state": "Sikkim",
-    "items": [
-      {
-        "size": "5ml Normal",
-        "quantity": 1,
-        "name": "Lattafa Khamrah"
-      }
-    ],
-    "shippingProtection": false,
-    "address": "KC Khim",
-    "createdAt": "2026-07-07T15:36:47.041Z",
-    "total": 448,
-    "name": "LAKHI",
-    "orderNumber": "SP-2026-695648",
-    "status": "deleted",
     "pincode": "737101"
   },
   {
-    "status": "deleted",
-    "total": 448,
-    "shippingProtection": false,
-    "address": "KC Khim Lower Arithang ",
-    "orderNumber": "SP-2026-635813",
-    "email": "chingapa@gmail.com",
-    "stockReduced": true,
-    "name": "LAKHI",
+    "items": [
+      {
+        "size": "10ml",
+        "name": "Zara Sunrise",
+        "quantity": 1
+      }
+    ],
+    "address": "KCKhim",
+    "createdAt": "2026-07-07T15:45:29.573Z",
     "phone": "9475997943",
     "pincode": "737101",
     "state": "Sikkim",
-    "createdAt": "2026-07-07T15:35:58.737Z",
+    "stockReduced": true,
+    "shippingProtection": false,
+    "orderNumber": "SP-2026-917011",
+    "total": 568,
+    "status": "deleted",
+    "email": "chingapa@gmail.com",
+    "name": "LAKHI"
+  },
+  {
+    "email": "chingapa@gmail.com",
+    "total": 448,
+    "name": "LAKHI",
+    "orderNumber": "SP-2026-224130",
+    "shippingProtection": false,
+    "status": "deleted",
+    "state": "Sikkim",
+    "pincode": "737101",
+    "address": "KC khim",
+    "createdAt": "2026-07-07T15:43:29.242Z",
+    "phone": "9475997943",
+    "stockReduced": true,
     "items": [
       {
-        "quantity": 1,
         "size": "5ml Normal",
+        "quantity": 1,
         "name": "Lattafa Khamrah"
       }
     ]
   },
   {
-    "state": "Sikkim",
+    "status": "deleted",
+    "phone": "9475997943",
     "items": [
       {
-        "name": "Zara Sunrise",
+        "name": "Lattafa Khamrah",
         "quantity": 1,
-        "size": "10ml"
+        "size": "5ml Normal"
       }
     ],
-    "name": "J",
-    "email": "norchenla@gmail.com",
+    "state": "Sikkim",
     "shippingProtection": false,
-    "phone": "9632161828",
-    "createdAt": "2026-07-07T14:57:55.763Z",
+    "createdAt": "2026-07-07T15:36:47.041Z",
+    "stockReduced": true,
+    "name": "LAKHI",
+    "address": "KC Khim",
+    "orderNumber": "SP-2026-695648",
+    "email": "chingapa@gmail.com",
     "pincode": "737101",
-    "orderNumber": "SP-2026-485820",
-    "status": "deleted",
-    "address": "Middle Arithang",
-    "total": 568,
-    "stockReduced": true
+    "total": 448
   },
   {
-    "createdAt": "2026-07-07T14:55:09.855Z",
-    "name": "Norchenla Namka",
-    "total": 475,
-    "orderNumber": "SP-2026-461521",
-    "items": [
-      {
-        "quantity": 1,
-        "name": "Zara Seoul Winter",
-        "size": "10ml"
-      }
-    ],
-    "address": "Middle Arithang, Sunil Hardware ",
+    "createdAt": "2026-07-07T15:35:58.737Z",
+    "orderNumber": "SP-2026-635813",
+    "address": "KC Khim Lower Arithang ",
+    "status": "deleted",
     "state": "Sikkim",
-    "phone": "9632161828",
-    "stockReduced": true,
-    "email": "norchenla@gmail.com",
-    "status": "deleted",
-    "pincode": "737101",
-    "shippingProtection": false
-  },
-  {
-    "name": "Tej Chingtham",
-    "pincode": "737101",
-    "shippingProtection": false,
-    "total": 568,
-    "address": "KC KHIM LOWER ARITHANG",
-    "orderNumber": "SP-2026-894377",
-    "stockReduced": true,
-    "items": [
-      {
-        "name": "Zara For Him Black",
-        "quantity": 1,
-        "size": "10ml"
-      }
-    ],
-    "state": "Sikkim",
-    "email": "chingtham@gmail.com",
-    "createdAt": "2026-07-07T14:20:09.605Z",
-    "phone": "91 96356 96145",
-    "status": "deleted"
-  },
-  {
-    "stockReduced": true,
-    "status": "deleted",
-    "email": "geph@gmail.com",
-    "phone": "96356 96144",
     "items": [
       {
         "quantity": 1,
@@ -671,13 +932,96 @@
         "size": "5ml Normal"
       }
     ],
+    "phone": "9475997943",
+    "pincode": "737101",
+    "total": 448,
+    "email": "chingapa@gmail.com",
+    "stockReduced": true,
+    "name": "LAKHI",
+    "shippingProtection": false
+  },
+  {
+    "pincode": "737101",
+    "orderNumber": "SP-2026-485820",
+    "shippingProtection": false,
+    "stockReduced": true,
+    "address": "Middle Arithang",
+    "email": "norchenla@gmail.com",
+    "total": 568,
+    "phone": "9632161828",
+    "name": "J",
+    "items": [
+      {
+        "name": "Zara Sunrise",
+        "quantity": 1,
+        "size": "10ml"
+      }
+    ],
+    "status": "deleted",
     "state": "Sikkim",
+    "createdAt": "2026-07-07T14:57:55.763Z"
+  },
+  {
+    "status": "deleted",
+    "name": "Norchenla Namka",
+    "stockReduced": true,
+    "address": "Middle Arithang, Sunil Hardware ",
+    "email": "norchenla@gmail.com",
+    "pincode": "737101",
+    "total": 475,
+    "phone": "9632161828",
+    "createdAt": "2026-07-07T14:55:09.855Z",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "10ml",
+        "name": "Zara Seoul Winter"
+      }
+    ],
+    "shippingProtection": false,
+    "state": "Sikkim",
+    "orderNumber": "SP-2026-461521"
+  },
+  {
+    "createdAt": "2026-07-07T14:20:09.605Z",
+    "status": "deleted",
+    "pincode": "737101",
+    "total": 568,
+    "shippingProtection": false,
+    "orderNumber": "SP-2026-894377",
+    "name": "Tej Chingtham",
+    "email": "chingtham@gmail.com",
+    "address": "KC KHIM LOWER ARITHANG",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "10ml",
+        "name": "Zara For Him Black"
+      }
+    ],
+    "stockReduced": true,
+    "phone": "91 96356 96145",
+    "state": "Sikkim"
+  },
+  {
+    "email": "geph@gmail.com",
+    "name": "Gephel",
+    "total": 748,
     "shippingProtection": true,
     "createdAt": "2026-07-07T14:09:15.138Z",
-    "address": "KC Khim",
-    "total": 748,
     "pincode": "737101",
-    "name": "Gephel",
-    "orderNumber": "SP-2026-172500"
+    "orderNumber": "SP-2026-172500",
+    "state": "Sikkim",
+    "address": "KC Khim",
+    "phone": "96356 96144",
+    "status": "deleted",
+    "items": [
+      {
+        "quantity": 1,
+        "size": "5ml Normal",
+        "name": "Lattafa Khamrah"
+      }
+    ],
+    "stockReduced": true
   }
 ]

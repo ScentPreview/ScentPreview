@@ -2,18 +2,24 @@
 @import "tailwindcss";
 
 html, body {
-  background: #09090b;
-  background-attachment: fixed;
+  background: #f3f1ed;
   color: #111111;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Inter", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "Futura", "Futura PT", -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-futura: "Futura", "Futura PT", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Inter", -apple-system, sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   
+  --color-sp-offwhite: #F7F7F5;
+  --color-sp-cream: #EFEDE6;
+  --color-sp-grey: #8A8A8A;
+  --color-sp-lightgrey: #D9D9D6;
+  --color-sp-teal: #2F4F4F;
+
   --color-sand-50: #fbfbf9;
   --color-sand-100: #f5f4ef;
   --color-sand-200: #e9e7dc;
