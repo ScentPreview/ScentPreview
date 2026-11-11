@@ -36,7 +36,7 @@ export default function ProductDetailPage({
   const [added, setAdded] = useState(false);
   const [layeringAdded, setLayeringAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [openSection, setOpenSection] = useState<string | null>("Notes");
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const handleCopyDirectLink = () => {
     try {

@@ -745,7 +745,7 @@ export default function App() {
     return null;
   };
 
-  // Helper to detect if the current route/subdomain is the dedicated Admin Portal (/admin or admin.*)
+  // Helper to detect if the current route/subdomain is the dedicated Orders Portal (/orders or orders.*)
   const resolveIsAdminFromLocation = (): boolean => {
     if (typeof window === "undefined") return false;
     const hostname = window.location.hostname.toLowerCase();
@@ -754,6 +754,13 @@ export default function App() {
     const hash = window.location.hash.replace(/^#+/, "").toLowerCase();
 
     if (
+      hostname.startsWith("orders.") ||
+      hostname.includes("scentprevieworders") ||
+      pathname === "orders" ||
+      pathname.startsWith("orders/") ||
+      searchParams.get("orders") === "1" ||
+      searchParams.get("orders") === "true" ||
+      hash === "orders" ||
       hostname.startsWith("admin.") ||
       hostname.includes("scentpreviewadmin") ||
       pathname === "admin" ||
@@ -1869,7 +1876,7 @@ export default function App() {
     setAdminOrders([]);
     localStorage.removeItem("scent_admin_token");
     try {
-      if (typeof window !== "undefined" && (window.location.pathname.toLowerCase().includes("admin") || window.location.search.includes("admin") || window.location.hash.includes("admin"))) {
+      if (typeof window !== "undefined" && (window.location.pathname.toLowerCase().includes("admin") || window.location.search.includes("admin") || window.location.hash.includes("admin") || window.location.pathname.toLowerCase().includes("orders") || window.location.search.includes("orders") || window.location.hash.includes("orders"))) {
         window.history.pushState({}, "", "/");
       }
     } catch (e) {}
@@ -5794,6 +5801,17 @@ export default function App() {
                 <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
                 <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
                 <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
+                <a 
+                  href="/orders" 
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    window.history.pushState({}, "", "/orders"); 
+                    setIsAdminOpen(true); 
+                  }} 
+                  className="hover:text-black transition-colors cursor-pointer"
+                >
+                  Orders
+                </a>
                 <a 
                   href="https://velyx-waitlist.vercel.app" 
                   target="_blank" 
