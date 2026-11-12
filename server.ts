@@ -33,6 +33,7 @@ interface Order {
   stockReduced?: boolean;
   ip?: string;
   userAgent?: string;
+  source?: string;
 }
 
 interface Complaint {
@@ -1093,6 +1094,7 @@ async function startServer() {
     ];
     const urls = [
       `  <url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      `  <url><loc>${baseUrl}/qrscans</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`,
       ...perfumeIds.map(
         (id) => `  <url><loc>${baseUrl}/?perfume=${id}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>`
       ),
@@ -1345,7 +1347,7 @@ Your evaluation must fit this schema:
   // API Route: Create order (Pending state)
   app.post("/api/orders", async (req, res) => {
     try {
-      const { items, total, subtotal, discount, couponCode, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction } = req.body;
+      const { items, total, subtotal, discount, couponCode, orderNumber, name, email, address, phone, state, pincode, shippingProtection, skipStockReduction, source } = req.body;
 
       if (!orderNumber || !items || !name || !address) {
         return res.status(400).json({ error: "Missing required checkout fields." });
@@ -1413,6 +1415,7 @@ Your evaluation must fit this schema:
         stockReduced: false,
         ip: clientIp,
         userAgent: userAgent,
+        ...(source ? { source: String(source) } : {}),
       };
 
       // Validate stock before creating order unless skipped (manual order)

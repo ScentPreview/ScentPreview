@@ -685,6 +685,28 @@ export default function App() {
     }
   }, [isCartOpen]);
 
+  // Helper to detect if visitor came through the dedicated QR scans route or subdomain (/qrscans or qrscans.*)
+  const resolveIsQRScanFromLocation = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const hostname = window.location.hostname.toLowerCase();
+    const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#+/, "").toLowerCase();
+
+    return (
+      pathname === "qrscans" ||
+      pathname.startsWith("qrscans/") ||
+      hostname.startsWith("qrscans.") ||
+      hostname.includes("scentpreviewqrscans") ||
+      hostname.includes("qrscans") ||
+      searchParams.get("ref") === "qr" ||
+      searchParams.get("ref") === "qrscans" ||
+      searchParams.get("source") === "qrscans" ||
+      searchParams.get("qr") === "1" ||
+      hash === "qrscans"
+    );
+  };
+
   // Helper to find a fragrance from hostname (subdomains) or pathname/search params
   const resolveFragranceFromLocation = (): Fragrance | null => {
     if (typeof window === "undefined") return null;
@@ -692,28 +714,63 @@ export default function App() {
     // 1. Check Subdomain (e.g. scentpreviewgentlemangivenchy.onrender.com or givenchy-gentleman.scentpreview.com)
     const hostname = window.location.hostname.toLowerCase();
     
-    // Check direct matching against catalog IDs, explicit subdomainSlug, or slugified names
-    for (const f of CATALOG_DATA) {
-      const cleanSlug = f.id.replace(/-/g, ""); // e.g. givenchygentleman
-      const nameSlug = f.name.toLowerCase().replace(/[^a-z0-9]/g, ""); // e.g. givenchygentleman
-      const customSubdomain = f.subdomainSlug?.toLowerCase() || "";
-      
-      // Check if hostname begins with or contains the exact custom subdomain or perfume slug
-      if (
-        (customSubdomain && hostname.includes(customSubdomain)) ||
-        hostname.includes(`scentpreview${cleanSlug}`) ||
-        hostname.includes(`scentpreview${nameSlug}`) ||
-        hostname.startsWith(`${f.id}.`) ||
-        hostname.startsWith(`${nameSlug}.`) ||
-        hostname.startsWith(`${cleanSlug}.`)
-      ) {
-        return f;
+    // Dedicated QR scan subdomain or admin portal: do not match fragrances by subdomain name
+    const isSpecialHost = 
+      hostname.startsWith("qrscans.") || 
+      hostname.includes("scentpreviewqrscans") ||
+      hostname.startsWith("orders.") ||
+      hostname.includes("scentprevieworders") ||
+      hostname.startsWith("admin.") ||
+      hostname.includes("scentpreviewadmin");
+
+    if (!isSpecialHost) {
+      // Check direct matching against catalog IDs, explicit subdomainSlug, or slugified names
+      for (const f of CATALOG_DATA) {
+        const cleanSlug = f.id.replace(/-/g, ""); // e.g. givenchygentleman
+        const nameSlug = f.name.toLowerCase().replace(/[^a-z0-9]/g, ""); // e.g. givenchygentleman
+        const customSubdomain = f.subdomainSlug?.toLowerCase() || "";
+        
+        // Check if hostname begins with or contains the exact custom subdomain or perfume slug
+        if (
+          (customSubdomain && hostname.includes(customSubdomain)) ||
+          hostname.includes(`scentpreview${cleanSlug}`) ||
+          hostname.includes(`scentpreview${nameSlug}`) ||
+          hostname.startsWith(`${f.id}.`) ||
+          hostname.startsWith(`${nameSlug}.`) ||
+          hostname.startsWith(`${cleanSlug}.`)
+        ) {
+          return f;
+        }
       }
     }
 
     // 2. Check Pathname (/perfume/:id, /p/:id, /:id)
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
     if (path) {
+      // System and landing routes: do not match whole path as a fragrance
+      if (
+        path === "qrscans" || 
+        path === "orders" || 
+        path === "admin"
+      ) {
+        return null;
+      }
+
+      if (path.startsWith("qrscans/")) {
+        const subSlug = path.replace(/^qrscans\//, "").trim();
+        if (subSlug) {
+          const match = CATALOG_DATA.find(
+            (f) =>
+              f.id === subSlug ||
+              (f.subdomainSlug && f.subdomainSlug === subSlug) ||
+              f.name.toLowerCase().replace(/[^a-z0-9]/g, "-") === subSlug ||
+              f.name.toLowerCase().replace(/[^a-z0-9]/g, "") === subSlug
+          );
+          if (match) return match;
+        }
+        return null;
+      }
+
       const segments = path.split("/");
       const targetSlug = segments[segments.length - 1]; // last segment or /perfume/givenchy-gentleman
       const match = CATALOG_DATA.find(
@@ -778,6 +835,7 @@ export default function App() {
   const [selectedDetailFragrance, setSelectedDetailFragrance] = useState<Fragrance | null>(() => {
     return resolveFragranceFromLocation();
   });
+  const [isQRScanVisit, setIsQRScanVisit] = useState<boolean>(() => resolveIsQRScanFromLocation());
 
   const handleOpenFragranceDetails = (fragrance: Fragrance) => {
     setSelectedDetailFragrance(fragrance);
@@ -785,7 +843,10 @@ export default function App() {
     
     // Update browser URL so page reload or sharing keeps this perfume open permanently
     try {
-      const newUrl = `${window.location.pathname}?perfume=${encodeURIComponent(fragrance.id)}`;
+      const isQR = resolveIsQRScanFromLocation();
+      const currentPath = window.location.pathname.toLowerCase();
+      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("orders") ? "/orders" : window.location.pathname);
+      const newUrl = `${basePath}?perfume=${encodeURIComponent(fragrance.id)}`;
       window.history.pushState({ perfumeId: fragrance.id }, "", newUrl);
     } catch (e) {}
   };
@@ -793,7 +854,9 @@ export default function App() {
   const handleBackFromDetails = () => {
     setSelectedDetailFragrance(null);
     try {
-      const newUrl = window.location.pathname;
+      const isQR = resolveIsQRScanFromLocation();
+      const currentPath = window.location.pathname.toLowerCase();
+      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("orders") ? "/orders" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
       window.history.pushState({}, "", newUrl);
     } catch (e) {}
   };
@@ -802,6 +865,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       setIsAdminOpen(resolveIsAdminFromLocation());
+      setIsQRScanVisit(resolveIsQRScanFromLocation());
       const resolved = resolveFragranceFromLocation();
       setSelectedDetailFragrance(resolved);
     };
@@ -2534,7 +2598,8 @@ export default function App() {
       phone: checkoutPhone,
       state: checkoutState,
       pincode: checkoutPincode,
-      shippingProtection: isShippingProtectionEnabled
+      shippingProtection: isShippingProtectionEnabled,
+      ...(isQRScanVisit ? { source: "qrscans" } : {})
     };
 
     try {
@@ -2933,6 +2998,10 @@ export default function App() {
             <span 
               onClick={() => {
                 setSelectedDetailFragrance(null);
+                const isQR = resolveIsQRScanFromLocation();
+                if (isQR && window.location.pathname.toLowerCase().includes("qrscans")) {
+                  try { window.history.pushState({}, "", "/qrscans"); } catch (e) {}
+                }
               }}
               className="text-sm sm:text-base font-sans font-bold tracking-[0.22em] uppercase text-[#2F4F4F] cursor-pointer hover:opacity-80 transition-opacity shrink-0 whitespace-nowrap select-none"
             >
@@ -4222,6 +4291,11 @@ export default function App() {
                                       <span className="text-[10px] font-mono text-stone-550">
                                         {new Date(order.createdAt).toLocaleString()}
                                       </span>
+                                      {order.source && (
+                                        <span className="text-[9px] font-mono font-semibold tracking-wider px-2 py-0.5 border bg-purple-50 border-purple-300 text-purple-700">
+                                          SOURCE: {order.source.toUpperCase()}
+                                        </span>
+                                      )}
                                     </div>
 
                                     {/* Variants */}
