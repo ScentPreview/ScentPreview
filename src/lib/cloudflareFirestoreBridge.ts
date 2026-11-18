@@ -373,32 +373,14 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
       return jsonResponse({ success: true, stock });
     }
 
-    // 2. POST /api/stock
-    if (pathOnly === "/api/stock" && method === "POST") {
-      saveCachedStock(parsedBody);
-      if (firestoreDb) {
-        withTimeout(setDoc(doc(firestoreDb, "stock", "global_stock"), parsedBody), null, 2500).catch(() => {});
-      }
-      return jsonResponse({ success: true, stock: parsedBody });
+    // 2. POST /api/stock & 3. POST /api/stock/reset (Admin-only via authenticated backend)
+    if ((pathOnly === "/api/stock" || pathOnly === "/api/stock/reset") && method === "POST") {
+      return jsonResponse({ success: false, error: "Admin authentication server required." }, 403);
     }
 
-    // 3. POST /api/stock/reset
-    if (pathOnly === "/api/stock/reset" && method === "POST") {
-      const resetData = JSON.parse(JSON.stringify(DEFAULT_STOCK_DATA));
-      saveCachedStock(resetData);
-      if (firestoreDb) {
-        withTimeout(setDoc(doc(firestoreDb, "stock", "global_stock"), resetData), null, 2500).catch(() => {});
-      }
-      return jsonResponse({ success: true, stock: resetData });
-    }
-
-    // 4. POST /api/login
+    // 4. POST /api/login (Never validate admin passcodes in client-side code)
     if (pathOnly === "/api/login" && method === "POST") {
-      const passcode = String(parsedBody?.passcode || "").trim();
-      if (passcode === "Zayden@233008") {
-        return jsonResponse({ success: true, token: "cf_scentpreview_admin_session_2026" });
-      }
-      return jsonResponse({ error: "Invalid passcode." }, 401);
+      return jsonResponse({ success: false, error: "Authentication server unavailable. Please retry when backend is online." }, 503);
     }
 
     // 5. GET /api/coupons/used
@@ -434,34 +416,18 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
       return jsonResponse({ valid: true, code });
     }
 
-    // 7. GET /api/orders
+    // 7. GET /api/orders (Admin-only via authenticated backend)
     if (pathOnly === "/api/orders" && method === "GET") {
-      let orders: any[] = getCachedOrders();
-      if (firestoreDb) {
-        const snap = await withTimeout<any>(getDocs(collection(firestoreDb, "orders")), null, 2500);
-        if (snap && typeof snap.forEach === "function") {
-          const remoteOrders: any[] = [];
-          snap.forEach((docSnap: any) => {
-            remoteOrders.push(docSnap.data());
-          });
-          if (remoteOrders.length > 0) {
-            orders = remoteOrders;
-          }
-        }
-      }
-      orders.sort((a, b) => {
-        const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return tB - tA;
-      });
-      return jsonResponse({ success: true, orders });
+      return jsonResponse({ success: false, error: "Admin authentication server required." }, 401);
     }
 
-    // 8. POST /api/orders
+    // 8. POST /api/orders (Public checkout only - disallow admin spoofing)
     if (pathOnly === "/api/orders" && method === "POST") {
-      const isManual = Boolean(parsedBody.skipStockReduction) || String(parsedBody.orderNumber || "").startsWith("SP-ADMIN-");
+      if (Boolean(parsedBody.skipStockReduction) || String(parsedBody.orderNumber || "").startsWith("SP-ADMIN-")) {
+        return jsonResponse({ success: false, error: "Unauthorized manual admin order creation." }, 403);
+      }
       const rawCoupon = parsedBody.couponCode ? String(parsedBody.couponCode).trim().toUpperCase() : "";
-      if (rawCoupon && !isManual) {
+      if (rawCoupon) {
         if (!VALID_COUPONS.has(rawCoupon)) {
           return jsonResponse({ success: false, error: "Invalid coupon code." }, 400);
         }
@@ -482,7 +448,7 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
       const orderRecord = {
         ...parsedBody,
         ...(rawCoupon ? { couponCode: rawCoupon } : {}),
-        status: isManual ? "paid" : "pending",
+        status: "pending",
         stockReduced: false,
         createdAt: parsedBody.createdAt || new Date().toISOString(),
       };
@@ -496,6 +462,9 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
     // 9. POST /api/orders/confirm-payment
     if (pathOnly === "/api/orders/confirm-payment" && method === "POST") {
       const orderNum = parsedBody.orderNumber;
+      if (Boolean(parsedBody.skipStockReduction) || String(orderNum || "").startsWith("SP-ADMIN-")) {
+        return jsonResponse({ success: false, error: "Unauthorized admin confirmation." }, 403);
+      }
       const cachedOrders = getCachedOrders();
       const localExisting = cachedOrders.find((o) => o.orderNumber === orderNum);
 
@@ -508,18 +477,13 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
         }
       }
 
-      const isManual =
-        Boolean(parsedBody.skipStockReduction) ||
-        Boolean(existing?.skipStockReduction) ||
-        String(orderNum).startsWith("SP-ADMIN-");
-
       const updatedOrder: any = {
         ...(existing || parsedBody),
         status: "paid",
         createdAt: existing?.createdAt || new Date().toISOString(),
       };
 
-      if (!updatedOrder.stockReduced && Array.isArray(updatedOrder.items) && !isManual) {
+      if (!updatedOrder.stockReduced && Array.isArray(updatedOrder.items)) {
         await reduceStockDirect(updatedOrder.items);
         updatedOrder.stockReduced = true;
       }
@@ -532,42 +496,17 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
       return jsonResponse({ success: true, orderStatus: "paid", emailService: "firestore-direct" });
     }
 
-    // 10. DELETE /api/orders/:orderNumber
+    // 10. DELETE /api/orders/:orderNumber (Admin-only via authenticated backend)
     if (pathOnly.startsWith("/api/orders/") && method === "DELETE") {
-      const orderNum = decodeURIComponent(pathOnly.replace("/api/orders/", ""));
-      const cachedOrders = getCachedOrders();
-      const local = cachedOrders.find((o) => o.orderNumber === orderNum);
-      if (local) {
-        local.status = "deleted";
-        saveCachedOrder(local);
-      }
-      if (firestoreDb) {
-        const orderRef = doc(firestoreDb, "orders", orderNum);
-        withTimeout(setDoc(orderRef, { orderNumber: orderNum, status: "deleted" }, { merge: true }), null, 2500).catch(() => {});
-      }
-      return jsonResponse({ success: true, message: `Order ${orderNum} deleted successfully.` });
+      return jsonResponse({ success: false, error: "Admin authentication server required." }, 401);
     }
 
-    // 11. GET /api/complaints
+    // 11. GET /api/complaints (Admin-only via authenticated backend)
     if (pathOnly === "/api/complaints" && method === "GET") {
-      let complaints: any[] = getCachedComplaints();
-      if (firestoreDb) {
-        const snap = await withTimeout<any>(getDocs(collection(firestoreDb, "complaints")), null, 2500);
-        if (snap && typeof snap.forEach === "function") {
-          const remoteList: any[] = [];
-          snap.forEach((d: any) => remoteList.push(d.data()));
-          if (remoteList.length > 0) complaints = remoteList;
-        }
-      }
-      complaints.sort((a, b) => {
-        const tA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-        const tB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
-        return tB - tA;
-      });
-      return jsonResponse({ success: true, complaints });
+      return jsonResponse({ success: false, error: "Admin authentication server required." }, 401);
     }
 
-    // 12. POST /api/complaints
+    // 12. POST /api/complaints (Public customer claim submission)
     if (pathOnly === "/api/complaints" && method === "POST") {
       const claimId = "CLM-" + Math.floor(1000 + Math.random() * 9000);
       const complaint = {
@@ -586,24 +525,12 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
       return jsonResponse({ success: true, complaint });
     }
 
-    // 13. PATCH /api/complaints/:id
+    // 13. PATCH /api/complaints/:id & 14. /api/admin/* (Admin-only via authenticated backend)
     if (pathOnly.startsWith("/api/complaints/") && method === "PATCH") {
-      const claimId = decodeURIComponent(pathOnly.replace("/api/complaints/", ""));
-      const list = getCachedComplaints();
-      const local = list.find((c) => c.id === claimId);
-      if (local) {
-        local.status = parsedBody.status;
-        saveCachedComplaint(local);
-      }
-      if (firestoreDb) {
-        withTimeout(setDoc(doc(firestoreDb, "complaints", claimId), { status: parsedBody.status }, { merge: true }), null, 2500).catch(() => {});
-      }
-      return jsonResponse({ success: true, id: claimId, status: parsedBody.status });
+      return jsonResponse({ success: false, error: "Admin authentication server required." }, 401);
     }
-
-    // 14. POST/GET /api/admin/blacklist
-    if (pathOnly === "/api/admin/blacklist") {
-      return jsonResponse({ success: true, blacklist: { phones: [], emails: [], ips: [] } });
+    if (pathOnly.startsWith("/api/admin/")) {
+      return jsonResponse({ success: false, error: "Admin authentication server required." }, 401);
     }
 
     return jsonResponse({ error: "Endpoint not found" }, 404);

@@ -817,14 +817,7 @@ export default function App() {
       pathname.startsWith("orders/") ||
       searchParams.get("orders") === "1" ||
       searchParams.get("orders") === "true" ||
-      hash === "orders" ||
-      hostname.startsWith("admin.") ||
-      hostname.includes("scentpreviewadmin") ||
-      pathname === "admin" ||
-      pathname.startsWith("admin/") ||
-      searchParams.get("admin") === "1" ||
-      searchParams.get("admin") === "true" ||
-      hash === "admin"
+      hash === "orders"
     ) {
       return true;
     }
@@ -1526,7 +1519,10 @@ export default function App() {
                   // Sync missing manual order to backend in background
                   safeFetch("/api/orders", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${token}`
+                    },
                     body: JSON.stringify({ ...lo, skipStockReduction: true })
                   }).catch(() => {});
                 }
@@ -1712,10 +1708,14 @@ export default function App() {
       ]);
 
       try {
+        const token = localStorage.getItem("scent_admin_token") || "";
         // 1. Save the manual order on the server (persists to Firestore + disk as paid without reducing stock)
         const createRes = await safeFetch("/api/orders", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify(payload)
         });
         const createData = await createRes.json();
@@ -1723,7 +1723,10 @@ export default function App() {
         // 2. Also call confirm-payment to ensure paid status and notification flow (with skipStockReduction: true)
         await safeFetch("/api/orders/confirm-payment", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify(payload)
         });
 
@@ -1815,10 +1818,12 @@ export default function App() {
     if (!order || !order.orderNumber) return;
     setConfirmingOrderNum(order.orderNumber);
     try {
+      const token = localStorage.getItem("scent_admin_token") || "";
       const response = await safeFetch("/api/orders/confirm-payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(order),
       });
@@ -5875,17 +5880,6 @@ export default function App() {
                 <button onClick={() => setPolicyModal("terms")} className="hover:text-black transition-colors cursor-pointer">Terms</button>
                 <button onClick={() => setPolicyModal("privacy")} className="hover:text-black transition-colors cursor-pointer">Privacy</button>
                 <button onClick={() => setPolicyModal("returns")} className="hover:text-black transition-colors cursor-pointer">Refund</button>
-                <a 
-                  href="/orders" 
-                  onClick={(e) => { 
-                    e.preventDefault(); 
-                    window.history.pushState({}, "", "/orders"); 
-                    setIsAdminOpen(true); 
-                  }} 
-                  className="hover:text-black transition-colors cursor-pointer"
-                >
-                  Orders
-                </a>
                 <a 
                   href="https://velyx-waitlist.vercel.app" 
                   target="_blank" 
