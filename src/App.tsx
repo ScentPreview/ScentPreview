@@ -753,8 +753,7 @@ export default function App() {
       // System and landing routes: do not match whole path as a fragrance
       if (
         path === "qrscans" || 
-        path === "decantsales" ||
-        path.startsWith("decantsales/")
+        path === "decantorders"
       ) {
         return null;
       }
@@ -805,11 +804,11 @@ export default function App() {
     return null;
   };
 
-  // Helper to detect if the current route is exclusively the /decantsales Admin Portal (no other admin subdomains/paths)
+  // Helper to detect if the current route is exclusively /decantorders (nothing more, nothing less)
   const resolveIsAdminFromLocation = (): boolean => {
     if (typeof window === "undefined") return false;
     const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    return pathname === "decantsales" || pathname.startsWith("decantsales/");
+    return pathname === "decantorders";
   };
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
@@ -826,7 +825,7 @@ export default function App() {
     try {
       const isQR = resolveIsQRScanFromLocation();
       const currentPath = window.location.pathname.toLowerCase();
-      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("decantsales") ? "/decantsales" : window.location.pathname);
+      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.replace(/\/+$/, "") === "/decantorders" ? "/decantorders" : window.location.pathname);
       const newUrl = `${basePath}?perfume=${encodeURIComponent(fragrance.id)}`;
       window.history.pushState({ perfumeId: fragrance.id }, "", newUrl);
     } catch (e) {}
@@ -837,7 +836,7 @@ export default function App() {
     try {
       const isQR = resolveIsQRScanFromLocation();
       const currentPath = window.location.pathname.toLowerCase();
-      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("decantsales") ? "/decantsales" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
+      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.replace(/\/+$/, "") === "/decantorders" ? "/decantorders" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
       window.history.pushState({}, "", newUrl);
     } catch (e) {}
   };
@@ -1293,7 +1292,7 @@ export default function App() {
     }
   }, [isQuizListOpen]);
 
-  // Admin Portal States (accessible exclusively via /decantsales)
+  // Admin Portal States (accessible exclusively via /decantorders)
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(() => resolveIsAdminFromLocation());
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [isLoadingAdminOrders, setIsLoadingAdminOrders] = useState<boolean>(false);
@@ -2021,7 +2020,7 @@ export default function App() {
     resetAdminAuthFlowState();
     localStorage.removeItem("scent_admin_token");
     try {
-      if (typeof window !== "undefined" && window.location.pathname.toLowerCase().includes("decantsales")) {
+      if (typeof window !== "undefined" && window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase() === "decantorders") {
         window.history.pushState({}, "", "/");
       }
     } catch (e) {}
@@ -3974,10 +3973,10 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="font-sans font-bold text-lg text-black tracking-wide">
-                      Decant Sales Security Portal
+                      Decant Orders Security Portal
                     </h3>
                     <p className="text-[10px] font-sans tracking-[0.15em] uppercase text-black">
-                      ScentPreview Vault · /decantsales
+                      ScentPreview Vault · /decantorders
                     </p>
                   </div>
                 </div>
@@ -4141,7 +4140,7 @@ export default function App() {
                     <div className="w-full space-y-4">
                       <div className="space-y-1.5">
                         <h4 className="font-sans font-bold text-xl text-black">
-                          Enter Decant Sales Passcode
+                          Enter Decant Orders Passcode
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
                           Your IP and device have been extracted and bound to this session. Enter your passcode to continue to 2-Factor Authentication.
@@ -4273,7 +4272,7 @@ export default function App() {
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
                           {twoFactorMode === "setup"
-                            ? "Scan this QR code in Google Authenticator, Apple Passwords, or Authy, save your backup codes, and enter the 6-digit code to unlock /decantsales."
+                            ? "Scan this QR code in Google Authenticator, Apple Passwords, or Authy, save your backup codes, and enter the 6-digit code to unlock /decantorders."
                             : "Enter the 6-digit verification code from your Authenticator App (or a backup recovery code) to complete login."}
                         </p>
                       </div>
@@ -5781,7 +5780,7 @@ export default function App() {
                               2-FACTOR AUTHENTICATION &amp; EXTRACTED IP/DEVICE AUDIT LOG
                             </span>
                             <p className="text-xs text-stone-600 font-sans mt-0.5">
-                              Every login attempt to /decantsales requires pre-login IP &amp; device extraction, passcode, and 2FA.
+                              Every login attempt to /decantorders requires pre-login IP &amp; device extraction, passcode, and 2FA.
                             </p>
                           </div>
                           <button
