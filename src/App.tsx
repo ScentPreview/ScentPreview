@@ -804,11 +804,17 @@ export default function App() {
     return null;
   };
 
-  // Helper to detect if the current route is exclusively /decantorders (nothing more, nothing less)
+  // Helper to detect if the current route is exclusively www.scentpreview.in/decantorders (nothing more, nothing less)
   const resolveIsAdminFromLocation = (): boolean => {
     if (typeof window === "undefined") return false;
+    const hostname = window.location.hostname.toLowerCase();
     const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    return pathname === "decantorders";
+    const isAllowedHost =
+      hostname === "www.scentpreview.in" ||
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.endsWith(".run.app");
+    return isAllowedHost && pathname === "decantorders";
   };
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
@@ -1301,7 +1307,8 @@ export default function App() {
   const [adminPriceFilter, setAdminPriceFilter] = useState<"all" | "fragrance" | "bundle" | "outofstock" | "disabled">("all");
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [adminPasscodeInput, setAdminPasscodeInput] = useState<string>("");
-  const [adminLoginStep, setAdminLoginStep] = useState<"device" | "passcode" | "2fa">("device");
+  const [adminLoginStep, setAdminLoginStep] = useState<"passcode" | "device" | "denied" | "2fa">("passcode");
+  const [passcodeToken, setPasscodeToken] = useState<string | null>(null);
   const [isExtractingDevice, setIsExtractingDevice] = useState<boolean>(false);
   const [deviceTelemetry, setDeviceTelemetry] = useState<any | null>(null);
   const [deviceGateToken, setDeviceGateToken] = useState<string | null>(null);
@@ -1640,28 +1647,85 @@ export default function App() {
     }
   };
 
-  const runDeviceAndIpExtraction = async () => {
+  const handleAllowDeviceExtraction = async () => {
+    if (!passcodeToken) {
+      setAdminLoginStep("passcode");
+      return;
+    }
     setIsExtractingDevice(true);
     setDeviceGateError(null);
     try {
       const clientTelemetry = await extractDeviceTelemetry();
+      if (!clientTelemetry || !clientTelemetry.userAgent || clientTelemetry.userAgent === "Unknown") {
+        setDeviceGateError("You are not getting access.");
+        setAdminLoginStep("denied");
+        return;
+      }
       const res = await safeFetch("/api/admin/device-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientTelemetry })
+        body: JSON.stringify({
+          passcodeToken,
+          allowDeviceAccess: true,
+          clientTelemetry,
+        }),
       });
       const data = await res.json();
-      if (res.ok && data.success && data.deviceToken) {
-        setDeviceTelemetry(data.telemetry);
-        setDeviceGateToken(data.deviceToken);
-      } else {
-        throw new Error(data.error || "Unable to extract and verify IP & device telemetry.");
+      if (res.status === 429) {
+        const newLockout = data.lockoutUntil || (Date.now() + 10 * 60 * 1000);
+        setAdminLockoutTime(newLockout);
+        localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
+        setDeviceGateError(data.error || "Vault locked out.");
+        return;
       }
-    } catch (err: any) {
-      setDeviceGateError(err.message || "Automatic device & IP verification failed.");
+      if (!res.ok || data.denied || !data.deviceToken) {
+        setDeviceGateError(data.error || "You are not getting access.");
+        setAdminLoginStep("denied");
+        return;
+      }
+      setDeviceTelemetry(data.telemetry);
+      setDeviceGateToken(data.deviceToken);
+      if (data.pendingToken) {
+        setTwoFactorPendingToken(data.pendingToken);
+        setTwoFactorError(null);
+        setTwoFactorCodeInput("");
+        if (data.requires2FASetup) {
+          setTwoFactorMode("setup");
+          setTwoFactorQrUrl(data.qrCodeDataUrl || null);
+          setTwoFactorManualSecret(data.manualSecret || null);
+          setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
+        } else {
+          setTwoFactorMode("verify");
+          setTwoFactorQrUrl(null);
+          setTwoFactorManualSecret(null);
+          setTwoFactorRecoveryCodes([]);
+        }
+        setAdminLoginStep("2fa");
+      }
+    } catch {
+      setDeviceGateError("You are not getting access.");
+      setAdminLoginStep("denied");
     } finally {
       setIsExtractingDevice(false);
     }
+  };
+
+  const handleDenyDeviceExtraction = async () => {
+    try {
+      if (passcodeToken) {
+        await safeFetch("/api/admin/device-denied", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passcodeToken }),
+        });
+      }
+    } catch {}
+    setPasscodeToken(null);
+    setAdminPasscodeInput("");
+    setDeviceGateToken(null);
+    setDeviceTelemetry(null);
+    setDeviceGateError("You are not getting access.");
+    setAdminLoginStep("denied");
   };
 
   useEffect(() => {
@@ -1675,14 +1739,13 @@ export default function App() {
            fetchAdminOrders();
            fetchAdminComplaints();
         }, 10000); // Keep admin orders synchronized across devices
-      } else if (!deviceGateToken && !isExtractingDevice && !deviceGateError) {
-        runDeviceAndIpExtraction();
       }
     } else {
       setIsAdminAuthenticated(false);
       setAdminPasscodeInput("");
       setAdminPasscodeError(null);
-      setAdminLoginStep("device");
+      setPasscodeToken(null);
+      setAdminLoginStep("passcode");
       setDeviceTelemetry(null);
       setDeviceGateToken(null);
       setDeviceGateError(null);
@@ -1992,7 +2055,8 @@ export default function App() {
   const resetAdminAuthFlowState = () => {
     setAdminPasscodeInput("");
     setAdminPasscodeError(null);
-    setAdminLoginStep("device");
+    setPasscodeToken(null);
+    setAdminLoginStep("passcode");
     setDeviceTelemetry(null);
     setDeviceGateToken(null);
     setDeviceGateError(null);
@@ -3976,7 +4040,7 @@ export default function App() {
                       Decant Orders Security Portal
                     </h3>
                     <p className="text-[10px] font-sans tracking-[0.15em] uppercase text-black">
-                      ScentPreview Vault · /decantorders
+                      www.scentpreview.in/decantorders
                     </p>
                   </div>
                 </div>
@@ -4004,12 +4068,12 @@ export default function App() {
                 <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 sm:p-8 text-center max-w-lg w-full mx-auto space-y-5">
                   {/* Step Progress Indicator */}
                   <div className="w-full flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider border border-stone-200 bg-stone-50 px-3 py-2">
-                    <span className={adminLoginStep === "device" ? "font-bold text-black" : "text-emerald-700 font-bold"}>
-                      1. IP &amp; Device Scan
+                    <span className={adminLoginStep === "passcode" ? "font-bold text-black" : adminLoginStep === "denied" ? "text-rose-700 font-bold" : "text-emerald-700 font-bold"}>
+                      1. Passcode
                     </span>
                     <span className="text-stone-300">→</span>
-                    <span className={adminLoginStep === "passcode" ? "font-bold text-black" : adminLoginStep === "2fa" ? "text-emerald-700 font-bold" : "text-stone-400"}>
-                      2. Passcode
+                    <span className={adminLoginStep === "device" ? "font-bold text-black" : adminLoginStep === "denied" ? "text-rose-700 font-bold" : adminLoginStep === "2fa" ? "text-emerald-700 font-bold" : "text-stone-400"}>
+                      2. Device &amp; IP
                     </span>
                     <span className="text-stone-300">→</span>
                     <span className={adminLoginStep === "2fa" ? "font-bold text-black" : "text-stone-400"}>
@@ -4017,13 +4081,13 @@ export default function App() {
                     </span>
                   </div>
 
-                  <div className={`w-14 h-14 bg-stone-50 flex items-center justify-center border ${isAdminLocked ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
-                    {isAdminLocked ? (
+                  <div className={`w-14 h-14 bg-stone-50 flex items-center justify-center border ${isAdminLocked || adminLoginStep === "denied" ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
+                    {isAdminLocked || adminLoginStep === "denied" ? (
                       <ShieldAlert className="w-6 h-6 text-rose-700" />
-                    ) : adminLoginStep === "device" ? (
-                      <Globe className="w-6 h-6 text-black" />
                     ) : adminLoginStep === "passcode" ? (
                       <Lock className="w-6 h-6 text-black" />
+                    ) : adminLoginStep === "device" ? (
+                      <Globe className="w-6 h-6 text-black" />
                     ) : (
                       <ShieldCheck className="w-6 h-6 text-black" />
                     )}
@@ -4043,98 +4107,25 @@ export default function App() {
                         Maximum failed authentication attempts exceeded. Access from this IP is temporarily frozen.
                       </p>
                     </div>
-                  ) : adminLoginStep === "device" ? (
+                  ) : adminLoginStep === "denied" ? (
                     <div className="w-full space-y-4">
-                      <div className="space-y-1.5">
-                        <h4 className="font-sans font-bold text-xl text-black">
-                          Mandatory IP &amp; Device Verification
+                      <div className="p-6 border-2 border-rose-500 bg-rose-50 text-center space-y-2">
+                        <h4 className="font-sans font-bold text-xl text-rose-800 uppercase tracking-wide">
+                          You are not getting access.
                         </h4>
-                        <p className="text-xs text-black font-sans leading-relaxed">
-                          Before logging in, this device must provide its live <strong>IP address</strong> and <strong>device type</strong>. Our software automatically extracts your hardware and network signature — manual selection is disabled.
+                        <p className="text-xs text-rose-900 font-sans leading-relaxed">
+                          Device and IP telemetry permission was denied or blocked by your browser. Access to www.scentpreview.in/decantorders cannot proceed without extracting your device information.
                         </p>
                       </div>
-
-                      {isExtractingDevice ? (
-                        <div className="p-6 border border-stone-200 bg-stone-50 text-xs font-mono text-black flex flex-col items-center gap-3">
-                          <RefreshCw className="w-5 h-5 animate-spin text-black" />
-                          <span>Extracting IP Address, Device Type, OS &amp; GPU Signature...</span>
-                        </div>
-                      ) : deviceGateError ? (
-                        <div className="p-4 border border-rose-200 bg-rose-50 text-left space-y-3">
-                          <p className="text-xs font-mono text-rose-800">{deviceGateError}</p>
-                          <button
-                            type="button"
-                            onClick={runDeviceAndIpExtraction}
-                            className="w-full bg-black text-white text-xs font-sans uppercase tracking-[0.15em] py-2.5 px-4 font-bold cursor-pointer"
-                          >
-                            Retry IP &amp; Device Extraction
-                          </button>
-                        </div>
-                      ) : deviceTelemetry ? (
-                        <div className="w-full border border-stone-200 bg-stone-50 p-4 text-left space-y-3">
-                          <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                            <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-800 flex items-center gap-1.5">
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              Telemetry Extracted &amp; Logged
-                            </span>
-                            <span className="text-[9px] font-mono text-stone-500">{deviceTelemetry.auditId}</span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2.5 text-[11px] font-mono">
-                            <div className="bg-white border border-stone-200 p-2.5">
-                              <span className="block text-[9px] text-stone-500 uppercase">Extracted IP</span>
-                              <span className="font-bold text-black break-all">{deviceTelemetry.ip}</span>
-                            </div>
-                            <div className="bg-white border border-stone-200 p-2.5">
-                              <span className="block text-[9px] text-stone-500 uppercase">Device Type</span>
-                              <span className="font-bold text-black">{deviceTelemetry.deviceType}</span>
-                            </div>
-                            <div className="bg-white border border-stone-200 p-2.5">
-                              <span className="block text-[9px] text-stone-500 uppercase">Brand &amp; Model</span>
-                              <span className="font-bold text-black">
-                                {deviceTelemetry.brand} · {deviceTelemetry.model}
-                              </span>
-                            </div>
-                            <div className="bg-white border border-stone-200 p-2.5">
-                              <span className="block text-[9px] text-stone-500 uppercase">OS &amp; Browser</span>
-                              <span className="font-bold text-black">{deviceTelemetry.os} · {deviceTelemetry.browser}</span>
-                            </div>
-                            <div className="bg-white border border-stone-200 p-2.5 col-span-2">
-                              <span className="block text-[9px] text-stone-500 uppercase">Hardware / Screen / Timezone</span>
-                              <span className="text-black break-words">
-                                {deviceTelemetry.screenResolution} · {deviceTelemetry.timezone} · {deviceTelemetry.gpuRenderer}
-                              </span>
-                            </div>
-                          </div>
-
-                          {deviceTelemetry.isSamsung && (
-                            <div className="p-2 bg-amber-50 border border-amber-300 text-[10px] font-mono text-amber-900">
-                              Notice: Samsung hardware/browser signature detected and flagged in audit log.
-                            </div>
-                          )}
-
-                          <div className="flex gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAdminPasscodeError(null);
-                                setAdminLoginStep("passcode");
-                              }}
-                              className="flex-1 bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.18em] uppercase font-bold py-3 px-4 transition-all cursor-pointer"
-                            >
-                              Continue to Passcode →
-                            </button>
-                            <button
-                              type="button"
-                              onClick={runDeviceAndIpExtraction}
-                              title="Re-scan telemetry"
-                              className="px-3 py-3 border border-stone-300 bg-white hover:bg-stone-100 text-black cursor-pointer"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetAdminAuthFlowState();
+                        }}
+                        className="w-full bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.18em] uppercase font-bold py-3 px-4 transition-all cursor-pointer"
+                      >
+                        Restart Verification
+                      </button>
                     </div>
                   ) : adminLoginStep === "passcode" ? (
                     <div className="w-full space-y-4">
@@ -4143,27 +4134,9 @@ export default function App() {
                           Enter Decant Orders Passcode
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
-                          Your IP and device have been extracted and bound to this session. Enter your passcode to continue to 2-Factor Authentication.
+                          Restricted to www.scentpreview.in/decantorders. After entering the passcode, your device information and IP must be shared to continue.
                         </p>
                       </div>
-
-                      {deviceTelemetry && (
-                        <div className="p-2.5 bg-stone-50 border border-stone-200 text-[10px] font-mono text-black flex flex-wrap items-center justify-between gap-2">
-                          <span>
-                            Bound: <strong>{deviceTelemetry.ip}</strong> · {deviceTelemetry.brand} {deviceTelemetry.model} ({deviceTelemetry.deviceType})
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAdminLoginStep("device");
-                              runDeviceAndIpExtraction();
-                            }}
-                            className="underline text-stone-600 hover:text-black cursor-pointer"
-                          >
-                            Re-scan
-                          </button>
-                        </div>
-                      )}
 
                       <form
                         onSubmit={async (e) => {
@@ -4173,10 +4146,7 @@ export default function App() {
                             const res = await safeFetch("/api/login", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                passcode: sanitizedInput,
-                                deviceToken: deviceGateToken,
-                              })
+                              body: JSON.stringify({ passcode: sanitizedInput })
                             });
 
                             const data = await res.json();
@@ -4189,42 +4159,15 @@ export default function App() {
                               return;
                             }
 
-                            if (res.status === 403) {
-                              setAdminPasscodeError(data.error || "Device verification expired.");
+                            if (res.ok && data.success && data.passcodeToken) {
+                              setPasscodeToken(data.passcodeToken);
+                              setAdminPasscodeError(null);
+                              setDeviceGateError(null);
                               setAdminLoginStep("device");
-                              runDeviceAndIpExtraction();
                               return;
                             }
 
-                            if (res.ok && data.success && data.pendingToken) {
-                              setTwoFactorPendingToken(data.pendingToken);
-                              setTwoFactorError(null);
-                              setTwoFactorCodeInput("");
-                              if (data.requires2FASetup) {
-                                setTwoFactorMode("setup");
-                                setTwoFactorQrUrl(data.qrCodeDataUrl || null);
-                                setTwoFactorManualSecret(data.manualSecret || null);
-                                setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
-                              } else {
-                                setTwoFactorMode("verify");
-                                setTwoFactorQrUrl(null);
-                                setTwoFactorManualSecret(null);
-                                setTwoFactorRecoveryCodes([]);
-                              }
-                              setAdminPasscodeError(null);
-                              setAdminLoginStep("2fa");
-                              return;
-                            }
-
-                            if (res.ok && data.success && data.token) {
-                              localStorage.setItem("scent_admin_token", data.token);
-                              localStorage.removeItem("scent_adminAttempts");
-                              setIsAdminAuthenticated(true);
-                              setAdminPasscodeError(null);
-                              setAdminLockoutTime(null);
-                            } else {
-                              throw new Error(data.error || "Invalid passcode");
-                            }
+                            throw new Error(data.error || "Invalid passcode");
                           } catch (err: any) {
                             const errorMsg = err.message || "Invalid passcode.";
                             setAdminPasscodeError(errorMsg);
@@ -4260,9 +4203,52 @@ export default function App() {
                           type="submit"
                           className="w-full bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
                         >
-                          Verify Passcode &amp; Proceed to 2FA
+                          Verify Passcode →
                         </button>
                       </form>
+                    </div>
+                  ) : adminLoginStep === "device" ? (
+                    <div className="w-full space-y-4">
+                      <div className="space-y-1.5">
+                        <h4 className="font-sans font-bold text-xl text-black">
+                          Allow Device &amp; IP Extraction
+                        </h4>
+                        <p className="text-xs text-black font-sans leading-relaxed">
+                          Passcode verified. To enter 2FA, you must allow our software to extract your <strong>IP address</strong>, <strong>device type</strong>, brand/model, OS, and hardware signature. If not allowed, access is denied.
+                        </p>
+                      </div>
+
+                      {isExtractingDevice ? (
+                        <div className="p-6 border border-stone-200 bg-stone-50 text-xs font-mono text-black flex flex-col items-center gap-3">
+                          <RefreshCw className="w-5 h-5 animate-spin text-black" />
+                          <span>Extracting IP Address, Device Type, OS &amp; Hardware Signature...</span>
+                        </div>
+                      ) : (
+                        <div className="border border-stone-200 bg-stone-50 p-4 space-y-3 text-left">
+                          <p className="text-[11px] font-mono text-stone-700 leading-relaxed">
+                            Data collected automatically upon permission: IP address, device type (Desktop/Mobile/Tablet), brand &amp; model hints, OS, browser, GPU renderer, screen resolution, and timezone. Manual entry is disabled.
+                          </p>
+                          {deviceGateError && (
+                            <p className="text-xs font-mono text-rose-700 font-bold">{deviceGateError}</p>
+                          )}
+                          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleAllowDeviceExtraction}
+                              className="flex-1 bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.15em] uppercase font-bold py-3 px-4 transition-all cursor-pointer"
+                            >
+                              Allow &amp; Extract Device Info
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDenyDeviceExtraction}
+                              className="px-4 py-3 border border-rose-300 bg-white hover:bg-rose-50 text-rose-800 font-sans text-xs tracking-[0.12em] uppercase font-bold transition-all cursor-pointer"
+                            >
+                              Do Not Allow
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="w-full space-y-4">
@@ -4272,10 +4258,33 @@ export default function App() {
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
                           {twoFactorMode === "setup"
-                            ? "Scan this QR code in Google Authenticator, Apple Passwords, or Authy, save your backup codes, and enter the 6-digit code to unlock /decantorders."
+                            ? "Scan this QR code in Google Authenticator, Apple Passwords, or Authy, save your backup codes, and enter the 6-digit code to unlock www.scentpreview.in/decantorders."
                             : "Enter the 6-digit verification code from your Authenticator App (or a backup recovery code) to complete login."}
                         </p>
                       </div>
+
+                      {deviceTelemetry && (
+                        <div className="w-full border border-stone-200 bg-stone-50 p-3 text-left space-y-2 text-[10px] font-mono">
+                          <div className="flex items-center justify-between border-b border-stone-200 pb-1.5">
+                            <span className="uppercase tracking-widest font-bold text-emerald-800 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" />
+                              Device &amp; IP Extracted
+                            </span>
+                            <span className="text-stone-500">{deviceTelemetry.auditId}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5 text-black">
+                            <div>IP: <strong>{deviceTelemetry.ip}</strong></div>
+                            <div>Type: <strong>{deviceTelemetry.deviceType}</strong></div>
+                            <div>Device: <strong>{deviceTelemetry.brand} · {deviceTelemetry.model}</strong></div>
+                            <div>OS/Browser: <strong>{deviceTelemetry.os} · {deviceTelemetry.browser}</strong></div>
+                          </div>
+                          {deviceTelemetry.isSamsung && (
+                            <div className="p-1.5 bg-amber-100 border border-amber-300 text-amber-900 font-bold">
+                              Samsung device signature flagged in audit log.
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {twoFactorMode === "setup" && twoFactorQrUrl && (
                         <div className="border border-stone-200 bg-stone-50 p-4 space-y-3 text-left">
@@ -4373,12 +4382,11 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => {
-                              setAdminLoginStep("passcode");
-                              setTwoFactorError(null);
+                              resetAdminAuthFlowState();
                             }}
                             className="px-4 py-3 border border-stone-200 text-xs font-mono text-black hover:bg-stone-50 cursor-pointer"
                           >
-                            Back
+                            Restart
                           </button>
                         </div>
                       </form>
@@ -5780,7 +5788,7 @@ export default function App() {
                               2-FACTOR AUTHENTICATION &amp; EXTRACTED IP/DEVICE AUDIT LOG
                             </span>
                             <p className="text-xs text-stone-600 font-sans mt-0.5">
-                              Every login attempt to /decantorders requires pre-login IP &amp; device extraction, passcode, and 2FA.
+                              Every login attempt to www.scentpreview.in/decantorders requires passcode, device &amp; IP extraction permission, and 2FA.
                             </p>
                           </div>
                           <button
