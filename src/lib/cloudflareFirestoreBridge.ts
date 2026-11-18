@@ -378,8 +378,8 @@ export async function handleCloudflareFirestoreApi(url: string, options?: Reques
       return jsonResponse({ success: false, error: "Admin authentication server required." }, 403);
     }
 
-    // 4. POST /api/login (Never validate admin passcodes in client-side code)
-    if (pathOnly === "/api/login" && method === "POST") {
+    // 4. POST /api/login & /api/login/verify-2fa (Never validate admin passcodes/2FA in client-side code)
+    if ((pathOnly === "/api/login" || pathOnly === "/api/login/verify-2fa") && method === "POST") {
       return jsonResponse({ success: false, error: "Authentication server unavailable. Please retry when backend is online." }, 503);
     }
 

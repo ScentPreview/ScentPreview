@@ -10,12 +10,288 @@ import nodemailer from "nodemailer";
 import fs from "fs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import QRCode from "qrcode";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
 dotenv.config();
 
 const RUNTIME_JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const ADMIN_LOGIN_LOGS_PATH = path.join(process.cwd(), "admin-login-logs.json");
+const ADMIN_2FA_PATH = path.join(process.cwd(), "admin-2fa.json");
+
+interface ExtractedTelemetry {
+  auditId: string;
+  ip: string;
+  forwardedChain: string;
+  country: string;
+  deviceType: string;
+  brand: string;
+  model: string;
+  os: string;
+  browser: string;
+  isSamsung: boolean;
+  userAgent: string;
+  secChModel: string;
+  secChPlatform: string;
+  timezone: string;
+  screenResolution: string;
+  gpuRenderer: string;
+  clientSignature: string;
+  extractedAt: string;
+}
+
+interface AdminTwoFactorConfig {
+  enabled: boolean;
+  secret: string;
+  recoveryHashes: string[];
+  enrolledAt: string;
+  enrolledFromIp?: string;
+  enrolledDevice?: string;
+}
+
+const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+function generateBase32Secret(byteLength = 20): string {
+  const bytes = crypto.randomBytes(byteLength);
+  let bits = 0;
+  let value = 0;
+  let output = "";
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) {
+    output += BASE32_ALPHABET[(value << (5 - bits)) & 31];
+  }
+  return output;
+}
+
+function base32ToBuffer(base32: string): Buffer {
+  const cleaned = base32.toUpperCase().replace(/[^A-Z2-7]/g, "");
+  let bits = 0;
+  let value = 0;
+  const bytes: number[] = [];
+  for (const char of cleaned) {
+    const idx = BASE32_ALPHABET.indexOf(char);
+    if (idx === -1) continue;
+    value = (value << 5) | idx;
+    bits += 5;
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(bytes);
+}
+
+function generateTotpAtCounter(secretBase32: string, counter: number): string {
+  const key = base32ToBuffer(secretBase32);
+  const counterBuf = Buffer.alloc(8);
+  counterBuf.writeBigUInt64BE(BigInt(counter));
+  const hmac = crypto.createHmac("sha1", key).update(counterBuf).digest();
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const binary =
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff);
+  return String(binary % 1000000).padStart(6, "0");
+}
+
+function verifyTotpCode(secretBase32: string, inputCode: string, window = 1): boolean {
+  const cleanCode = inputCode.replace(/\s+/g, "");
+  if (!/^\d{6}$/.test(cleanCode)) return false;
+  const currentCounter = Math.floor(Date.now() / 1000 / 30);
+  const providedBuf = Buffer.from(cleanCode, "utf8");
+  for (let delta = -window; delta <= window; delta++) {
+    const expected = generateTotpAtCounter(secretBase32, currentCounter + delta);
+    const expectedBuf = Buffer.from(expected, "utf8");
+    if (providedBuf.length === expectedBuf.length && crypto.timingSafeEqual(providedBuf, expectedBuf)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hashRecoveryCode(code: string): string {
+  return crypto.createHash("sha256").update(code.trim().toUpperCase()).digest("hex");
+}
+
+function generateRecoveryCodes(): string[] {
+  const codes: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    const hex = crypto.randomBytes(4).toString("hex").toUpperCase();
+    codes.push(`SP-${hex.slice(0, 4)}-${hex.slice(4, 8)}`);
+  }
+  return codes;
+}
+
+function loadTwoFactorConfig(): AdminTwoFactorConfig | null {
+  if (process.env.ADMIN_2FA_SECRET && process.env.ADMIN_2FA_SECRET.trim().length >= 16) {
+    return {
+      enabled: true,
+      secret: process.env.ADMIN_2FA_SECRET.trim(),
+      recoveryHashes: [],
+      enrolledAt: "env-configured",
+    };
+  }
+  try {
+    if (fs.existsSync(ADMIN_2FA_PATH)) {
+      const raw = fs.readFileSync(ADMIN_2FA_PATH, "utf-8").trim();
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.enabled && parsed.secret) {
+          return parsed as AdminTwoFactorConfig;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[2FA] Failed to load admin-2fa.json:", err);
+  }
+  return null;
+}
+
+function saveTwoFactorConfig(cfg: AdminTwoFactorConfig) {
+  try {
+    fs.writeFileSync(ADMIN_2FA_PATH, JSON.stringify(cfg, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[2FA] Failed to save admin-2fa.json:", err);
+  }
+}
+
+function extractClientIp(req: express.Request): { ip: string; forwardedChain: string; country: string } {
+  const cfIp = typeof req.headers["cf-connecting-ip"] === "string" ? req.headers["cf-connecting-ip"].trim() : "";
+  const trueClientIp = typeof req.headers["true-client-ip"] === "string" ? req.headers["true-client-ip"].trim() : "";
+  const xffRaw = typeof req.headers["x-forwarded-for"] === "string" ? req.headers["x-forwarded-for"].trim() : "";
+  const xffFirst = xffRaw ? xffRaw.split(",")[0].trim() : "";
+  const rawIp = cfIp || trueClientIp || xffFirst || req.ip || req.socket.remoteAddress || "unknown";
+  const cleanIp = rawIp.replace(/^::ffff:/, "");
+  const country = typeof req.headers["cf-ipcountry"] === "string" ? req.headers["cf-ipcountry"].trim() : "Unknown";
+  return { ip: cleanIp, forwardedChain: xffRaw || cleanIp, country };
+}
+
+function extractServerDeviceTelemetry(req: express.Request, client: any = {}): ExtractedTelemetry {
+  const { ip, forwardedChain, country } = extractClientIp(req);
+  const ua = String(req.headers["user-agent"] || client?.userAgent || "Unknown");
+  const uaLower = ua.toLowerCase();
+  const secChModel = String(req.headers["sec-ch-ua-model"] || client?.highEntropyModel || "").replace(/"/g, "").trim();
+  const secChPlatform = String(req.headers["sec-ch-ua-platform"] || client?.highEntropyPlatform || "").replace(/"/g, "").trim();
+  const secChMobile = String(req.headers["sec-ch-ua-mobile"] || "");
+  const gpuRenderer = String(client?.gpuRenderer || "Unknown");
+  const gpuLower = gpuRenderer.toLowerCase();
+  const platformStr = String(client?.platform || secChPlatform || "");
+  const modelCombined = `${ua} ${secChModel} ${gpuRenderer}`.toLowerCase();
+
+  let os = "Unknown OS";
+  if (uaLower.includes("iphone") || uaLower.includes("ipad") || uaLower.includes("ipod")) {
+    os = "iOS / iPadOS";
+  } else if (uaLower.includes("android") || secChPlatform.toLowerCase() === "android") {
+    os = "Android";
+  } else if (uaLower.includes("mac os x") || uaLower.includes("macintosh") || secChPlatform.toLowerCase() === "macos") {
+    os = "macOS";
+  } else if (uaLower.includes("windows") || secChPlatform.toLowerCase() === "windows") {
+    os = "Windows";
+  } else if (uaLower.includes("linux") || secChPlatform.toLowerCase() === "linux") {
+    os = "Linux";
+  } else if (uaLower.includes("node") || uaLower.includes("curl") || uaLower.includes("python")) {
+    os = "Automated CLI / Script";
+  }
+
+  let browser = "Unknown Browser";
+  if (uaLower.includes("samsungbrowser")) browser = "Samsung Internet";
+  else if (uaLower.includes("edg/")) browser = "Microsoft Edge";
+  else if (uaLower.includes("opr/") || uaLower.includes("opera")) browser = "Opera";
+  else if (uaLower.includes("instagram")) browser = "Instagram In-App Browser";
+  else if (uaLower.includes("chrome/") && !uaLower.includes("edg/")) browser = "Chrome";
+  else if (uaLower.includes("firefox/")) browser = "Firefox";
+  else if (uaLower.includes("safari/") && !uaLower.includes("chrome/")) browser = "Safari";
+  else if (uaLower.includes("curl") || uaLower.includes("node")) browser = "CLI / HTTP Client";
+
+  const isSamsung =
+    modelCombined.includes("samsung") ||
+    modelCombined.includes("samsungbrowser") ||
+    modelCombined.includes("xclipse") ||
+    /\bsm-[a-z0-9]+/i.test(modelCombined) ||
+    /\bgt-[a-z0-9]+/i.test(modelCombined) ||
+    /\bsch-[a-z0-9]+/i.test(modelCombined) ||
+    /\bsgh-[a-z0-9]+/i.test(modelCombined);
+
+  let brand = "Unknown";
+  if (isSamsung) {
+    brand = "Samsung";
+  } else if (
+    uaLower.includes("iphone") ||
+    uaLower.includes("ipad") ||
+    uaLower.includes("macintosh") ||
+    platformStr.toLowerCase().includes("mac") ||
+    gpuLower.includes("apple")
+  ) {
+    brand = "Apple";
+  } else if (modelCombined.includes("pixel")) {
+    brand = "Google Pixel";
+  } else if (modelCombined.includes("oneplus") || /\bcph\d+|\bne\d+|\ble\d+/i.test(modelCombined)) {
+    brand = "OnePlus";
+  } else if (modelCombined.includes("xiaomi") || modelCombined.includes("redmi") || modelCombined.includes("poco")) {
+    brand = "Xiaomi / Redmi";
+  } else if (os === "Windows") {
+    brand = "Windows PC";
+  } else if (os === "Linux") {
+    brand = "Linux System";
+  } else if (os === "Automated CLI / Script") {
+    brand = "Script / Bot";
+  }
+
+  let deviceType = "Desktop";
+  if (os === "Automated CLI / Script") {
+    deviceType = "Headless / Script";
+  } else if (uaLower.includes("ipad") || (uaLower.includes("android") && !uaLower.includes("mobile"))) {
+    deviceType = "Tablet";
+  } else if (
+    uaLower.includes("mobile") ||
+    uaLower.includes("iphone") ||
+    uaLower.includes("android") ||
+    secChMobile === "?1" ||
+    client?.highEntropyMobile === true
+  ) {
+    deviceType = "Mobile Phone";
+  }
+
+  let model = secChModel || "";
+  if (!model) {
+    if (uaLower.includes("iphone")) model = "iPhone";
+    else if (uaLower.includes("ipad")) model = "iPad";
+    else if (uaLower.includes("macintosh")) model = gpuLower.includes("apple") ? "Mac (Apple Silicon)" : "Mac";
+    else if (os === "Windows") model = "Windows Workstation";
+    else if (os === "Android") model = isSamsung ? "Samsung Galaxy (Model Masked)" : "Android Handset";
+    else model = platformStr || deviceType;
+  }
+
+  return {
+    auditId: `AUTH-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`,
+    ip,
+    forwardedChain,
+    country,
+    deviceType,
+    brand,
+    model,
+    os,
+    browser,
+    isSamsung,
+    userAgent: ua,
+    secChModel: secChModel || "Not Sent",
+    secChPlatform: secChPlatform || platformStr || "Not Sent",
+    timezone: String(client?.timezone || "Unknown"),
+    screenResolution: String(client?.screenResolution || "Unknown"),
+    gpuRenderer,
+    clientSignature: String(client?.clientSignature || "SERVER-ONLY"),
+    extractedAt: new Date().toISOString(),
+  };
+}
 
 interface Order {
   orderNumber: string;
@@ -968,7 +1244,7 @@ async function sendSoldOutNotificationEmail(fragranceName: string, brand: string
         It has been automatically unlisted and removed from the listing for all live customers to prevent unfulfillable orders.
       </p>
       <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 14px; margin: 20px 0; font-size: 13px; color: #991b1b;">
-        <strong>Admin Notice:</strong> Once new decants or bottles arrive, log into the Orders Portal (/orders) and update stock levels to re-enable this fragrance for live customers automatically.
+        <strong>Admin Notice:</strong> Once new decants or bottles arrive, log into the Decant Sales Portal (/decantsales) and update stock levels to re-enable this fragrance for live customers automatically.
       </div>
       <p style="font-size: 11px; color: #78716c; border-top: 1px solid #e7e5e4; padding-top: 15px; margin-top: 25px;">
         Automated alert generated by ScentPreview Inventory Monitor.
@@ -1674,25 +1950,147 @@ Your evaluation must fit this schema:
     }
   });
 
+  const loadLocalAdminLoginLogs = (): any[] => {
+    try {
+      if (fs.existsSync(ADMIN_LOGIN_LOGS_PATH)) {
+        const raw = fs.readFileSync(ADMIN_LOGIN_LOGS_PATH, "utf-8").trim();
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch {}
+    return [];
+  };
+
+  const recordAdminAuthEvent = async (
+    stage: "device_verified" | "passcode_failed" | "passcode_passed" | "2fa_failed" | "login_success" | "login_success_2fa_enrolled",
+    telemetry: Partial<ExtractedTelemetry>,
+    note?: string
+  ) => {
+    const entry = {
+      id: `LOG-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`,
+      stage,
+      note: note || "",
+      ip: telemetry.ip || "unknown",
+      forwardedChain: telemetry.forwardedChain || "",
+      country: telemetry.country || "Unknown",
+      deviceType: telemetry.deviceType || "Unknown",
+      brand: telemetry.brand || "Unknown",
+      model: telemetry.model || "Unknown",
+      os: telemetry.os || "Unknown",
+      browser: telemetry.browser || "Unknown",
+      isSamsung: Boolean(telemetry.isSamsung),
+      userAgent: telemetry.userAgent || "Unknown",
+      timezone: telemetry.timezone || "Unknown",
+      screenResolution: telemetry.screenResolution || "Unknown",
+      gpuRenderer: telemetry.gpuRenderer || "Unknown",
+      clientSignature: telemetry.clientSignature || "",
+      auditId: telemetry.auditId || "",
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const existing = loadLocalAdminLoginLogs();
+      existing.unshift(entry);
+      fs.writeFileSync(ADMIN_LOGIN_LOGS_PATH, JSON.stringify(existing.slice(0, 200), null, 2), "utf-8");
+    } catch (err) {
+      console.error("[Admin Audit] Failed to write local login log:", err);
+    }
+
+    if (firestoreDb) {
+      try {
+        await setDoc(doc(firestoreDb, "admin_login_attempts", entry.id), entry);
+      } catch (err) {
+        console.error("[Admin Audit] Failed to persist login log to Firestore:", err);
+      }
+    }
+    return entry;
+  };
+
   const adminLoginLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 3, // Limit each IP to 3 login requests per `window`
+    max: 5, // Limit each IP to 5 failed login/2FA attempts per window
+    skipSuccessfulRequests: true,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => {
-      const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
-      console.warn(`[Security Alert] Admin login rate-limited (3+ failed attempts) from IP=${clientIp}`);
+      const { ip: clientIp } = extractClientIp(req);
+      console.warn(`[Security Alert] Admin login rate-limited (5+ failed attempts) from IP=${clientIp}`);
       res.status(429).json({
-        error: "Too many login attempts from this IP, please try again after 10 minutes",
+        error: "Too many failed login attempts from this IP, please try again after 10 minutes.",
         lockoutUntil: Date.now() + 10 * 60 * 1000,
       });
+    },
+  });
+
+  // Step 1: Mandatory Pre-Login Automatic IP & Device Telemetry Extraction
+  app.post("/api/admin/device-verify", async (req, res) => {
+    try {
+      const clientTelemetry = req.body?.clientTelemetry || {};
+      const telemetry = extractServerDeviceTelemetry(req, clientTelemetry);
+
+      await recordAdminAuthEvent("device_verified", telemetry, "Pre-login automatic IP & device extraction");
+      console.log(
+        `[Admin Gate] Extracted device telemetry: IP=${telemetry.ip}, Device=${telemetry.deviceType}, Brand=${telemetry.brand}, Model=${telemetry.model}, OS=${telemetry.os}, Browser=${telemetry.browser}, Samsung=${telemetry.isSamsung}`
+      );
+
+      const deviceToken = jwt.sign(
+        {
+          type: "device_gate",
+          auditId: telemetry.auditId,
+          ip: telemetry.ip,
+          deviceType: telemetry.deviceType,
+          brand: telemetry.brand,
+          model: telemetry.model,
+          os: telemetry.os,
+          browser: telemetry.browser,
+          isSamsung: telemetry.isSamsung,
+          clientSignature: telemetry.clientSignature,
+        },
+        RUNTIME_JWT_SECRET,
+        { expiresIn: "15m" }
+      );
+
+      const twoFactorActive = Boolean(loadTwoFactorConfig()?.enabled);
+      res.json({
+        success: true,
+        deviceToken,
+        twoFactorActive,
+        telemetry,
+      });
+    } catch (error: any) {
+      console.error("[Admin Gate] Device verification error:", error);
+      res.status(500).json({ error: "Failed to extract device and IP telemetry." });
     }
   });
 
-  // API Route: Admin Login (Generates JWT)
-  app.post("/api/login", adminLoginLimiter, (req, res) => {
+  // Step 2: Admin Passcode Verification (Requires verified deviceToken -> triggers 2FA)
+  app.post("/api/login", adminLoginLimiter, async (req, res) => {
     try {
-      const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+      const { ip: clientIp } = extractClientIp(req);
+      const deviceToken = typeof req.body?.deviceToken === "string" ? req.body.deviceToken : "";
+      if (!deviceToken) {
+        return res.status(403).json({
+          error: "Pre-login IP and device extraction is required before entering the passcode.",
+        });
+      }
+
+      let deviceClaims: any;
+      try {
+        deviceClaims = jwt.verify(deviceToken, RUNTIME_JWT_SECRET);
+      } catch {
+        return res.status(403).json({
+          error: "Device verification expired or invalid. Please re-scan your IP and device.",
+        });
+      }
+
+      if (!deviceClaims || deviceClaims.type !== "device_gate" || deviceClaims.ip !== clientIp) {
+        return res.status(403).json({
+          error: "Device & IP mismatch detected. Please re-verify your current device.",
+        });
+      }
+
       const passcode = typeof req.body?.passcode === "string" ? req.body.passcode : "";
       const expectedPasscode = process.env.ADMIN_PASSCODE || "Zayden@08";
 
@@ -1703,17 +2101,228 @@ Your evaluation must fit this schema:
         crypto.timingSafeEqual(providedBuf, expectedBuf);
 
       if (!isMatch) {
-        console.warn(`[Security Alert] Failed admin login attempt from IP=${clientIp}`);
+        await recordAdminAuthEvent("passcode_failed", { ...deviceClaims, ip: clientIp }, "Invalid vault passcode");
+        console.warn(`[Security Alert] Failed admin passcode from IP=${clientIp} (${deviceClaims.brand} ${deviceClaims.model})`);
         return res.status(401).json({ error: "Invalid passcode." });
       }
 
-      // Generate token valid for 2 hours
-      const token = jwt.sign({ role: "admin" }, RUNTIME_JWT_SECRET, { expiresIn: "2h" });
-      console.log(`[Admin Audit] Admin login succeeded from IP=${clientIp}`);
-      res.json({ success: true, token });
+      await recordAdminAuthEvent("passcode_passed", { ...deviceClaims, ip: clientIp }, "Passcode accepted, awaiting 2FA");
+
+      const existing2FA = loadTwoFactorConfig();
+      if (!existing2FA) {
+        // First-time 2FA enrollment: generate secret, QR code, and recovery codes
+        const setupSecret = generateBase32Secret(20);
+        const recoveryCodes = generateRecoveryCodes();
+        const otpauthUrl = `otpauth://totp/ScentPreview:DecantSalesAdmin?secret=${setupSecret}&issuer=ScentPreview&digits=6&period=30`;
+        const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, { width: 220, margin: 1 });
+
+        const pendingToken = jwt.sign(
+          {
+            type: "2fa_setup",
+            auditId: deviceClaims.auditId,
+            ip: clientIp,
+            secret: setupSecret,
+            recoveryCodes,
+          },
+          RUNTIME_JWT_SECRET,
+          { expiresIn: "10m" }
+        );
+
+        return res.json({
+          success: true,
+          requires2FASetup: true,
+          pendingToken,
+          qrCodeDataUrl,
+          manualSecret: setupSecret,
+          recoveryCodes,
+        });
+      }
+
+      // Standard 2FA challenge for already-enrolled vault
+      const pendingToken = jwt.sign(
+        {
+          type: "2fa_verify",
+          auditId: deviceClaims.auditId,
+          ip: clientIp,
+        },
+        RUNTIME_JWT_SECRET,
+        { expiresIn: "10m" }
+      );
+
+      res.json({
+        success: true,
+        requires2FA: true,
+        pendingToken,
+      });
     } catch (error: any) {
       console.error("Login error:", error);
       res.status(500).json({ error: "An error occurred during login." });
+    }
+  });
+
+  // Step 3: 2-Factor Authentication Verification (TOTP 6-digit or backup recovery code -> Issues Admin JWT)
+  app.post("/api/login/verify-2fa", adminLoginLimiter, async (req, res) => {
+    try {
+      const { ip: clientIp } = extractClientIp(req);
+      const deviceToken = typeof req.body?.deviceToken === "string" ? req.body.deviceToken : "";
+      const pendingToken = typeof req.body?.pendingToken === "string" ? req.body.pendingToken : "";
+      const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+
+      if (!deviceToken || !pendingToken || !code) {
+        return res.status(400).json({ error: "Device token, 2FA session, and verification code are required." });
+      }
+
+      let deviceClaims: any;
+      let pendingClaims: any;
+      try {
+        deviceClaims = jwt.verify(deviceToken, RUNTIME_JWT_SECRET);
+        pendingClaims = jwt.verify(pendingToken, RUNTIME_JWT_SECRET);
+      } catch {
+        return res.status(401).json({ error: "2FA session expired. Please verify your device and passcode again." });
+      }
+
+      if (
+        deviceClaims?.type !== "device_gate" ||
+        deviceClaims.ip !== clientIp ||
+        pendingClaims.ip !== clientIp ||
+        pendingClaims.auditId !== deviceClaims.auditId
+      ) {
+        return res.status(403).json({ error: "Security session binding mismatch. Please restart verification." });
+      }
+
+      if (pendingClaims.type === "2fa_setup") {
+        if (!verifyTotpCode(pendingClaims.secret, code, 1)) {
+          await recordAdminAuthEvent("2fa_failed", { ...deviceClaims, ip: clientIp }, "Invalid 2FA setup code");
+          return res.status(401).json({ error: "Invalid 6-digit authenticator code. Check device time and try again." });
+        }
+
+        const recoveryHashes = Array.isArray(pendingClaims.recoveryCodes)
+          ? pendingClaims.recoveryCodes.map((c: string) => hashRecoveryCode(c))
+          : [];
+
+        saveTwoFactorConfig({
+          enabled: true,
+          secret: pendingClaims.secret,
+          recoveryHashes,
+          enrolledAt: new Date().toISOString(),
+          enrolledFromIp: clientIp,
+          enrolledDevice: `${deviceClaims.brand} ${deviceClaims.model} (${deviceClaims.os} / ${deviceClaims.browser})`,
+        });
+
+        await recordAdminAuthEvent(
+          "login_success_2fa_enrolled",
+          { ...deviceClaims, ip: clientIp },
+          "2FA enrolled and admin session issued"
+        );
+        console.log(`[Admin Audit] 2FA enrolled & admin login succeeded from IP=${clientIp} (${deviceClaims.brand} ${deviceClaims.model})`);
+      } else if (pendingClaims.type === "2fa_verify") {
+        const cfg = loadTwoFactorConfig();
+        if (!cfg || !cfg.enabled || !cfg.secret) {
+          return res.status(400).json({ error: "2FA is not configured. Please re-enter passcode to set up 2FA." });
+        }
+
+        let verified = verifyTotpCode(cfg.secret, code, 1);
+        let usedRecovery = false;
+
+        if (!verified && Array.isArray(cfg.recoveryHashes) && cfg.recoveryHashes.length > 0) {
+          const codeHash = hashRecoveryCode(code);
+          const idx = cfg.recoveryHashes.indexOf(codeHash);
+          if (idx !== -1) {
+            verified = true;
+            usedRecovery = true;
+            cfg.recoveryHashes.splice(idx, 1);
+            saveTwoFactorConfig(cfg);
+          }
+        }
+
+        if (!verified) {
+          await recordAdminAuthEvent("2fa_failed", { ...deviceClaims, ip: clientIp }, "Invalid 2FA authenticator code");
+          console.warn(`[Security Alert] Failed 2FA attempt from IP=${clientIp} (${deviceClaims.brand} ${deviceClaims.model})`);
+          return res.status(401).json({ error: "Invalid 2FA code. Enter the 6-digit code from your Authenticator App." });
+        }
+
+        await recordAdminAuthEvent(
+          "login_success",
+          { ...deviceClaims, ip: clientIp },
+          usedRecovery ? "Authenticated via backup recovery code" : "Authenticated via TOTP 2FA"
+        );
+        console.log(`[Admin Audit] 2FA admin login succeeded from IP=${clientIp} (${deviceClaims.brand} ${deviceClaims.model})`);
+      } else {
+        return res.status(400).json({ error: "Invalid 2FA stage." });
+      }
+
+      const token = jwt.sign(
+        {
+          role: "admin",
+          ip: clientIp,
+          deviceType: deviceClaims.deviceType,
+          brand: deviceClaims.brand,
+          model: deviceClaims.model,
+          auditId: deviceClaims.auditId,
+        },
+        RUNTIME_JWT_SECRET,
+        { expiresIn: "2h" }
+      );
+
+      res.json({ success: true, token });
+    } catch (error: any) {
+      console.error("[2FA Error] Verification failed:", error);
+      res.status(500).json({ error: "Failed to verify 2FA code." });
+    }
+  });
+
+  // Admin Login & Device Audit Logs (Protected by Admin JWT)
+  app.get("/api/admin/login-logs", authenticateAdmin, async (req, res) => {
+    try {
+      const merged = new Map<string, any>();
+      for (const localEntry of loadLocalAdminLoginLogs()) {
+        if (localEntry?.id) merged.set(localEntry.id, localEntry);
+      }
+      if (firestoreDb) {
+        try {
+          const snap = await getDocs(collection(firestoreDb, "admin_login_attempts"));
+          snap.forEach((d: any) => {
+            const data = d.data();
+            const key = data?.id || d.id;
+            if (key) merged.set(key, { id: key, ...data });
+          });
+        } catch (err) {
+          console.warn("[Admin Audit] Failed to fetch Firestore login logs:", err);
+        }
+      }
+      const logs = Array.from(merged.values())
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+        .slice(0, 100);
+
+      const twoFactorCfg = loadTwoFactorConfig();
+      res.json({
+        success: true,
+        logs,
+        twoFactorStatus: {
+          enabled: Boolean(twoFactorCfg?.enabled),
+          enrolledAt: twoFactorCfg?.enrolledAt || null,
+          enrolledDevice: twoFactorCfg?.enrolledDevice || null,
+          remainingRecoveryCodes: twoFactorCfg?.recoveryHashes?.length ?? 0,
+          lockedByEnv: Boolean(process.env.ADMIN_2FA_SECRET),
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch login audit logs." });
+    }
+  });
+
+  // Reset 2FA pairing (Protected by Admin JWT)
+  app.post("/api/admin/2fa/reset", authenticateAdmin, (_req, res) => {
+    if (process.env.ADMIN_2FA_SECRET) {
+      return res.status(400).json({ error: "2FA is locked via ADMIN_2FA_SECRET environment variable." });
+    }
+    try {
+      if (fs.existsSync(ADMIN_2FA_PATH)) {
+        fs.unlinkSync(ADMIN_2FA_PATH);
+      }
+      res.json({ success: true, message: "2FA configuration reset. Next login will prompt for new authenticator QR pairing." });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to reset 2FA configuration." });
     }
   });
 

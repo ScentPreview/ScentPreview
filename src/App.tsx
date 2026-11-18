@@ -16,6 +16,7 @@ import ChordQuiz from "./components/ChordQuiz";
 import ScentBattle from "./components/ScentBattle";
 import LiquidBars from "./components/ui/liquid-bars";
 import { handleCloudflareFirestoreApi } from "./lib/cloudflareFirestoreBridge";
+import { extractDeviceTelemetry } from "./lib/deviceExtractor";
 import { 
   ShoppingBag, 
   X, 
@@ -32,6 +33,12 @@ import {
   PlusCircle,
   List,
   ShieldAlert,
+  ShieldCheck,
+  Smartphone,
+  Monitor,
+  Globe,
+  KeyRound,
+  QrCode,
   Trash2,
   Sparkles,
   Search,
@@ -714,14 +721,10 @@ export default function App() {
     // 1. Check Subdomain (e.g. scentpreviewgentlemangivenchy.onrender.com or givenchy-gentleman.scentpreview.com)
     const hostname = window.location.hostname.toLowerCase();
     
-    // Dedicated QR scan subdomain or admin portal: do not match fragrances by subdomain name
+    // Dedicated QR scan route: do not match fragrances by subdomain name
     const isSpecialHost = 
       hostname.startsWith("qrscans.") || 
-      hostname.includes("scentpreviewqrscans") ||
-      hostname.startsWith("orders.") ||
-      hostname.includes("scentprevieworders") ||
-      hostname.startsWith("admin.") ||
-      hostname.includes("scentpreviewadmin");
+      hostname.includes("scentpreviewqrscans");
 
     if (!isSpecialHost) {
       // Check direct matching against catalog IDs, explicit subdomainSlug, or slugified names
@@ -750,8 +753,8 @@ export default function App() {
       // System and landing routes: do not match whole path as a fragrance
       if (
         path === "qrscans" || 
-        path === "orders" || 
-        path === "admin"
+        path === "decantsales" ||
+        path.startsWith("decantsales/")
       ) {
         return null;
       }
@@ -802,26 +805,11 @@ export default function App() {
     return null;
   };
 
-  // Helper to detect if the current route/subdomain is the dedicated Orders Portal (/orders or orders.*)
+  // Helper to detect if the current route is exclusively the /decantsales Admin Portal (no other admin subdomains/paths)
   const resolveIsAdminFromLocation = (): boolean => {
     if (typeof window === "undefined") return false;
-    const hostname = window.location.hostname.toLowerCase();
     const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    const searchParams = new URLSearchParams(window.location.search);
-    const hash = window.location.hash.replace(/^#+/, "").toLowerCase();
-
-    if (
-      hostname.startsWith("orders.") ||
-      hostname.includes("scentprevieworders") ||
-      pathname === "orders" ||
-      pathname.startsWith("orders/") ||
-      searchParams.get("orders") === "1" ||
-      searchParams.get("orders") === "true" ||
-      hash === "orders"
-    ) {
-      return true;
-    }
-    return false;
+    return pathname === "decantsales" || pathname.startsWith("decantsales/");
   };
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
@@ -838,7 +826,7 @@ export default function App() {
     try {
       const isQR = resolveIsQRScanFromLocation();
       const currentPath = window.location.pathname.toLowerCase();
-      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("orders") ? "/orders" : window.location.pathname);
+      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("decantsales") ? "/decantsales" : window.location.pathname);
       const newUrl = `${basePath}?perfume=${encodeURIComponent(fragrance.id)}`;
       window.history.pushState({ perfumeId: fragrance.id }, "", newUrl);
     } catch (e) {}
@@ -849,7 +837,7 @@ export default function App() {
     try {
       const isQR = resolveIsQRScanFromLocation();
       const currentPath = window.location.pathname.toLowerCase();
-      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("orders") ? "/orders" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
+      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.includes("decantsales") ? "/decantsales" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
       window.history.pushState({}, "", newUrl);
     } catch (e) {}
   };
@@ -1305,15 +1293,31 @@ export default function App() {
     }
   }, [isQuizListOpen]);
 
-  // Admin Portal States (accessible exclusively via /admin or admin subdomain)
+  // Admin Portal States (accessible exclusively via /decantsales)
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(() => resolveIsAdminFromLocation());
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [isLoadingAdminOrders, setIsLoadingAdminOrders] = useState<boolean>(false);
-  const [adminActiveTab, setAdminActiveTab] = useState<"view" | "create" | "stock" | "prices" | "claims">("view");
+  const [adminActiveTab, setAdminActiveTab] = useState<"view" | "create" | "stock" | "prices" | "claims" | "security">("view");
   const [adminPriceSearch, setAdminPriceSearch] = useState<string>("");
   const [adminPriceFilter, setAdminPriceFilter] = useState<"all" | "fragrance" | "bundle" | "outofstock" | "disabled">("all");
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [adminPasscodeInput, setAdminPasscodeInput] = useState<string>("");
+  const [adminLoginStep, setAdminLoginStep] = useState<"device" | "passcode" | "2fa">("device");
+  const [isExtractingDevice, setIsExtractingDevice] = useState<boolean>(false);
+  const [deviceTelemetry, setDeviceTelemetry] = useState<any | null>(null);
+  const [deviceGateToken, setDeviceGateToken] = useState<string | null>(null);
+  const [deviceGateError, setDeviceGateError] = useState<string | null>(null);
+  const [twoFactorPendingToken, setTwoFactorPendingToken] = useState<string | null>(null);
+  const [twoFactorMode, setTwoFactorMode] = useState<"verify" | "setup">("verify");
+  const [twoFactorQrUrl, setTwoFactorQrUrl] = useState<string | null>(null);
+  const [twoFactorManualSecret, setTwoFactorManualSecret] = useState<string | null>(null);
+  const [twoFactorRecoveryCodes, setTwoFactorRecoveryCodes] = useState<string[]>([]);
+  const [twoFactorCodeInput, setTwoFactorCodeInput] = useState<string>("");
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+  const [isVerifyingTwoFactor, setIsVerifyingTwoFactor] = useState<boolean>(false);
+  const [adminLoginLogs, setAdminLoginLogs] = useState<any[]>([]);
+  const [adminTwoFactorStatus, setAdminTwoFactorStatus] = useState<any | null>(null);
+  const [isLoadingLoginLogs, setIsLoadingLoginLogs] = useState<boolean>(false);
 
   const [adminPasscodeError, setAdminPasscodeError] = useState<string | null>(null);
   const [adminLockoutTime, setAdminLockoutTime] = useState<number | null>(() => {
@@ -1617,21 +1621,78 @@ export default function App() {
   };
 
 
+  const fetchAdminLoginLogs = async () => {
+    if (!isAdminAuthenticated) return;
+    setIsLoadingLoginLogs(true);
+    try {
+      const token = localStorage.getItem("scent_admin_token") || "";
+      const response = await safeFetch("/api/admin/login-logs", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAdminLoginLogs(data.logs || []);
+        setAdminTwoFactorStatus(data.twoFactorStatus || null);
+      }
+    } catch (e) {
+      console.error("Failed to fetch login audit logs:", e);
+    } finally {
+      setIsLoadingLoginLogs(false);
+    }
+  };
+
+  const runDeviceAndIpExtraction = async () => {
+    setIsExtractingDevice(true);
+    setDeviceGateError(null);
+    try {
+      const clientTelemetry = await extractDeviceTelemetry();
+      const res = await safeFetch("/api/admin/device-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientTelemetry })
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.deviceToken) {
+        setDeviceTelemetry(data.telemetry);
+        setDeviceGateToken(data.deviceToken);
+      } else {
+        throw new Error(data.error || "Unable to extract and verify IP & device telemetry.");
+      }
+    } catch (err: any) {
+      setDeviceGateError(err.message || "Automatic device & IP verification failed.");
+    } finally {
+      setIsExtractingDevice(false);
+    }
+  };
+
   useEffect(() => {
     let interval: any = null;
     if (isAdminOpen) {
       if (isAdminAuthenticated) {
         fetchAdminOrders();
         fetchAdminComplaints();
+        fetchAdminLoginLogs();
         interval = setInterval(() => {
            fetchAdminOrders();
            fetchAdminComplaints();
         }, 10000); // Keep admin orders synchronized across devices
+      } else if (!deviceGateToken && !isExtractingDevice && !deviceGateError) {
+        runDeviceAndIpExtraction();
       }
     } else {
       setIsAdminAuthenticated(false);
       setAdminPasscodeInput("");
       setAdminPasscodeError(null);
+      setAdminLoginStep("device");
+      setDeviceTelemetry(null);
+      setDeviceGateToken(null);
+      setDeviceGateError(null);
+      setTwoFactorPendingToken(null);
+      setTwoFactorCodeInput("");
+      setTwoFactorError(null);
+      setTwoFactorQrUrl(null);
+      setTwoFactorManualSecret(null);
+      setTwoFactorRecoveryCodes([]);
     }
     return () => {
       if (interval) {
@@ -1929,11 +1990,26 @@ export default function App() {
     }
   };
 
+  const resetAdminAuthFlowState = () => {
+    setAdminPasscodeInput("");
+    setAdminPasscodeError(null);
+    setAdminLoginStep("device");
+    setDeviceTelemetry(null);
+    setDeviceGateToken(null);
+    setDeviceGateError(null);
+    setTwoFactorPendingToken(null);
+    setTwoFactorCodeInput("");
+    setTwoFactorError(null);
+    setTwoFactorQrUrl(null);
+    setTwoFactorManualSecret(null);
+    setTwoFactorRecoveryCodes([]);
+  };
+
   const handleLockAdminSession = async () => {
     await saveStockImmediately();
     setIsAdminAuthenticated(false);
-    setAdminPasscodeInput("");
     setAdminOrders([]);
+    resetAdminAuthFlowState();
     localStorage.removeItem("scent_admin_token");
   };
 
@@ -1941,11 +2017,11 @@ export default function App() {
     await saveStockImmediately();
     setIsAdminOpen(false);
     setIsAdminAuthenticated(false);
-    setAdminPasscodeInput("");
     setAdminOrders([]);
+    resetAdminAuthFlowState();
     localStorage.removeItem("scent_admin_token");
     try {
-      if (typeof window !== "undefined" && (window.location.pathname.toLowerCase().includes("admin") || window.location.search.includes("admin") || window.location.hash.includes("admin") || window.location.pathname.toLowerCase().includes("orders") || window.location.search.includes("orders") || window.location.hash.includes("orders"))) {
+      if (typeof window !== "undefined" && window.location.pathname.toLowerCase().includes("decantsales")) {
         window.history.pushState({}, "", "/");
       }
     } catch (e) {}
@@ -3897,11 +3973,11 @@ export default function App() {
                     <Lock className="w-4 h-4 text-black animate-pulse" />
                   </div>
                   <div>
-                    <h3 className="font-sans font-bold text-lg text-black  tracking-wide">
-                      Admin Security Portal
+                    <h3 className="font-sans font-bold text-lg text-black tracking-wide">
+                      Decant Sales Security Portal
                     </h3>
-                    <p className="text-[10px] font-sans tracking-[0.15em] uppercase tracking-[0.15em] text-black">
-                      ScentPreview Allocation Vault
+                    <p className="text-[10px] font-sans tracking-[0.15em] uppercase text-black">
+                      ScentPreview Vault · /decantsales
                     </p>
                   </div>
                 </div>
@@ -3910,7 +3986,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleLockAdminSession}
-                      className="px-3 py-1.5  border border-stone-200 hover:border-amber-gold/30 hover:bg-stone-850 text-black hover:text-white text-[10px] font-sans tracking-[0.15em] uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                      className="px-3 py-1.5 border border-stone-200 hover:border-amber-gold/30 hover:bg-stone-850 text-black hover:text-white text-[10px] font-sans tracking-[0.15em] uppercase transition-colors cursor-pointer flex items-center gap-1.5"
                     >
                       <Lock className="w-3 h-3" />
                       Lock Session
@@ -3918,7 +3994,7 @@ export default function App() {
                   )}
                   <button
                     onClick={handleCloseAndSaveAdminSession}
-                    className="p-1.5 -full border border-stone-200 hover:bg-stone-850 text-black hover:text-white  transition-colors cursor-pointer"
+                    className="p-1.5 border border-stone-200 hover:bg-stone-850 text-black hover:text-white transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -3926,111 +4002,387 @@ export default function App() {
               </div>
 
               {!isAdminAuthenticated ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 py-20 text-center max-w-md mx-auto space-y-6">
-                  <div className={`w-16 h-16 -full bg-stone-50 flex items-center justify-center border ${isAdminLocked ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
-                    {isAdminLocked ? (
-                      <ShieldAlert className="w-6 h-6 text-rose-700" />
-                    ) : (
-                      <Lock className="w-6 h-6 text-black" />
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="font-sans font-bold text-xl text-black ">
-                      {isAdminLocked ? "Vault Session Locked" : "Enter Vault Passcode"}
-                    </h4>
-                    <p className="text-xs text-black font-sans leading-relaxed">
-                      {isAdminLocked ? "Security protocol active. Maximum authentication attempts exceeded. Access has been frozen." : "This zone is strictly restricted to ScentPreview administrators. Please verify your credentials to decrypt the allocation logs."}
-                    </p>
+                <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 sm:p-8 text-center max-w-lg w-full mx-auto space-y-5">
+                  {/* Step Progress Indicator */}
+                  <div className="w-full flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider border border-stone-200 bg-stone-50 px-3 py-2">
+                    <span className={adminLoginStep === "device" ? "font-bold text-black" : "text-emerald-700 font-bold"}>
+                      1. IP &amp; Device Scan
+                    </span>
+                    <span className="text-stone-300">→</span>
+                    <span className={adminLoginStep === "passcode" ? "font-bold text-black" : adminLoginStep === "2fa" ? "text-emerald-700 font-bold" : "text-stone-400"}>
+                      2. Passcode
+                    </span>
+                    <span className="text-stone-300">→</span>
+                    <span className={adminLoginStep === "2fa" ? "font-bold text-black" : "text-stone-400"}>
+                      3. 2FA Code
+                    </span>
                   </div>
 
-                  {true ? (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        const sanitizedInput = adminPasscodeInput.trim();
-                        try {
-                          const res = await safeFetch("/api/login", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ passcode: sanitizedInput })
-                          });
-                          
-                          const data = await res.json();
-                          
-                          if (res.status === 429) {
-                            const newLockout = data.lockoutUntil || (Date.now() + 10 * 60 * 1000);
-                            setAdminLockoutTime(newLockout);
-                            localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
-                            setAdminPasscodeError(data.error || "Vault locked out.");
-                            return;
-                          }
-                          
-                          if (res.ok && data.success && data.token) {
-                            localStorage.setItem("scent_admin_token", data.token);
-                            localStorage.removeItem("scent_adminAttempts");
-                            setIsAdminAuthenticated(true);
-                            setAdminPasscodeError(null);
-                            setAdminLockoutTime(null);
-                          } else {
-                            throw new Error(data.error || "Invalid passcode");
-                          }
-                        } catch (err: any) {
-                          const errorMsg = err.message || "Invalid passcode.";
-                          setAdminPasscodeError(errorMsg);
-                          
-                          let attempts = parseInt(localStorage.getItem("scent_adminAttempts") || "0") + 1;
-                          localStorage.setItem("scent_adminAttempts", attempts.toString());
-                          
-                          if (attempts >= 3) {
-                             const newLockout = Date.now() + 10 * 60 * 1000;
-                             setAdminLockoutTime(newLockout);
-                             localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
-                             setAdminPasscodeError("Maximum authentication attempts exceeded.");
-                          }
-                        }
-                      }}
-                      className="w-full space-y-3"
-                    >
-                      <input
-                        type="password"
-                        placeholder="Enter Passcode"
-                        value={adminPasscodeInput}
-                        onChange={(e) => {
-                          setAdminPasscodeInput(e.target.value);
-                          setAdminPasscodeError(null);
-                        }}
-                        className="w-full bg-[#FFFFFF] border border-stone-200  px-4 py-3 text-xs tracking-widest text-center text-black  focus:outline-none focus:border-amber-gold transition-colors font-mono"
-                        autoFocus
-                      />
-                      {adminPasscodeError && (
-                        <p className="text-[10px] font-mono text-rose-700">{adminPasscodeError}</p>
-                      )}
-                      <button
-                        type="submit"
-                        className="w-full bg-black hover:bg-amber-400 text-white font-sans text-xs tracking-[0.2em] uppercase font-medium font-bold py-3 px-6 transition-all  cursor-pointer "
-                      >
-                        Authenticate Vault
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="w-full p-4 border border-rose-900/30 bg-rose-950/20  text-rose-700 text-xs font-mono space-y-2 text-left">
+                  <div className={`w-14 h-14 bg-stone-50 flex items-center justify-center border ${isAdminLocked ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
+                    {isAdminLocked ? (
+                      <ShieldAlert className="w-6 h-6 text-rose-700" />
+                    ) : adminLoginStep === "device" ? (
+                      <Globe className="w-6 h-6 text-black" />
+                    ) : adminLoginStep === "passcode" ? (
+                      <Lock className="w-6 h-6 text-black" />
+                    ) : (
+                      <ShieldCheck className="w-6 h-6 text-black" />
+                    )}
+                  </div>
+
+                  {isAdminLocked ? (
+                    <div className="w-full p-4 border border-rose-900/30 bg-rose-950/10 text-rose-700 text-xs font-mono space-y-2 text-left">
                       <div className="flex items-center justify-between">
-                        <p className="font-semibold uppercase tracking-wider text-rose-700">● SECURITY THREAT SUSPENDED</p>
+                        <p className="font-semibold uppercase tracking-wider text-rose-700">● SECURITY LOCKOUT ACTIVE</p>
                         {lockoutTimeRemaining && (
-                          <span className="text-[10px] bg-rose-950/80 px-2 py-0.5  border border-rose-800 animate-pulse text-rose-700 font-bold">
+                          <span className="text-[10px] bg-rose-100 px-2 py-0.5 border border-rose-300 font-bold text-rose-800">
                             {lockoutTimeRemaining}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-black leading-normal font-sans">
-                        You have failed to authenticate 3 consecutive times. The ScentPreview Vault has been sealed for security. Access is locked for exactly 1 hour.
+                      <p className="text-[11px] text-black leading-normal font-sans">
+                        Maximum failed authentication attempts exceeded. Access from this IP is temporarily frozen.
                       </p>
-                      {lockoutTimeRemaining && (
-                        <div className="pt-2 border-t border-rose-900/20 flex items-center justify-between text-[10px]">
-                          <span className="text-black font-sans uppercase tracking-wider">Remaining Lockout:</span>
-                          <span className="font-mono text-rose-700 font-bold tracking-widest">{lockoutTimeRemaining}</span>
+                    </div>
+                  ) : adminLoginStep === "device" ? (
+                    <div className="w-full space-y-4">
+                      <div className="space-y-1.5">
+                        <h4 className="font-sans font-bold text-xl text-black">
+                          Mandatory IP &amp; Device Verification
+                        </h4>
+                        <p className="text-xs text-black font-sans leading-relaxed">
+                          Before logging in, this device must provide its live <strong>IP address</strong> and <strong>device type</strong>. Our software automatically extracts your hardware and network signature — manual selection is disabled.
+                        </p>
+                      </div>
+
+                      {isExtractingDevice ? (
+                        <div className="p-6 border border-stone-200 bg-stone-50 text-xs font-mono text-black flex flex-col items-center gap-3">
+                          <RefreshCw className="w-5 h-5 animate-spin text-black" />
+                          <span>Extracting IP Address, Device Type, OS &amp; GPU Signature...</span>
+                        </div>
+                      ) : deviceGateError ? (
+                        <div className="p-4 border border-rose-200 bg-rose-50 text-left space-y-3">
+                          <p className="text-xs font-mono text-rose-800">{deviceGateError}</p>
+                          <button
+                            type="button"
+                            onClick={runDeviceAndIpExtraction}
+                            className="w-full bg-black text-white text-xs font-sans uppercase tracking-[0.15em] py-2.5 px-4 font-bold cursor-pointer"
+                          >
+                            Retry IP &amp; Device Extraction
+                          </button>
+                        </div>
+                      ) : deviceTelemetry ? (
+                        <div className="w-full border border-stone-200 bg-stone-50 p-4 text-left space-y-3">
+                          <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                            <span className="text-[10px] font-mono uppercase tracking-widest font-bold text-emerald-800 flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Telemetry Extracted &amp; Logged
+                            </span>
+                            <span className="text-[9px] font-mono text-stone-500">{deviceTelemetry.auditId}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2.5 text-[11px] font-mono">
+                            <div className="bg-white border border-stone-200 p-2.5">
+                              <span className="block text-[9px] text-stone-500 uppercase">Extracted IP</span>
+                              <span className="font-bold text-black break-all">{deviceTelemetry.ip}</span>
+                            </div>
+                            <div className="bg-white border border-stone-200 p-2.5">
+                              <span className="block text-[9px] text-stone-500 uppercase">Device Type</span>
+                              <span className="font-bold text-black">{deviceTelemetry.deviceType}</span>
+                            </div>
+                            <div className="bg-white border border-stone-200 p-2.5">
+                              <span className="block text-[9px] text-stone-500 uppercase">Brand &amp; Model</span>
+                              <span className="font-bold text-black">
+                                {deviceTelemetry.brand} · {deviceTelemetry.model}
+                              </span>
+                            </div>
+                            <div className="bg-white border border-stone-200 p-2.5">
+                              <span className="block text-[9px] text-stone-500 uppercase">OS &amp; Browser</span>
+                              <span className="font-bold text-black">{deviceTelemetry.os} · {deviceTelemetry.browser}</span>
+                            </div>
+                            <div className="bg-white border border-stone-200 p-2.5 col-span-2">
+                              <span className="block text-[9px] text-stone-500 uppercase">Hardware / Screen / Timezone</span>
+                              <span className="text-black break-words">
+                                {deviceTelemetry.screenResolution} · {deviceTelemetry.timezone} · {deviceTelemetry.gpuRenderer}
+                              </span>
+                            </div>
+                          </div>
+
+                          {deviceTelemetry.isSamsung && (
+                            <div className="p-2 bg-amber-50 border border-amber-300 text-[10px] font-mono text-amber-900">
+                              Notice: Samsung hardware/browser signature detected and flagged in audit log.
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminPasscodeError(null);
+                                setAdminLoginStep("passcode");
+                              }}
+                              className="flex-1 bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.18em] uppercase font-bold py-3 px-4 transition-all cursor-pointer"
+                            >
+                              Continue to Passcode →
+                            </button>
+                            <button
+                              type="button"
+                              onClick={runDeviceAndIpExtraction}
+                              title="Re-scan telemetry"
+                              className="px-3 py-3 border border-stone-300 bg-white hover:bg-stone-100 text-black cursor-pointer"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : adminLoginStep === "passcode" ? (
+                    <div className="w-full space-y-4">
+                      <div className="space-y-1.5">
+                        <h4 className="font-sans font-bold text-xl text-black">
+                          Enter Decant Sales Passcode
+                        </h4>
+                        <p className="text-xs text-black font-sans leading-relaxed">
+                          Your IP and device have been extracted and bound to this session. Enter your passcode to continue to 2-Factor Authentication.
+                        </p>
+                      </div>
+
+                      {deviceTelemetry && (
+                        <div className="p-2.5 bg-stone-50 border border-stone-200 text-[10px] font-mono text-black flex flex-wrap items-center justify-between gap-2">
+                          <span>
+                            Bound: <strong>{deviceTelemetry.ip}</strong> · {deviceTelemetry.brand} {deviceTelemetry.model} ({deviceTelemetry.deviceType})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminLoginStep("device");
+                              runDeviceAndIpExtraction();
+                            }}
+                            className="underline text-stone-600 hover:text-black cursor-pointer"
+                          >
+                            Re-scan
+                          </button>
                         </div>
                       )}
+
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const sanitizedInput = adminPasscodeInput.trim();
+                          try {
+                            const res = await safeFetch("/api/login", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                passcode: sanitizedInput,
+                                deviceToken: deviceGateToken,
+                              })
+                            });
+
+                            const data = await res.json();
+
+                            if (res.status === 429) {
+                              const newLockout = data.lockoutUntil || (Date.now() + 10 * 60 * 1000);
+                              setAdminLockoutTime(newLockout);
+                              localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
+                              setAdminPasscodeError(data.error || "Vault locked out.");
+                              return;
+                            }
+
+                            if (res.status === 403) {
+                              setAdminPasscodeError(data.error || "Device verification expired.");
+                              setAdminLoginStep("device");
+                              runDeviceAndIpExtraction();
+                              return;
+                            }
+
+                            if (res.ok && data.success && data.pendingToken) {
+                              setTwoFactorPendingToken(data.pendingToken);
+                              setTwoFactorError(null);
+                              setTwoFactorCodeInput("");
+                              if (data.requires2FASetup) {
+                                setTwoFactorMode("setup");
+                                setTwoFactorQrUrl(data.qrCodeDataUrl || null);
+                                setTwoFactorManualSecret(data.manualSecret || null);
+                                setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
+                              } else {
+                                setTwoFactorMode("verify");
+                                setTwoFactorQrUrl(null);
+                                setTwoFactorManualSecret(null);
+                                setTwoFactorRecoveryCodes([]);
+                              }
+                              setAdminPasscodeError(null);
+                              setAdminLoginStep("2fa");
+                              return;
+                            }
+
+                            if (res.ok && data.success && data.token) {
+                              localStorage.setItem("scent_admin_token", data.token);
+                              localStorage.removeItem("scent_adminAttempts");
+                              setIsAdminAuthenticated(true);
+                              setAdminPasscodeError(null);
+                              setAdminLockoutTime(null);
+                            } else {
+                              throw new Error(data.error || "Invalid passcode");
+                            }
+                          } catch (err: any) {
+                            const errorMsg = err.message || "Invalid passcode.";
+                            setAdminPasscodeError(errorMsg);
+
+                            const attempts = parseInt(localStorage.getItem("scent_adminAttempts") || "0") + 1;
+                            localStorage.setItem("scent_adminAttempts", attempts.toString());
+
+                            if (attempts >= 5) {
+                              const newLockout = Date.now() + 10 * 60 * 1000;
+                              setAdminLockoutTime(newLockout);
+                              localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
+                              setAdminPasscodeError("Maximum authentication attempts exceeded.");
+                            }
+                          }
+                        }}
+                        className="w-full space-y-3"
+                      >
+                        <input
+                          type="password"
+                          placeholder="Enter Vault Passcode"
+                          value={adminPasscodeInput}
+                          onChange={(e) => {
+                            setAdminPasscodeInput(e.target.value);
+                            setAdminPasscodeError(null);
+                          }}
+                          className="w-full bg-[#FFFFFF] border border-stone-200 px-4 py-3 text-xs tracking-widest text-center text-black focus:outline-none focus:border-amber-gold transition-colors font-mono"
+                          autoFocus
+                        />
+                        {adminPasscodeError && (
+                          <p className="text-[10px] font-mono text-rose-700">{adminPasscodeError}</p>
+                        )}
+                        <button
+                          type="submit"
+                          className="w-full bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
+                        >
+                          Verify Passcode &amp; Proceed to 2FA
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-4">
+                      <div className="space-y-1.5">
+                        <h4 className="font-sans font-bold text-xl text-black">
+                          {twoFactorMode === "setup" ? "Pair 2-Factor Authenticator" : "2-Factor Authentication Required"}
+                        </h4>
+                        <p className="text-xs text-black font-sans leading-relaxed">
+                          {twoFactorMode === "setup"
+                            ? "Scan this QR code in Google Authenticator, Apple Passwords, or Authy, save your backup codes, and enter the 6-digit code to unlock /decantsales."
+                            : "Enter the 6-digit verification code from your Authenticator App (or a backup recovery code) to complete login."}
+                        </p>
+                      </div>
+
+                      {twoFactorMode === "setup" && twoFactorQrUrl && (
+                        <div className="border border-stone-200 bg-stone-50 p-4 space-y-3 text-left">
+                          <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <img
+                              src={twoFactorQrUrl}
+                              alt="2FA Authenticator QR Code"
+                              className="w-36 h-36 bg-white p-2 border border-stone-200 shrink-0"
+                            />
+                            <div className="space-y-2 text-[11px] font-mono w-full">
+                              <div>
+                                <span className="block text-[9px] text-stone-500 uppercase">Manual Setup Key</span>
+                                <span className="font-bold text-black break-all select-all">{twoFactorManualSecret}</span>
+                              </div>
+                              {twoFactorRecoveryCodes.length > 0 && (
+                                <div>
+                                  <span className="block text-[9px] text-stone-500 uppercase">One-Time Backup Codes (Save Safely)</span>
+                                  <div className="grid grid-cols-2 gap-1 mt-1">
+                                    {twoFactorRecoveryCodes.map((rc) => (
+                                      <span key={rc} className="bg-white border border-stone-200 px-2 py-0.5 text-[10px] font-bold text-black select-all">
+                                        {rc}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          setIsVerifyingTwoFactor(true);
+                          setTwoFactorError(null);
+                          try {
+                            const res = await safeFetch("/api/login/verify-2fa", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                deviceToken: deviceGateToken,
+                                pendingToken: twoFactorPendingToken,
+                                code: twoFactorCodeInput.trim(),
+                              })
+                            });
+                            const data = await res.json();
+                            if (res.status === 429) {
+                              const newLockout = data.lockoutUntil || (Date.now() + 10 * 60 * 1000);
+                              setAdminLockoutTime(newLockout);
+                              localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
+                              setTwoFactorError(data.error || "Too many attempts.");
+                              return;
+                            }
+                            if (res.ok && data.success && data.token) {
+                              localStorage.setItem("scent_admin_token", data.token);
+                              localStorage.removeItem("scent_adminAttempts");
+                              setIsAdminAuthenticated(true);
+                              setTwoFactorError(null);
+                              setAdminLockoutTime(null);
+                            } else {
+                              throw new Error(data.error || "Invalid 2FA verification code.");
+                            }
+                          } catch (err: any) {
+                            setTwoFactorError(err.message || "Invalid 2FA code.");
+                          } finally {
+                            setIsVerifyingTwoFactor(false);
+                          }
+                        }}
+                        className="w-full space-y-3"
+                      >
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder={twoFactorMode === "setup" ? "Enter 6-Digit Code from App" : "6-Digit Code or SP-XXXX-XXXX"}
+                          value={twoFactorCodeInput}
+                          onChange={(e) => {
+                            setTwoFactorCodeInput(e.target.value);
+                            setTwoFactorError(null);
+                          }}
+                          className="w-full bg-[#FFFFFF] border border-stone-200 px-4 py-3 text-sm tracking-[0.25em] text-center text-black focus:outline-none focus:border-amber-gold transition-colors font-mono font-bold"
+                          autoFocus
+                        />
+                        {twoFactorError && (
+                          <p className="text-[10px] font-mono text-rose-700">{twoFactorError}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={isVerifyingTwoFactor}
+                            className="flex-1 bg-black hover:bg-stone-800 disabled:opacity-50 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
+                          >
+                            {isVerifyingTwoFactor ? "Verifying..." : twoFactorMode === "setup" ? "Activate 2FA & Enter Vault" : "Verify 2FA & Enter Vault"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminLoginStep("passcode");
+                              setTwoFactorError(null);
+                            }}
+                            className="px-4 py-3 border border-stone-200 text-xs font-mono text-black hover:bg-stone-50 cursor-pointer"
+                          >
+                            Back
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   )}
                 </div>
@@ -4044,7 +4396,7 @@ export default function App() {
                         setAdminActiveTab("view");
                         setAdminStatusMessage(null);
                       }}
-                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap px-3 ${
                         adminActiveTab === "view"
                           ? "border-stone-900 text-stone-900 bg-white font-bold"
                           : "border-transparent text-stone-500 hover:text-stone-900"
@@ -4059,7 +4411,7 @@ export default function App() {
                         setAdminActiveTab("create");
                         setAdminStatusMessage(null);
                       }}
-                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap px-3 ${
                         adminActiveTab === "create"
                           ? "border-stone-900 text-stone-900 bg-white font-bold"
                           : "border-transparent text-stone-500 hover:text-stone-900"
@@ -4074,7 +4426,7 @@ export default function App() {
                         setAdminActiveTab("stock");
                         setAdminStatusMessage(null);
                       }}
-                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap px-3 ${
                         adminActiveTab === "stock"
                           ? "border-stone-900 text-stone-900 bg-white font-bold"
                           : "border-transparent text-stone-500 hover:text-stone-900"
@@ -4089,7 +4441,7 @@ export default function App() {
                         setAdminActiveTab("prices");
                         setAdminStatusMessage(null);
                       }}
-                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 py-3 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap px-3 ${
                         adminActiveTab === "prices"
                           ? "border-stone-900 text-stone-900 bg-white font-bold"
                           : "border-transparent text-stone-500 hover:text-stone-900"
@@ -4112,6 +4464,22 @@ export default function App() {
                     >
                       <ShieldAlert className="w-3.5 h-3.5" />
                       Refund Claims
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminActiveTab("security");
+                        setAdminStatusMessage(null);
+                        fetchAdminLoginLogs();
+                      }}
+                      className={`flex-1 py-3 px-4 text-[10px] sm:text-xs font-sans tracking-[0.15em] uppercase tracking-widest border-b-2 transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
+                        adminActiveTab === "security"
+                          ? "border-stone-900 text-stone-900 bg-white font-bold"
+                          : "border-transparent text-stone-500 hover:text-stone-900"
+                      }`}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Security &amp; 2FA
                     </button>
                   </div>
 
@@ -5307,7 +5675,7 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                    ) : (
+                    ) : adminActiveTab === "claims" ? (
                       /* Claims Tab */
                       <div className="space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-black/5">
@@ -5401,6 +5769,118 @@ export default function App() {
                                 )}
                               </div>
                             ); })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Security & 2FA Audit Tab */
+                      <div className="space-y-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-200">
+                          <div>
+                            <span className="block text-[10px] font-sans tracking-[0.15em] uppercase text-black font-bold">
+                              2-FACTOR AUTHENTICATION &amp; EXTRACTED IP/DEVICE AUDIT LOG
+                            </span>
+                            <p className="text-xs text-stone-600 font-sans mt-0.5">
+                              Every login attempt to /decantsales requires pre-login IP &amp; device extraction, passcode, and 2FA.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={fetchAdminLoginLogs}
+                            className="inline-flex items-center gap-1.5 text-[10px] font-sans text-black border border-stone-200 hover:border-black px-3 py-1.5 bg-white cursor-pointer"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isLoadingLoginLogs ? "animate-spin" : ""}`} />
+                            Refresh Security Logs
+                          </button>
+                        </div>
+
+                        {adminTwoFactorStatus && (
+                          <div className="border border-stone-200 bg-stone-50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1 text-xs font-mono">
+                              <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                                <span className="font-bold text-black">
+                                  2FA Status: {adminTwoFactorStatus.enabled ? "ACTIVE (TOTP Authenticator)" : "Pending Setup"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-stone-700">
+                                Enrolled Device: {adminTwoFactorStatus.enrolledDevice || "Current Session"} · Backup Codes Remaining: {adminTwoFactorStatus.remainingRecoveryCodes ?? 0}
+                              </p>
+                            </div>
+                            {!adminTwoFactorStatus.lockedByEnv && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const token = localStorage.getItem("scent_admin_token") || "";
+                                  const res = await safeFetch("/api/admin/2fa/reset", {
+                                    method: "POST",
+                                    headers: { "Authorization": `Bearer ${token}` }
+                                  });
+                                  const d = await res.json();
+                                  if (d.success) {
+                                    setAdminStatusMessage({ type: "success", text: d.message });
+                                    fetchAdminLoginLogs();
+                                  }
+                                }}
+                                className="px-3 py-2 border border-rose-300 bg-white hover:bg-rose-50 text-rose-800 text-[10px] font-mono uppercase tracking-wider font-bold cursor-pointer shrink-0"
+                              >
+                                Re-Pair 2FA Device
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {adminLoginLogs.length === 0 ? (
+                          <div className="py-12 text-center border border-dashed border-stone-200 text-xs font-mono text-stone-500">
+                            No login telemetry logs recorded yet.
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5">
+                            {adminLoginLogs.map((logEntry) => (
+                              <div
+                                key={logEntry.id}
+                                className={`border p-3.5 text-xs font-mono space-y-1.5 ${
+                                  logEntry.isSamsung
+                                    ? "border-amber-400 bg-amber-50/50"
+                                    : logEntry.stage?.includes("failed")
+                                    ? "border-rose-200 bg-rose-50/40"
+                                    : "border-stone-200 bg-white"
+                                }`}
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${
+                                      logEntry.stage?.includes("success")
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : logEntry.stage?.includes("failed")
+                                        ? "bg-rose-100 text-rose-800"
+                                        : "bg-stone-100 text-stone-800"
+                                    }`}>
+                                      {logEntry.stage}
+                                    </span>
+                                    <span className="font-bold text-black">{logEntry.ip}</span>
+                                    <span className="text-stone-700">
+                                      {logEntry.brand} {logEntry.model} ({logEntry.deviceType})
+                                    </span>
+                                    {logEntry.isSamsung && (
+                                      <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-200 text-amber-950 uppercase">
+                                        SAMSUNG DETECTED
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-stone-500">
+                                    {logEntry.createdAt ? new Date(logEntry.createdAt).toLocaleString() : ""}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-stone-600 flex flex-wrap gap-x-4 gap-y-1">
+                                  <span>OS: {logEntry.os}</span>
+                                  <span>Browser: {logEntry.browser}</span>
+                                  <span>TZ: {logEntry.timezone}</span>
+                                  <span>Screen: {logEntry.screenResolution}</span>
+                                  {logEntry.note && <span>Note: {logEntry.note}</span>}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
