@@ -1691,7 +1691,14 @@ export default function App() {
         setTwoFactorCodeInput("");
         if (data.requires2FASetup) {
           setTwoFactorMode("setup");
-          setTwoFactorQrUrl(data.qrCodeDataUrl || null);
+          let qrUrl = data.qrCodeDataUrl || null;
+          if (!qrUrl && data.otpauthUrl) {
+            try {
+              const QRCodeLib = (await import("qrcode")).default;
+              qrUrl = await QRCodeLib.toDataURL(data.otpauthUrl, { width: 220, margin: 1 });
+            } catch {}
+          }
+          setTwoFactorQrUrl(qrUrl);
           setTwoFactorManualSecret(data.manualSecret || null);
           setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
         } else {
@@ -4286,14 +4293,16 @@ export default function App() {
                         </div>
                       )}
 
-                      {twoFactorMode === "setup" && twoFactorQrUrl && (
+                      {twoFactorMode === "setup" && (twoFactorQrUrl || twoFactorManualSecret) && (
                         <div className="border border-stone-200 bg-stone-50 p-4 space-y-3 text-left">
                           <div className="flex flex-col sm:flex-row items-center gap-4">
-                            <img
-                              src={twoFactorQrUrl}
-                              alt="2FA Authenticator QR Code"
-                              className="w-36 h-36 bg-white p-2 border border-stone-200 shrink-0"
-                            />
+                            {twoFactorQrUrl && (
+                              <img
+                                src={twoFactorQrUrl}
+                                alt="2FA Authenticator QR Code"
+                                className="w-36 h-36 bg-white p-2 border border-stone-200 shrink-0"
+                              />
+                            )}
                             <div className="space-y-2 text-[11px] font-mono w-full">
                               <div>
                                 <span className="block text-[9px] text-stone-500 uppercase">Manual Setup Key</span>

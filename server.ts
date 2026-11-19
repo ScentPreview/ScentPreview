@@ -2211,6 +2211,7 @@ Your evaluation must fit this schema:
           requires2FASetup: true,
           pendingToken,
           qrCodeDataUrl,
+          otpauthUrl,
           manualSecret: setupSecret,
           recoveryCodes,
         });
@@ -2363,7 +2364,7 @@ Your evaluation must fit this schema:
           snap.forEach((d: any) => {
             const data = d.data();
             const key = data?.id || d.id;
-            if (key) merged.set(key, { id: key, ...data });
+            if (key && !String(key).startsWith("__")) merged.set(key, { id: key, ...data });
           });
         } catch (err) {
           console.warn("[Admin Audit] Failed to fetch Firestore login logs:", err);
