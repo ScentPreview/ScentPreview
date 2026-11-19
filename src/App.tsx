@@ -804,17 +804,21 @@ export default function App() {
     return null;
   };
 
-  // Helper to detect if the current route is exclusively www.scentpreview.in/decantorders (nothing more, nothing less)
+  // Helper to detect if the current route is exclusively www.scentpreview.in/decantorders (or preview/local /decantorders; zero admin subdomains)
   const resolveIsAdminFromLocation = (): boolean => {
     if (typeof window === "undefined") return false;
     const hostname = window.location.hostname.toLowerCase();
     const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-    const isAllowedHost =
-      hostname === "www.scentpreview.in" ||
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname.endsWith(".run.app");
-    return isAllowedHost && pathname === "decantorders";
+    const isAdminSubdomain =
+      hostname.startsWith("orders.") ||
+      hostname.startsWith("admin.") ||
+      hostname.startsWith("decantsales.") ||
+      hostname.startsWith("decantorders.") ||
+      hostname.includes("scentprevieworders") ||
+      hostname.includes("scentpreviewadmin") ||
+      (hostname.endsWith(".scentpreview.in") && hostname !== "www.scentpreview.in");
+    if (isAdminSubdomain) return false;
+    return pathname === "decantorders";
   };
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
@@ -2855,7 +2859,7 @@ export default function App() {
     );
   });
 
-  if (showPaymentPage && paymentDetails) {
+  if (!isAdminOpen && showPaymentPage && paymentDetails) {
     return (
       <div className="min-h-screen bg-stone-50 text-black font-sans p-4 sm:p-8 flex flex-col items-center justify-center">
         <div className="max-w-lg w-full bg-white border border-stone-200 p-6 sm:p-8">
