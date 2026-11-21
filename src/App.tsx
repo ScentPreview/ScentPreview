@@ -3986,24 +3986,11 @@ export default function App() {
 
               {!isAdminAuthenticated ? (
                 <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 sm:p-8 text-center max-w-lg w-full mx-auto space-y-5">
-                  {/* Step Progress Indicator */}
-                  <div className="w-full flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider border border-stone-200 bg-stone-50 px-4 py-2">
-                    <span className={adminLoginStep === "passcode" ? "font-bold text-black" : "text-emerald-700 font-bold"}>
-                      1. Passcode
-                    </span>
-                    <span className="text-stone-300">→</span>
-                    <span className={adminLoginStep === "2fa" ? "font-bold text-black" : "text-stone-400"}>
-                      2. Google Authenticator (2FA)
-                    </span>
-                  </div>
-
                   <div className={`w-14 h-14 bg-stone-50 flex items-center justify-center border ${isAdminLocked ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
                     {isAdminLocked ? (
                       <ShieldAlert className="w-6 h-6 text-rose-700" />
-                    ) : adminLoginStep === "passcode" ? (
-                      <Lock className="w-6 h-6 text-black" />
                     ) : (
-                      <ShieldCheck className="w-6 h-6 text-black" />
+                      <Lock className="w-6 h-6 text-black" />
                     )}
                   </div>
 
@@ -4021,14 +4008,14 @@ export default function App() {
                         Maximum failed authentication attempts exceeded. Access from this IP is temporarily frozen.
                       </p>
                     </div>
-                  ) : adminLoginStep === "passcode" ? (
+                  ) : (
                     <div className="w-full space-y-4">
                       <div className="space-y-1.5">
                         <h4 className="font-sans font-bold text-xl text-black">
                           Enter Sales Portal Passcode
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
-                          Restricted to www.scentpreview.in/scentpreviewsales.in. Google Authenticator 2-factor verification is required after passcode entry.
+                          Restricted to www.scentpreview.in/scentpreviewsales.in. Enter your passcode to unlock the sales portal.
                         </p>
                       </div>
 
@@ -4064,32 +4051,12 @@ export default function App() {
                               return;
                             }
 
-                            if (res.ok && data.success && data.pendingToken) {
+                            if (res.ok && data.success && data.token) {
+                              localStorage.setItem("scent_admin_token", data.token);
+                              localStorage.removeItem("scent_adminAttempts");
+                              setIsAdminAuthenticated(true);
                               setAdminPasscodeError(null);
-                              setDeviceTelemetry(data.telemetry || null);
-                              setTwoFactorPendingToken(data.pendingToken);
-                              setTwoFactorError(null);
-                              setTwoFactorCodeInput("");
-                              setTwoFactorCopiedKey(false);
-                              if (data.requires2FASetup) {
-                                setTwoFactorMode("setup");
-                                let qrUrl = data.qrCodeDataUrl || null;
-                                if (!qrUrl && data.otpauthUrl) {
-                                  try {
-                                    const QRCodeLib = (await import("qrcode")).default;
-                                    qrUrl = await QRCodeLib.toDataURL(data.otpauthUrl, { width: 220, margin: 1 });
-                                  } catch {}
-                                }
-                                setTwoFactorQrUrl(qrUrl);
-                                setTwoFactorManualSecret(data.manualSecret || null);
-                                setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
-                              } else {
-                                setTwoFactorMode("verify");
-                                setTwoFactorQrUrl(null);
-                                setTwoFactorManualSecret(null);
-                                setTwoFactorRecoveryCodes([]);
-                              }
-                              setAdminLoginStep("2fa");
+                              setAdminLockoutTime(null);
                               return;
                             }
 
@@ -4132,168 +4099,8 @@ export default function App() {
                           disabled={isSubmittingPasscode}
                           className="w-full bg-black hover:bg-stone-800 disabled:opacity-50 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
                         >
-                          {isSubmittingPasscode ? "Verifying..." : "Continue to Google Authenticator →"}
+                          {isSubmittingPasscode ? "Verifying..." : "Enter Sales Portal →"}
                         </button>
-                      </form>
-                    </div>
-                  ) : (
-                    <div className="w-full space-y-4">
-                      <div className="space-y-1.5">
-                        <h4 className="font-sans font-bold text-xl text-black">
-                          {twoFactorMode === "setup" ? "Pair Google Authenticator" : "Google Authenticator Verification"}
-                        </h4>
-                        <p className="text-xs text-black font-sans leading-relaxed">
-                          {twoFactorMode === "setup"
-                            ? "Open Google Authenticator on your phone, scan this QR code (or copy the setup key), and enter the 6-digit code to unlock /scentpreviewsales.in."
-                            : "Open Google Authenticator and enter the 6-digit verification code (or a saved backup code) to unlock /scentpreviewsales.in."}
-                        </p>
-                      </div>
-
-                      {deviceTelemetry && (
-                        <div className="w-full border border-stone-200 bg-stone-50 p-3 text-left space-y-2 text-[10px] font-mono">
-                          <div className="flex items-center justify-between border-b border-stone-200 pb-1.5">
-                            <span className="uppercase tracking-widest font-bold text-emerald-800 flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" />
-                              Device &amp; IP Logged
-                            </span>
-                            <span className="text-stone-500">{deviceTelemetry.auditId}</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-1.5 text-black">
-                            <div>IP: <strong>{deviceTelemetry.ip}</strong></div>
-                            <div>Type: <strong>{deviceTelemetry.deviceType}</strong></div>
-                            <div>Device: <strong>{deviceTelemetry.brand} · {deviceTelemetry.model}</strong></div>
-                            <div>OS/Browser: <strong>{deviceTelemetry.os} · {deviceTelemetry.browser}</strong></div>
-                          </div>
-                          {deviceTelemetry.isSamsung && (
-                            <div className="p-1.5 bg-amber-100 border border-amber-300 text-amber-900 font-bold">
-                              Samsung device signature logged.
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {twoFactorMode === "setup" && (twoFactorQrUrl || twoFactorManualSecret) && (
-                        <div className="border border-stone-200 bg-stone-50 p-4 space-y-3 text-left">
-                          <div className="flex flex-col sm:flex-row items-center gap-4">
-                            {twoFactorQrUrl && (
-                              <img
-                                src={twoFactorQrUrl}
-                                alt="Google Authenticator 2FA QR Code"
-                                className="w-36 h-36 bg-white p-2 border border-stone-200 shrink-0"
-                              />
-                            )}
-                            <div className="space-y-2 text-[11px] font-mono w-full">
-                              <div>
-                                <span className="block text-[9px] text-stone-500 uppercase">Google Authenticator Setup Key</span>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="font-bold text-black break-all select-all">{twoFactorManualSecret}</span>
-                                  {twoFactorManualSecret && (
-                                    <button
-                                      type="button"
-                                      onClick={async () => {
-                                        try {
-                                          await navigator.clipboard.writeText(twoFactorManualSecret);
-                                          setTwoFactorCopiedKey(true);
-                                          setTimeout(() => setTwoFactorCopiedKey(false), 2000);
-                                        } catch {}
-                                      }}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-stone-300 bg-white hover:bg-stone-100 text-[9px] font-mono text-black cursor-pointer shrink-0"
-                                    >
-                                      {twoFactorCopiedKey ? <Check className="w-3 h-3 text-emerald-700" /> : <Copy className="w-3 h-3" />}
-                                      {twoFactorCopiedKey ? "Copied" : "Copy"}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                              {twoFactorRecoveryCodes.length > 0 && (
-                                <div>
-                                  <span className="block text-[9px] text-stone-500 uppercase">One-Time Backup Codes (Save Safely)</span>
-                                  <div className="grid grid-cols-2 gap-1 mt-1">
-                                    {twoFactorRecoveryCodes.map((rc) => (
-                                      <span key={rc} className="bg-white border border-stone-200 px-2 py-0.5 text-[10px] font-bold text-black select-all">
-                                        {rc}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <form
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          setIsVerifyingTwoFactor(true);
-                          setTwoFactorError(null);
-                          try {
-                            const res = await safeFetch("/api/login/verify-2fa", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                pendingToken: twoFactorPendingToken,
-                                code: twoFactorCodeInput.trim(),
-                              })
-                            });
-                            const data = await res.json();
-                            if (res.status === 429) {
-                              const newLockout = data.lockoutUntil || (Date.now() + 10 * 60 * 1000);
-                              setAdminLockoutTime(newLockout);
-                              localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
-                              setTwoFactorError(data.error || "Too many attempts.");
-                              return;
-                            }
-                            if (res.ok && data.success && data.token) {
-                              localStorage.setItem("scent_admin_token", data.token);
-                              localStorage.removeItem("scent_adminAttempts");
-                              setIsAdminAuthenticated(true);
-                              setTwoFactorError(null);
-                              setAdminLockoutTime(null);
-                            } else {
-                              throw new Error(data.error || "Invalid 2FA verification code.");
-                            }
-                          } catch (err: any) {
-                            setTwoFactorError(err.message || "Invalid 2FA code.");
-                          } finally {
-                            setIsVerifyingTwoFactor(false);
-                          }
-                        }}
-                        className="w-full space-y-3"
-                      >
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder={twoFactorMode === "setup" ? "Enter 6-Digit Google Authenticator Code" : "6-Digit Code or SP-XXXX-XXXX"}
-                          value={twoFactorCodeInput}
-                          onChange={(e) => {
-                            setTwoFactorCodeInput(e.target.value);
-                            setTwoFactorError(null);
-                          }}
-                          className="w-full bg-[#FFFFFF] border border-stone-200 px-4 py-3 text-sm tracking-[0.25em] text-center text-black focus:outline-none focus:border-amber-gold transition-colors font-mono font-bold"
-                          autoFocus
-                        />
-                        {twoFactorError && (
-                          <p className="text-[10px] font-mono text-rose-700">{twoFactorError}</p>
-                        )}
-                        <div className="flex gap-2">
-                          <button
-                            type="submit"
-                            disabled={isVerifyingTwoFactor}
-                            className="flex-1 bg-black hover:bg-stone-800 disabled:opacity-50 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
-                          >
-                            {isVerifyingTwoFactor ? "Verifying..." : twoFactorMode === "setup" ? "Activate Google 2FA & Enter" : "Verify 2FA & Enter"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              resetAdminAuthFlowState();
-                            }}
-                            className="px-4 py-3 border border-stone-200 text-xs font-mono text-black hover:bg-stone-50 cursor-pointer"
-                          >
-                            Back
-                          </button>
-                        </div>
                       </form>
                     </div>
                   )}

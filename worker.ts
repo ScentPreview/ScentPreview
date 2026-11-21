@@ -762,7 +762,7 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
 
   const secret = await getSigningSecret(env);
 
-  // Step 1: Passcode verification + Automatic Telemetry -> Forced Google Authenticator 2FA
+  // Admin Passcode Login (Direct Authentication)
   if (path === "/api/login" && method === "POST") {
     const { ip: clientIp } = extractClientIp(request);
     const rl = await checkRateLimit(clientIp);
@@ -775,7 +775,7 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
     const passcode = typeof body?.passcode === "string" ? body.passcode : "";
     const expectedPasscode = env.ADMIN_PASSCODE || "ZaydenChingtham@2330";
     if (!timingSafeStringEqual(passcode, expectedPasscode)) {
-      await recordAdminAuthEvent("passcode_failed", telemetry, "Invalid vault passcode");
+      await recordAdminAuthEvent("passcode_failed", telemetry, "Invalid sales portal passcode");
       const lockoutUntil = await recordRateLimitFailure(clientIp);
       if (lockoutUntil) {
         return json({ error: "Too many failed login attempts from this IP, please try again after 10 minutes.", lockoutUntil }, 429);
@@ -783,155 +783,22 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       return json({ error: "Invalid passcode." }, 401);
     }
 
-    await recordAdminAuthEvent("passcode_passed", telemetry, "Passcode verified, awaiting Google Authenticator 2FA");
-
-    const telemetrySummary = {
-      deviceType: telemetry.deviceType,
-      brand: telemetry.brand,
-      model: telemetry.model,
-      os: telemetry.os,
-      browser: telemetry.browser,
-      isSamsung: telemetry.isSamsung,
-      ip: telemetry.ip,
-      country: telemetry.country,
-      timezone: telemetry.timezone,
-      screenResolution: telemetry.screenResolution,
-      gpuRenderer: telemetry.gpuRenderer,
-      clientSignature: telemetry.clientSignature,
-    };
-
-    const existing2FA = await loadTwoFactorConfig(env);
-    if (!existing2FA) {
-      const setupSecret = generateBase32Secret(20);
-      const recoveryCodes = generateRecoveryCodes();
-      const otpauthUrl = `otpauth://totp/ScentPreview:Admin?secret=${setupSecret}&issuer=ScentPreview&algorithm=SHA1&digits=6&period=30`;
-      const pendingToken = await signJwt(
-        {
-          type: "2fa_setup",
-          auditId: telemetry.auditId,
-          telemetry: telemetrySummary,
-          secret: setupSecret,
-          recoveryCodes,
-        },
-        secret,
-        900
-      );
-      return json({
-        success: true,
-        telemetry,
-        requires2FASetup: true,
-        pendingToken,
-        otpauthUrl,
-        manualSecret: setupSecret,
-        recoveryCodes,
-      });
-    }
-
-    const pendingToken = await signJwt(
-      { type: "2fa_verify", auditId: telemetry.auditId, telemetry: telemetrySummary },
-      secret,
-      900
-    );
-    return json({ success: true, telemetry, requires2FA: true, pendingToken });
-  }
-
-  // Step 2: Forced Google Authenticator 2FA Verification
-  if (path === "/api/login/verify-2fa" && method === "POST") {
-    const { ip: clientIp } = extractClientIp(request);
-    const rl = await checkRateLimit(clientIp);
-    if (rl.blocked) {
-      return json({ error: "Too many failed login attempts from this IP, please try again after 10 minutes.", lockoutUntil: rl.lockoutUntil }, 429);
-    }
-
-    const pendingToken = typeof body?.pendingToken === "string" ? body.pendingToken : "";
-    const code = typeof body?.code === "string" ? body.code.trim() : "";
-
-    if (!pendingToken || !code) {
-      return json({ error: "2FA session token and Google Authenticator code are required." }, 400);
-    }
-
-    const pendingClaims = await verifyJwt(pendingToken, secret);
-    if (!pendingClaims || (pendingClaims.type !== "2fa_setup" && pendingClaims.type !== "2fa_verify")) {
-      return json({ error: "2FA session expired. Please re-enter the passcode." }, 401);
-    }
-
-    const fallbackTelemetry = extractServerDeviceTelemetry(request, {});
-    const savedTel = pendingClaims.telemetry && typeof pendingClaims.telemetry === "object" ? pendingClaims.telemetry : {};
-    const auditTelemetry = {
-      ...fallbackTelemetry,
-      ...savedTel,
-      auditId: String(pendingClaims.auditId || fallbackTelemetry.auditId),
-      ip: clientIp || savedTel.ip || fallbackTelemetry.ip,
-    };
-
-    if (pendingClaims.type === "2fa_setup") {
-      const ok = await verifyTotpCode(pendingClaims.secret, code, 2);
-      if (!ok) {
-        await recordAdminAuthEvent("2fa_failed", auditTelemetry, "Invalid Google Authenticator setup code");
-        const lockoutUntil = await recordRateLimitFailure(clientIp);
-        if (lockoutUntil) return json({ error: "Too many failed attempts.", lockoutUntil }, 429);
-        return json({ error: "Invalid 6-digit Google Authenticator code. Check your phone's clock and try again." }, 401);
-      }
-
-      const recoveryHashes: string[] = [];
-      if (Array.isArray(pendingClaims.recoveryCodes)) {
-        for (const rc of pendingClaims.recoveryCodes) {
-          recoveryHashes.push(await sha256Hex(String(rc).trim().toUpperCase()));
-        }
-      }
-      await fsSetDoc("admin_login_attempts", "sys_totp_config", {
-        enabled: true,
-        secret: pendingClaims.secret,
-        recoveryHashes,
-        enrolledAt: new Date().toISOString(),
-        enrolledFromIp: clientIp,
-        enrolledDevice: `${auditTelemetry.brand} ${auditTelemetry.model} (${auditTelemetry.os} / ${auditTelemetry.browser})`,
-      });
-      await recordAdminAuthEvent("login_success_2fa_enrolled", auditTelemetry, "Google Authenticator 2FA enrolled and admin session issued");
-    } else {
-      const cfg = await loadTwoFactorConfig(env);
-      if (!cfg || !cfg.enabled || !cfg.secret) {
-        return json({ error: "Google Authenticator 2FA is not configured yet. Please re-enter passcode to pair." }, 400);
-      }
-      let verified = await verifyTotpCode(cfg.secret, code, 2);
-      let usedRecovery = false;
-      if (!verified && Array.isArray(cfg.recoveryHashes) && cfg.recoveryHashes.length > 0) {
-        const codeHash = await sha256Hex(code.trim().toUpperCase());
-        const idx = cfg.recoveryHashes.indexOf(codeHash);
-        if (idx !== -1) {
-          verified = true;
-          usedRecovery = true;
-          cfg.recoveryHashes.splice(idx, 1);
-          await fsSetDoc("admin_login_attempts", "sys_totp_config", cfg);
-        }
-      }
-      if (!verified) {
-        await recordAdminAuthEvent("2fa_failed", auditTelemetry, "Invalid Google Authenticator code");
-        const lockoutUntil = await recordRateLimitFailure(clientIp);
-        if (lockoutUntil) return json({ error: "Too many failed attempts.", lockoutUntil }, 429);
-        return json({ error: "Invalid 2FA code. Enter the 6-digit code from Google Authenticator." }, 401);
-      }
-      await recordAdminAuthEvent(
-        "login_success",
-        auditTelemetry,
-        usedRecovery ? "Authenticated via backup recovery code" : "Authenticated via Google Authenticator 2FA"
-      );
-    }
-
+    await recordAdminAuthEvent("login_success", telemetry, "Sales portal logged in via passcode");
     await clearRateLimit(clientIp);
+
     const token = await signJwt(
       {
         role: "admin",
         ip: clientIp,
-        deviceType: auditTelemetry.deviceType,
-        brand: auditTelemetry.brand,
-        model: auditTelemetry.model,
-        auditId: auditTelemetry.auditId,
+        deviceType: telemetry.deviceType,
+        brand: telemetry.brand,
+        model: telemetry.model,
+        auditId: telemetry.auditId,
       },
       secret,
       7200
     );
-    return json({ success: true, token });
+    return json({ success: true, token, telemetry });
   }
 
   // Admin: Login Audit Logs
@@ -949,29 +816,24 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
       .slice(0, 100);
 
-    const twoFactorCfg = await loadTwoFactorConfig(env);
     return json({
       success: true,
       logs,
       twoFactorStatus: {
-        enabled: Boolean(twoFactorCfg?.enabled),
-        enrolledAt: twoFactorCfg?.enrolledAt || null,
-        enrolledDevice: twoFactorCfg?.enrolledDevice || null,
-        remainingRecoveryCodes: Array.isArray(twoFactorCfg?.recoveryHashes) ? twoFactorCfg.recoveryHashes.length : 0,
-        lockedByEnv: Boolean(env.ADMIN_2FA_SECRET),
+        enabled: false,
+        enrolledAt: null,
+        enrolledDevice: null,
+        remainingRecoveryCodes: 0,
+        lockedByEnv: false,
       },
     });
   }
 
-  // Admin: Reset 2FA pairing
+  // Dummy 2FA reset endpoint for compatibility
   if (path === "/api/admin/2fa/reset" && method === "POST") {
     const admin = await authenticateAdminRequest(request, secret);
     if (!admin) return json({ error: "Access denied. Invalid or missing token." }, 401);
-    if (env.ADMIN_2FA_SECRET) {
-      return json({ error: "2FA is locked via ADMIN_2FA_SECRET environment variable." }, 400);
-    }
-    await fsDeleteDoc("admin_login_attempts", "sys_totp_config");
-    return json({ success: true, message: "2FA configuration reset. Next login will prompt for new authenticator QR pairing." });
+    return json({ success: true, message: "2FA is disabled. Passcode-only authentication is active." });
   }
 
   // Stock endpoints

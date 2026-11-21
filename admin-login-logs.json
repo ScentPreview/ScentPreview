@@ -1,1 +1,44 @@
-[]
+[
+  {
+    "id": "LOG-1795290376893-FFCA19",
+    "stage": "login_success",
+    "note": "Sales portal logged in via passcode",
+    "ip": "127.0.0.1",
+    "forwardedChain": "127.0.0.1",
+    "country": "Unknown",
+    "deviceType": "Headless / Script",
+    "brand": "Apple",
+    "model": "MacIntel",
+    "os": "Automated CLI / Script",
+    "browser": "CLI / HTTP Client",
+    "isSamsung": false,
+    "userAgent": "node",
+    "timezone": "Unknown",
+    "screenResolution": "Unknown",
+    "gpuRenderer": "Unknown",
+    "clientSignature": "TESTSIG123",
+    "auditId": "AUTH-1795290376893-4048C5",
+    "createdAt": "2026-11-21T19:46:16.893Z"
+  },
+  {
+    "id": "LOG-1795290376797-DFFCFF",
+    "stage": "passcode_failed",
+    "note": "Invalid sales portal passcode",
+    "ip": "127.0.0.1",
+    "forwardedChain": "127.0.0.1",
+    "country": "Unknown",
+    "deviceType": "Headless / Script",
+    "brand": "Script / Bot",
+    "model": "Headless / Script",
+    "os": "Automated CLI / Script",
+    "browser": "CLI / HTTP Client",
+    "isSamsung": false,
+    "userAgent": "node",
+    "timezone": "Unknown",
+    "screenResolution": "Unknown",
+    "gpuRenderer": "Unknown",
+    "clientSignature": "SERVER-ONLY",
+    "auditId": "AUTH-1795290376797-7627F3",
+    "createdAt": "2026-11-21T19:46:16.797Z"
+  }
+]
