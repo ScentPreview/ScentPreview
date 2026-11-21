@@ -752,8 +752,8 @@ export default function App() {
     if (path) {
       // System and landing routes: do not match whole path as a fragrance
       if (
-        path === "qrscans" || 
-        path === "decantorders"
+        path === "qrscans" ||
+        path === "scentpreviewsales.in"
       ) {
         return null;
       }
@@ -804,7 +804,7 @@ export default function App() {
     return null;
   };
 
-  // Helper to detect if the current route is exclusively www.scentpreview.in/decantorders (or preview/local /decantorders; zero admin subdomains)
+  // Helper to detect if the current route is exclusively /scentpreviewsales.in (zero admin subdomains)
   const resolveIsAdminFromLocation = (): boolean => {
     if (typeof window === "undefined") return false;
     const hostname = window.location.hostname.toLowerCase();
@@ -814,11 +814,12 @@ export default function App() {
       hostname.startsWith("admin.") ||
       hostname.startsWith("decantsales.") ||
       hostname.startsWith("decantorders.") ||
+      hostname.startsWith("scentpreviewsales.") ||
       hostname.includes("scentprevieworders") ||
       hostname.includes("scentpreviewadmin") ||
       (hostname.endsWith(".scentpreview.in") && hostname !== "www.scentpreview.in");
     if (isAdminSubdomain) return false;
-    return pathname === "decantorders";
+    return pathname === "scentpreviewsales.in";
   };
 
   const [selectedBundleSizes, setSelectedBundleSizes] = useState<Record<string, BundleSizeType>>({});
@@ -835,7 +836,7 @@ export default function App() {
     try {
       const isQR = resolveIsQRScanFromLocation();
       const currentPath = window.location.pathname.toLowerCase();
-      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.replace(/\/+$/, "") === "/decantorders" ? "/decantorders" : window.location.pathname);
+      const basePath = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.replace(/\/+$/, "") === "/scentpreviewsales.in" ? "/scentpreviewsales.in" : window.location.pathname);
       const newUrl = `${basePath}?perfume=${encodeURIComponent(fragrance.id)}`;
       window.history.pushState({ perfumeId: fragrance.id }, "", newUrl);
     } catch (e) {}
@@ -846,7 +847,7 @@ export default function App() {
     try {
       const isQR = resolveIsQRScanFromLocation();
       const currentPath = window.location.pathname.toLowerCase();
-      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.replace(/\/+$/, "") === "/decantorders" ? "/decantorders" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
+      const newUrl = isQR && currentPath.includes("qrscans") ? "/qrscans" : (currentPath.replace(/\/+$/, "") === "/scentpreviewsales.in" ? "/scentpreviewsales.in" : (currentPath === "/qrscans" ? "/qrscans" : "/"));
       window.history.pushState({}, "", newUrl);
     } catch (e) {}
   };
@@ -1302,7 +1303,7 @@ export default function App() {
     }
   }, [isQuizListOpen]);
 
-  // Admin Portal States (accessible exclusively via /decantorders)
+  // Admin Portal States (accessible exclusively via /scentpreviewsales.in)
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(() => resolveIsAdminFromLocation());
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [isLoadingAdminOrders, setIsLoadingAdminOrders] = useState<boolean>(false);
@@ -1311,17 +1312,15 @@ export default function App() {
   const [adminPriceFilter, setAdminPriceFilter] = useState<"all" | "fragrance" | "bundle" | "outofstock" | "disabled">("all");
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [adminPasscodeInput, setAdminPasscodeInput] = useState<string>("");
-  const [adminLoginStep, setAdminLoginStep] = useState<"passcode" | "device" | "denied" | "2fa">("passcode");
-  const [passcodeToken, setPasscodeToken] = useState<string | null>(null);
-  const [isExtractingDevice, setIsExtractingDevice] = useState<boolean>(false);
+  const [isSubmittingPasscode, setIsSubmittingPasscode] = useState<boolean>(false);
+  const [adminLoginStep, setAdminLoginStep] = useState<"passcode" | "2fa">("passcode");
   const [deviceTelemetry, setDeviceTelemetry] = useState<any | null>(null);
-  const [deviceGateToken, setDeviceGateToken] = useState<string | null>(null);
-  const [deviceGateError, setDeviceGateError] = useState<string | null>(null);
   const [twoFactorPendingToken, setTwoFactorPendingToken] = useState<string | null>(null);
   const [twoFactorMode, setTwoFactorMode] = useState<"verify" | "setup">("verify");
   const [twoFactorQrUrl, setTwoFactorQrUrl] = useState<string | null>(null);
   const [twoFactorManualSecret, setTwoFactorManualSecret] = useState<string | null>(null);
   const [twoFactorRecoveryCodes, setTwoFactorRecoveryCodes] = useState<string[]>([]);
+  const [twoFactorCopiedKey, setTwoFactorCopiedKey] = useState<boolean>(false);
   const [twoFactorCodeInput, setTwoFactorCodeInput] = useState<string>("");
   const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
   const [isVerifyingTwoFactor, setIsVerifyingTwoFactor] = useState<boolean>(false);
@@ -1651,94 +1650,6 @@ export default function App() {
     }
   };
 
-  const handleAllowDeviceExtraction = async () => {
-    if (!passcodeToken) {
-      setAdminLoginStep("passcode");
-      return;
-    }
-    setIsExtractingDevice(true);
-    setDeviceGateError(null);
-    try {
-      const clientTelemetry = await extractDeviceTelemetry();
-      if (!clientTelemetry || !clientTelemetry.userAgent || clientTelemetry.userAgent === "Unknown") {
-        setDeviceGateError("You are not getting access.");
-        setAdminLoginStep("denied");
-        return;
-      }
-      const res = await safeFetch("/api/admin/device-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          passcodeToken,
-          allowDeviceAccess: true,
-          clientTelemetry,
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 429) {
-        const newLockout = data.lockoutUntil || (Date.now() + 10 * 60 * 1000);
-        setAdminLockoutTime(newLockout);
-        localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
-        setDeviceGateError(data.error || "Vault locked out.");
-        return;
-      }
-      if (!res.ok || data.denied || !data.deviceToken) {
-        setDeviceGateError(data.error || "You are not getting access.");
-        setAdminLoginStep("denied");
-        return;
-      }
-      setDeviceTelemetry(data.telemetry);
-      setDeviceGateToken(data.deviceToken);
-      if (data.pendingToken) {
-        setTwoFactorPendingToken(data.pendingToken);
-        setTwoFactorError(null);
-        setTwoFactorCodeInput("");
-        if (data.requires2FASetup) {
-          setTwoFactorMode("setup");
-          let qrUrl = data.qrCodeDataUrl || null;
-          if (!qrUrl && data.otpauthUrl) {
-            try {
-              const QRCodeLib = (await import("qrcode")).default;
-              qrUrl = await QRCodeLib.toDataURL(data.otpauthUrl, { width: 220, margin: 1 });
-            } catch {}
-          }
-          setTwoFactorQrUrl(qrUrl);
-          setTwoFactorManualSecret(data.manualSecret || null);
-          setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
-        } else {
-          setTwoFactorMode("verify");
-          setTwoFactorQrUrl(null);
-          setTwoFactorManualSecret(null);
-          setTwoFactorRecoveryCodes([]);
-        }
-        setAdminLoginStep("2fa");
-      }
-    } catch {
-      setDeviceGateError("You are not getting access.");
-      setAdminLoginStep("denied");
-    } finally {
-      setIsExtractingDevice(false);
-    }
-  };
-
-  const handleDenyDeviceExtraction = async () => {
-    try {
-      if (passcodeToken) {
-        await safeFetch("/api/admin/device-denied", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcodeToken }),
-        });
-      }
-    } catch {}
-    setPasscodeToken(null);
-    setAdminPasscodeInput("");
-    setDeviceGateToken(null);
-    setDeviceTelemetry(null);
-    setDeviceGateError("You are not getting access.");
-    setAdminLoginStep("denied");
-  };
-
   useEffect(() => {
     let interval: any = null;
     if (isAdminOpen) {
@@ -1754,18 +1665,17 @@ export default function App() {
     } else {
       setIsAdminAuthenticated(false);
       setAdminPasscodeInput("");
+      setIsSubmittingPasscode(false);
       setAdminPasscodeError(null);
-      setPasscodeToken(null);
       setAdminLoginStep("passcode");
       setDeviceTelemetry(null);
-      setDeviceGateToken(null);
-      setDeviceGateError(null);
       setTwoFactorPendingToken(null);
       setTwoFactorCodeInput("");
       setTwoFactorError(null);
       setTwoFactorQrUrl(null);
       setTwoFactorManualSecret(null);
       setTwoFactorRecoveryCodes([]);
+      setTwoFactorCopiedKey(false);
     }
     return () => {
       if (interval) {
@@ -2065,18 +1975,17 @@ export default function App() {
 
   const resetAdminAuthFlowState = () => {
     setAdminPasscodeInput("");
+    setIsSubmittingPasscode(false);
     setAdminPasscodeError(null);
-    setPasscodeToken(null);
     setAdminLoginStep("passcode");
     setDeviceTelemetry(null);
-    setDeviceGateToken(null);
-    setDeviceGateError(null);
     setTwoFactorPendingToken(null);
     setTwoFactorCodeInput("");
     setTwoFactorError(null);
     setTwoFactorQrUrl(null);
     setTwoFactorManualSecret(null);
     setTwoFactorRecoveryCodes([]);
+    setTwoFactorCopiedKey(false);
   };
 
   const handleLockAdminSession = async () => {
@@ -2095,7 +2004,7 @@ export default function App() {
     resetAdminAuthFlowState();
     localStorage.removeItem("scent_admin_token");
     try {
-      if (typeof window !== "undefined" && window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase() === "decantorders") {
+      if (typeof window !== "undefined" && window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase() === "scentpreviewsales.in") {
         window.history.pushState({}, "", "/");
       }
     } catch (e) {}
@@ -4048,10 +3957,10 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="font-sans font-bold text-lg text-black tracking-wide">
-                      Decant Orders Security Portal
+                      ScentPreview Sales Portal
                     </h3>
                     <p className="text-[10px] font-sans tracking-[0.15em] uppercase text-black">
-                      www.scentpreview.in/decantorders
+                      www.scentpreview.in/scentpreviewsales.in
                     </p>
                   </div>
                 </div>
@@ -4078,27 +3987,21 @@ export default function App() {
               {!isAdminAuthenticated ? (
                 <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-6 sm:p-8 text-center max-w-lg w-full mx-auto space-y-5">
                   {/* Step Progress Indicator */}
-                  <div className="w-full flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider border border-stone-200 bg-stone-50 px-3 py-2">
-                    <span className={adminLoginStep === "passcode" ? "font-bold text-black" : adminLoginStep === "denied" ? "text-rose-700 font-bold" : "text-emerald-700 font-bold"}>
+                  <div className="w-full flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider border border-stone-200 bg-stone-50 px-4 py-2">
+                    <span className={adminLoginStep === "passcode" ? "font-bold text-black" : "text-emerald-700 font-bold"}>
                       1. Passcode
                     </span>
                     <span className="text-stone-300">→</span>
-                    <span className={adminLoginStep === "device" ? "font-bold text-black" : adminLoginStep === "denied" ? "text-rose-700 font-bold" : adminLoginStep === "2fa" ? "text-emerald-700 font-bold" : "text-stone-400"}>
-                      2. Device &amp; IP
-                    </span>
-                    <span className="text-stone-300">→</span>
                     <span className={adminLoginStep === "2fa" ? "font-bold text-black" : "text-stone-400"}>
-                      3. 2FA Code
+                      2. Google Authenticator (2FA)
                     </span>
                   </div>
 
-                  <div className={`w-14 h-14 bg-stone-50 flex items-center justify-center border ${isAdminLocked || adminLoginStep === "denied" ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
-                    {isAdminLocked || adminLoginStep === "denied" ? (
+                  <div className={`w-14 h-14 bg-stone-50 flex items-center justify-center border ${isAdminLocked ? "border-rose-500 animate-pulse" : "border-stone-200"}`}>
+                    {isAdminLocked ? (
                       <ShieldAlert className="w-6 h-6 text-rose-700" />
                     ) : adminLoginStep === "passcode" ? (
                       <Lock className="w-6 h-6 text-black" />
-                    ) : adminLoginStep === "device" ? (
-                      <Globe className="w-6 h-6 text-black" />
                     ) : (
                       <ShieldCheck className="w-6 h-6 text-black" />
                     )}
@@ -4118,34 +4021,14 @@ export default function App() {
                         Maximum failed authentication attempts exceeded. Access from this IP is temporarily frozen.
                       </p>
                     </div>
-                  ) : adminLoginStep === "denied" ? (
-                    <div className="w-full space-y-4">
-                      <div className="p-6 border-2 border-rose-500 bg-rose-50 text-center space-y-2">
-                        <h4 className="font-sans font-bold text-xl text-rose-800 uppercase tracking-wide">
-                          You are not getting access.
-                        </h4>
-                        <p className="text-xs text-rose-900 font-sans leading-relaxed">
-                          Device and IP telemetry permission was denied or blocked by your browser. Access to www.scentpreview.in/decantorders cannot proceed without extracting your device information.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          resetAdminAuthFlowState();
-                        }}
-                        className="w-full bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.18em] uppercase font-bold py-3 px-4 transition-all cursor-pointer"
-                      >
-                        Restart Verification
-                      </button>
-                    </div>
                   ) : adminLoginStep === "passcode" ? (
                     <div className="w-full space-y-4">
                       <div className="space-y-1.5">
                         <h4 className="font-sans font-bold text-xl text-black">
-                          Enter Decant Orders Passcode
+                          Enter Sales Portal Passcode
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
-                          Restricted to www.scentpreview.in/decantorders. After entering the passcode, your device information and IP must be shared to continue.
+                          Restricted to www.scentpreview.in/scentpreviewsales.in. Google Authenticator 2-factor verification is required after passcode entry.
                         </p>
                       </div>
 
@@ -4153,11 +4036,22 @@ export default function App() {
                         onSubmit={async (e) => {
                           e.preventDefault();
                           const sanitizedInput = adminPasscodeInput.trim();
+                          if (!sanitizedInput) {
+                            setAdminPasscodeError("Please enter the passcode.");
+                            return;
+                          }
+                          setIsSubmittingPasscode(true);
+                          setAdminPasscodeError(null);
                           try {
+                            let clientTelemetry: any = {};
+                            try {
+                              clientTelemetry = await extractDeviceTelemetry();
+                            } catch {}
+
                             const res = await safeFetch("/api/login", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ passcode: sanitizedInput })
+                              body: JSON.stringify({ passcode: sanitizedInput, clientTelemetry })
                             });
 
                             const data = await res.json();
@@ -4170,11 +4064,32 @@ export default function App() {
                               return;
                             }
 
-                            if (res.ok && data.success && data.passcodeToken) {
-                              setPasscodeToken(data.passcodeToken);
+                            if (res.ok && data.success && data.pendingToken) {
                               setAdminPasscodeError(null);
-                              setDeviceGateError(null);
-                              setAdminLoginStep("device");
+                              setDeviceTelemetry(data.telemetry || null);
+                              setTwoFactorPendingToken(data.pendingToken);
+                              setTwoFactorError(null);
+                              setTwoFactorCodeInput("");
+                              setTwoFactorCopiedKey(false);
+                              if (data.requires2FASetup) {
+                                setTwoFactorMode("setup");
+                                let qrUrl = data.qrCodeDataUrl || null;
+                                if (!qrUrl && data.otpauthUrl) {
+                                  try {
+                                    const QRCodeLib = (await import("qrcode")).default;
+                                    qrUrl = await QRCodeLib.toDataURL(data.otpauthUrl, { width: 220, margin: 1 });
+                                  } catch {}
+                                }
+                                setTwoFactorQrUrl(qrUrl);
+                                setTwoFactorManualSecret(data.manualSecret || null);
+                                setTwoFactorRecoveryCodes(Array.isArray(data.recoveryCodes) ? data.recoveryCodes : []);
+                              } else {
+                                setTwoFactorMode("verify");
+                                setTwoFactorQrUrl(null);
+                                setTwoFactorManualSecret(null);
+                                setTwoFactorRecoveryCodes([]);
+                              }
+                              setAdminLoginStep("2fa");
                               return;
                             }
 
@@ -4192,13 +4107,15 @@ export default function App() {
                               localStorage.setItem("scent_adminLockoutTime", newLockout.toString());
                               setAdminPasscodeError("Maximum authentication attempts exceeded.");
                             }
+                          } finally {
+                            setIsSubmittingPasscode(false);
                           }
                         }}
                         className="w-full space-y-3"
                       >
                         <input
                           type="password"
-                          placeholder="Enter Vault Passcode"
+                          placeholder="Enter Sales Portal Passcode"
                           value={adminPasscodeInput}
                           onChange={(e) => {
                             setAdminPasscodeInput(e.target.value);
@@ -4212,65 +4129,23 @@ export default function App() {
                         )}
                         <button
                           type="submit"
-                          className="w-full bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
+                          disabled={isSubmittingPasscode}
+                          className="w-full bg-black hover:bg-stone-800 disabled:opacity-50 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
                         >
-                          Verify Passcode →
+                          {isSubmittingPasscode ? "Verifying..." : "Continue to Google Authenticator →"}
                         </button>
                       </form>
-                    </div>
-                  ) : adminLoginStep === "device" ? (
-                    <div className="w-full space-y-4">
-                      <div className="space-y-1.5">
-                        <h4 className="font-sans font-bold text-xl text-black">
-                          Allow Device &amp; IP Extraction
-                        </h4>
-                        <p className="text-xs text-black font-sans leading-relaxed">
-                          Passcode verified. To enter 2FA, you must allow our software to extract your <strong>IP address</strong>, <strong>device type</strong>, brand/model, OS, and hardware signature. If not allowed, access is denied.
-                        </p>
-                      </div>
-
-                      {isExtractingDevice ? (
-                        <div className="p-6 border border-stone-200 bg-stone-50 text-xs font-mono text-black flex flex-col items-center gap-3">
-                          <RefreshCw className="w-5 h-5 animate-spin text-black" />
-                          <span>Extracting IP Address, Device Type, OS &amp; Hardware Signature...</span>
-                        </div>
-                      ) : (
-                        <div className="border border-stone-200 bg-stone-50 p-4 space-y-3 text-left">
-                          <p className="text-[11px] font-mono text-stone-700 leading-relaxed">
-                            Data collected automatically upon permission: IP address, device type (Desktop/Mobile/Tablet), brand &amp; model hints, OS, browser, GPU renderer, screen resolution, and timezone. Manual entry is disabled.
-                          </p>
-                          {deviceGateError && (
-                            <p className="text-xs font-mono text-rose-700 font-bold">{deviceGateError}</p>
-                          )}
-                          <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={handleAllowDeviceExtraction}
-                              className="flex-1 bg-black hover:bg-stone-800 text-white font-sans text-xs tracking-[0.15em] uppercase font-bold py-3 px-4 transition-all cursor-pointer"
-                            >
-                              Allow &amp; Extract Device Info
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleDenyDeviceExtraction}
-                              className="px-4 py-3 border border-rose-300 bg-white hover:bg-rose-50 text-rose-800 font-sans text-xs tracking-[0.12em] uppercase font-bold transition-all cursor-pointer"
-                            >
-                              Do Not Allow
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="w-full space-y-4">
                       <div className="space-y-1.5">
                         <h4 className="font-sans font-bold text-xl text-black">
-                          {twoFactorMode === "setup" ? "Pair 2-Factor Authenticator" : "2-Factor Authentication Required"}
+                          {twoFactorMode === "setup" ? "Pair Google Authenticator" : "Google Authenticator Verification"}
                         </h4>
                         <p className="text-xs text-black font-sans leading-relaxed">
                           {twoFactorMode === "setup"
-                            ? "Scan this QR code in Google Authenticator, Apple Passwords, or Authy, save your backup codes, and enter the 6-digit code to unlock www.scentpreview.in/decantorders."
-                            : "Enter the 6-digit verification code from your Authenticator App (or a backup recovery code) to complete login."}
+                            ? "Open Google Authenticator on your phone, scan this QR code (or copy the setup key), and enter the 6-digit code to unlock /scentpreviewsales.in."
+                            : "Open Google Authenticator and enter the 6-digit verification code (or a saved backup code) to unlock /scentpreviewsales.in."}
                         </p>
                       </div>
 
@@ -4279,7 +4154,7 @@ export default function App() {
                           <div className="flex items-center justify-between border-b border-stone-200 pb-1.5">
                             <span className="uppercase tracking-widest font-bold text-emerald-800 flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" />
-                              Device &amp; IP Extracted
+                              Device &amp; IP Logged
                             </span>
                             <span className="text-stone-500">{deviceTelemetry.auditId}</span>
                           </div>
@@ -4291,7 +4166,7 @@ export default function App() {
                           </div>
                           {deviceTelemetry.isSamsung && (
                             <div className="p-1.5 bg-amber-100 border border-amber-300 text-amber-900 font-bold">
-                              Samsung device signature flagged in audit log.
+                              Samsung device signature logged.
                             </div>
                           )}
                         </div>
@@ -4303,14 +4178,32 @@ export default function App() {
                             {twoFactorQrUrl && (
                               <img
                                 src={twoFactorQrUrl}
-                                alt="2FA Authenticator QR Code"
+                                alt="Google Authenticator 2FA QR Code"
                                 className="w-36 h-36 bg-white p-2 border border-stone-200 shrink-0"
                               />
                             )}
                             <div className="space-y-2 text-[11px] font-mono w-full">
                               <div>
-                                <span className="block text-[9px] text-stone-500 uppercase">Manual Setup Key</span>
-                                <span className="font-bold text-black break-all select-all">{twoFactorManualSecret}</span>
+                                <span className="block text-[9px] text-stone-500 uppercase">Google Authenticator Setup Key</span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="font-bold text-black break-all select-all">{twoFactorManualSecret}</span>
+                                  {twoFactorManualSecret && (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        try {
+                                          await navigator.clipboard.writeText(twoFactorManualSecret);
+                                          setTwoFactorCopiedKey(true);
+                                          setTimeout(() => setTwoFactorCopiedKey(false), 2000);
+                                        } catch {}
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-stone-300 bg-white hover:bg-stone-100 text-[9px] font-mono text-black cursor-pointer shrink-0"
+                                    >
+                                      {twoFactorCopiedKey ? <Check className="w-3 h-3 text-emerald-700" /> : <Copy className="w-3 h-3" />}
+                                      {twoFactorCopiedKey ? "Copied" : "Copy"}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               {twoFactorRecoveryCodes.length > 0 && (
                                 <div>
@@ -4339,7 +4232,6 @@ export default function App() {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({
-                                deviceToken: deviceGateToken,
                                 pendingToken: twoFactorPendingToken,
                                 code: twoFactorCodeInput.trim(),
                               })
@@ -4372,7 +4264,7 @@ export default function App() {
                         <input
                           type="text"
                           inputMode="numeric"
-                          placeholder={twoFactorMode === "setup" ? "Enter 6-Digit Code from App" : "6-Digit Code or SP-XXXX-XXXX"}
+                          placeholder={twoFactorMode === "setup" ? "Enter 6-Digit Google Authenticator Code" : "6-Digit Code or SP-XXXX-XXXX"}
                           value={twoFactorCodeInput}
                           onChange={(e) => {
                             setTwoFactorCodeInput(e.target.value);
@@ -4390,7 +4282,7 @@ export default function App() {
                             disabled={isVerifyingTwoFactor}
                             className="flex-1 bg-black hover:bg-stone-800 disabled:opacity-50 text-white font-sans text-xs tracking-[0.2em] uppercase font-bold py-3 px-6 transition-all cursor-pointer"
                           >
-                            {isVerifyingTwoFactor ? "Verifying..." : twoFactorMode === "setup" ? "Activate 2FA & Enter Vault" : "Verify 2FA & Enter Vault"}
+                            {isVerifyingTwoFactor ? "Verifying..." : twoFactorMode === "setup" ? "Activate Google 2FA & Enter" : "Verify 2FA & Enter"}
                           </button>
                           <button
                             type="button"
@@ -4399,7 +4291,7 @@ export default function App() {
                             }}
                             className="px-4 py-3 border border-stone-200 text-xs font-mono text-black hover:bg-stone-50 cursor-pointer"
                           >
-                            Restart
+                            Back
                           </button>
                         </div>
                       </form>
@@ -5801,7 +5693,7 @@ export default function App() {
                               2-FACTOR AUTHENTICATION &amp; EXTRACTED IP/DEVICE AUDIT LOG
                             </span>
                             <p className="text-xs text-stone-600 font-sans mt-0.5">
-                              Every login attempt to www.scentpreview.in/decantorders requires passcode, device &amp; IP extraction permission, and 2FA.
+                              Every login attempt to www.scentpreview.in/scentpreviewsales.in requires passcode and Google Authenticator 2FA.
                             </p>
                           </div>
                           <button

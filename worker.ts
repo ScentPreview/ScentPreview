@@ -232,8 +232,8 @@ async function generateTotpAtCounter(secretBase32: string, counter: number): Pro
   return String(binary % 1000000).padStart(6, "0");
 }
 
-async function verifyTotpCode(secretBase32: string, inputCode: string, window = 1): Promise<boolean> {
-  const cleanCode = inputCode.replace(/\s+/g, "");
+async function verifyTotpCode(secretBase32: string, inputCode: string, window = 2): Promise<boolean> {
+  const cleanCode = inputCode.replace(/[\s-]+/g, "");
   if (!/^\d{6}$/.test(cleanCode)) return false;
   const currentCounter = Math.floor(Date.now() / 1000 / 30);
   for (let delta = -window; delta <= window; delta++) {
@@ -377,13 +377,13 @@ async function getSigningSecret(env: WorkerEnv): Promise<string> {
     return env.JWT_SECRET.trim();
   }
   if (cachedSigningSecret) return cachedSigningSecret;
-  const existing = await fsGetDoc("admin_login_attempts", "__jwt_signing_key__");
+  const existing = await fsGetDoc("admin_login_attempts", "sys_jwt_signing_key");
   if (existing && typeof existing.secret === "string" && existing.secret.length >= 32) {
     cachedSigningSecret = existing.secret;
     return cachedSigningSecret;
   }
   const generated = randomHex(32);
-  await fsSetDoc("admin_login_attempts", "__jwt_signing_key__", {
+  await fsSetDoc("admin_login_attempts", "sys_jwt_signing_key", {
     secret: generated,
     createdAt: new Date().toISOString(),
   });
@@ -565,8 +565,8 @@ async function loadTwoFactorConfig(env: WorkerEnv) {
       enrolledDevice: "Environment Secret",
     };
   }
-  const doc = await fsGetDoc("admin_login_attempts", "__totp_config__");
-  if (doc && doc.enabled && typeof doc.secret === "string") {
+  const doc = await fsGetDoc("admin_login_attempts", "sys_totp_config");
+  if (doc && doc.enabled === true && typeof doc.secret === "string" && doc.secret.length >= 16) {
     return doc;
   }
   return null;
@@ -656,7 +656,7 @@ function getBundleConstituents(bundleId: string): string[] {
 
 async function reduceStock(items: { name: string; size: string; quantity: number }[]) {
   const stock = await loadStock();
-  const alertsDoc = (await fsGetDoc("stock", "__sold_out_alerts__")) || { alerts: [] };
+  const alertsDoc = (await fsGetDoc("stock", "sys_sold_out_alerts")) || { alerts: [] };
   const alerts: any[] = Array.isArray(alertsDoc.alerts) ? alertsDoc.alerts : [];
   const affected = new Set<string>();
 
@@ -704,14 +704,14 @@ async function reduceStock(items: { name: string; size: string; quantity: number
     }
   }
   if (alertsChanged) {
-    await fsSetDoc("stock", "__sold_out_alerts__", { alerts });
+    await fsSetDoc("stock", "sys_sold_out_alerts", { alerts });
   }
   return stock;
 }
 
 async function checkRateLimit(ip: string): Promise<{ blocked: boolean; lockoutUntil?: number }> {
   const safeIp = ip.replace(/[^a-zA-Z0-9._-]/g, "_") || "unknown";
-  const docId = `__ratelimit_${safeIp}__`;
+  const docId = `sys_ratelimit_${safeIp}`;
   const rec = await fsGetDoc("admin_login_attempts", docId);
   const now = Date.now();
   if (rec && typeof rec.lockoutUntil === "number" && rec.lockoutUntil > now) {
@@ -722,7 +722,7 @@ async function checkRateLimit(ip: string): Promise<{ blocked: boolean; lockoutUn
 
 async function recordRateLimitFailure(ip: string): Promise<number | null> {
   const safeIp = ip.replace(/[^a-zA-Z0-9._-]/g, "_") || "unknown";
-  const docId = `__ratelimit_${safeIp}__`;
+  const docId = `sys_ratelimit_${safeIp}`;
   const now = Date.now();
   const windowMs = 10 * 60 * 1000;
   const rec = await fsGetDoc("admin_login_attempts", docId);
@@ -739,7 +739,7 @@ async function recordRateLimitFailure(ip: string): Promise<number | null> {
 
 async function clearRateLimit(ip: string) {
   const safeIp = ip.replace(/[^a-zA-Z0-9._-]/g, "_") || "unknown";
-  await fsDeleteDoc("admin_login_attempts", `__ratelimit_${safeIp}__`);
+  await fsDeleteDoc("admin_login_attempts", `sys_ratelimit_${safeIp}`);
 }
 
 async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
@@ -762,7 +762,7 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
 
   const secret = await getSigningSecret(env);
 
-  // Step 1: Passcode verification
+  // Step 1: Passcode verification + Automatic Telemetry -> Forced Google Authenticator 2FA
   if (path === "/api/login" && method === "POST") {
     const { ip: clientIp } = extractClientIp(request);
     const rl = await checkRateLimit(clientIp);
@@ -770,11 +770,12 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       return json({ error: "Too many failed login attempts from this IP, please try again after 10 minutes.", lockoutUntil: rl.lockoutUntil }, 429);
     }
 
-    const headerTelemetry = extractServerDeviceTelemetry(request, {});
+    const clientTelemetry = body?.clientTelemetry && typeof body.clientTelemetry === "object" ? body.clientTelemetry : {};
+    const telemetry = extractServerDeviceTelemetry(request, clientTelemetry);
     const passcode = typeof body?.passcode === "string" ? body.passcode : "";
-    const expectedPasscode = env.ADMIN_PASSCODE || "Zayden@08";
+    const expectedPasscode = env.ADMIN_PASSCODE || "ZaydenChingtham@2330";
     if (!timingSafeStringEqual(passcode, expectedPasscode)) {
-      await recordAdminAuthEvent("passcode_failed", headerTelemetry, "Invalid vault passcode");
+      await recordAdminAuthEvent("passcode_failed", telemetry, "Invalid vault passcode");
       const lockoutUntil = await recordRateLimitFailure(clientIp);
       if (lockoutUntil) {
         return json({ error: "Too many failed login attempts from this IP, please try again after 10 minutes.", lockoutUntil }, 429);
@@ -782,104 +783,41 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       return json({ error: "Invalid passcode." }, 401);
     }
 
-    await recordAdminAuthEvent("passcode_passed", headerTelemetry, "Passcode accepted, awaiting device & IP permission");
-    const passcodeToken = await signJwt({ type: "passcode_ok", auditId: headerTelemetry.auditId, ip: clientIp }, secret, 600);
-    return json({ success: true, requiresDeviceInfo: true, passcodeToken });
-  }
+    await recordAdminAuthEvent("passcode_passed", telemetry, "Passcode verified, awaiting Google Authenticator 2FA");
 
-  // Step 2 (Refusal): Device & IP denied
-  if (path === "/api/admin/device-denied" && method === "POST") {
-    const { ip: clientIp } = extractClientIp(request);
-    const passcodeToken = typeof body?.passcodeToken === "string" ? body.passcodeToken : "";
-    if (passcodeToken) {
-      const claims = await verifyJwt(passcodeToken, secret);
-      if (claims?.type === "passcode_ok") {
-        const headerTelemetry = extractServerDeviceTelemetry(request, {});
-        await recordAdminAuthEvent("2fa_failed", { ...headerTelemetry, auditId: claims.auditId, ip: clientIp }, "Denied: user/device did not allow device & IP extraction");
-      }
-    }
-    return json({ success: false, denied: true, error: "You are not getting access." }, 403);
-  }
-
-  // Step 2: Mandatory post-passcode Device & IP Extraction
-  if (path === "/api/admin/device-verify" && method === "POST") {
-    const { ip: clientIp } = extractClientIp(request);
-    const rl = await checkRateLimit(clientIp);
-    if (rl.blocked) {
-      return json({ error: "Too many failed login attempts from this IP, please try again after 10 minutes.", lockoutUntil: rl.lockoutUntil }, 429);
-    }
-
-    const passcodeToken = typeof body?.passcodeToken === "string" ? body.passcodeToken : "";
-    const allowDeviceAccess = body?.allowDeviceAccess === true;
-    const clientTelemetry = body?.clientTelemetry;
-
-    if (!passcodeToken) {
-      return json({ denied: true, error: "Passcode verification is required first." }, 403);
-    }
-    const passcodeClaims = await verifyJwt(passcodeToken, secret);
-    if (!passcodeClaims || passcodeClaims.type !== "passcode_ok" || passcodeClaims.ip !== clientIp) {
-      return json({ denied: true, error: "You are not getting access." }, 403);
-    }
-
-    if (
-      !allowDeviceAccess ||
-      !clientTelemetry ||
-      typeof clientTelemetry !== "object" ||
-      !clientTelemetry.userAgent ||
-      clientTelemetry.userAgent === "Unknown" ||
-      !clientTelemetry.clientSignature
-    ) {
-      const fallback = extractServerDeviceTelemetry(request, {});
-      await recordAdminAuthEvent("2fa_failed", { ...fallback, auditId: passcodeClaims.auditId, ip: clientIp }, "Blocked: device telemetry not allowed or withheld");
-      return json({ denied: true, error: "You are not getting access." }, 403);
-    }
-
-    const telemetry = extractServerDeviceTelemetry(request, clientTelemetry);
-    telemetry.auditId = String(passcodeClaims.auditId || telemetry.auditId);
-
-    if (!telemetry.ip || telemetry.ip === "unknown" || telemetry.deviceType === "Headless / Script") {
-      await recordAdminAuthEvent("2fa_failed", telemetry, "Blocked: unrecognized IP or non-interactive script client");
-      return json({ denied: true, error: "You are not getting access." }, 403);
-    }
-
-    await recordAdminAuthEvent("device_verified", telemetry, "Post-passcode device & IP telemetry extracted");
-
-    const deviceToken = await signJwt(
-      {
-        type: "device_gate",
-        auditId: telemetry.auditId,
-        ip: telemetry.ip,
-        deviceType: telemetry.deviceType,
-        brand: telemetry.brand,
-        model: telemetry.model,
-        os: telemetry.os,
-        browser: telemetry.browser,
-        isSamsung: telemetry.isSamsung,
-        clientSignature: telemetry.clientSignature,
-      },
-      secret,
-      900
-    );
+    const telemetrySummary = {
+      deviceType: telemetry.deviceType,
+      brand: telemetry.brand,
+      model: telemetry.model,
+      os: telemetry.os,
+      browser: telemetry.browser,
+      isSamsung: telemetry.isSamsung,
+      ip: telemetry.ip,
+      country: telemetry.country,
+      timezone: telemetry.timezone,
+      screenResolution: telemetry.screenResolution,
+      gpuRenderer: telemetry.gpuRenderer,
+      clientSignature: telemetry.clientSignature,
+    };
 
     const existing2FA = await loadTwoFactorConfig(env);
     if (!existing2FA) {
       const setupSecret = generateBase32Secret(20);
       const recoveryCodes = generateRecoveryCodes();
-      const otpauthUrl = `otpauth://totp/ScentPreview:DecantOrdersAdmin?secret=${setupSecret}&issuer=ScentPreview&digits=6&period=30`;
+      const otpauthUrl = `otpauth://totp/ScentPreview:Admin?secret=${setupSecret}&issuer=ScentPreview&algorithm=SHA1&digits=6&period=30`;
       const pendingToken = await signJwt(
         {
           type: "2fa_setup",
           auditId: telemetry.auditId,
-          ip: clientIp,
+          telemetry: telemetrySummary,
           secret: setupSecret,
           recoveryCodes,
         },
         secret,
-        600
+        900
       );
       return json({
         success: true,
-        deviceToken,
         telemetry,
         requires2FASetup: true,
         pendingToken,
@@ -889,11 +827,15 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       });
     }
 
-    const pendingToken = await signJwt({ type: "2fa_verify", auditId: telemetry.auditId, ip: clientIp }, secret, 600);
-    return json({ success: true, deviceToken, telemetry, requires2FA: true, pendingToken });
+    const pendingToken = await signJwt(
+      { type: "2fa_verify", auditId: telemetry.auditId, telemetry: telemetrySummary },
+      secret,
+      900
+    );
+    return json({ success: true, telemetry, requires2FA: true, pendingToken });
   }
 
-  // Step 3: 2FA Verification
+  // Step 2: Forced Google Authenticator 2FA Verification
   if (path === "/api/login/verify-2fa" && method === "POST") {
     const { ip: clientIp } = extractClientIp(request);
     const rl = await checkRateLimit(clientIp);
@@ -901,36 +843,34 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       return json({ error: "Too many failed login attempts from this IP, please try again after 10 minutes.", lockoutUntil: rl.lockoutUntil }, 429);
     }
 
-    const deviceToken = typeof body?.deviceToken === "string" ? body.deviceToken : "";
     const pendingToken = typeof body?.pendingToken === "string" ? body.pendingToken : "";
     const code = typeof body?.code === "string" ? body.code.trim() : "";
 
-    if (!deviceToken || !pendingToken || !code) {
-      return json({ error: "Device token, 2FA session, and verification code are required." }, 400);
+    if (!pendingToken || !code) {
+      return json({ error: "2FA session token and Google Authenticator code are required." }, 400);
     }
 
-    const deviceClaims = await verifyJwt(deviceToken, secret);
     const pendingClaims = await verifyJwt(pendingToken, secret);
-    if (!deviceClaims || !pendingClaims) {
-      return json({ error: "2FA session expired. Please verify your device and passcode again." }, 401);
+    if (!pendingClaims || (pendingClaims.type !== "2fa_setup" && pendingClaims.type !== "2fa_verify")) {
+      return json({ error: "2FA session expired. Please re-enter the passcode." }, 401);
     }
 
-    if (
-      deviceClaims.type !== "device_gate" ||
-      deviceClaims.ip !== clientIp ||
-      pendingClaims.ip !== clientIp ||
-      pendingClaims.auditId !== deviceClaims.auditId
-    ) {
-      return json({ error: "Security session binding mismatch. Please restart verification." }, 403);
-    }
+    const fallbackTelemetry = extractServerDeviceTelemetry(request, {});
+    const savedTel = pendingClaims.telemetry && typeof pendingClaims.telemetry === "object" ? pendingClaims.telemetry : {};
+    const auditTelemetry = {
+      ...fallbackTelemetry,
+      ...savedTel,
+      auditId: String(pendingClaims.auditId || fallbackTelemetry.auditId),
+      ip: clientIp || savedTel.ip || fallbackTelemetry.ip,
+    };
 
     if (pendingClaims.type === "2fa_setup") {
-      const ok = await verifyTotpCode(pendingClaims.secret, code, 1);
+      const ok = await verifyTotpCode(pendingClaims.secret, code, 2);
       if (!ok) {
-        await recordAdminAuthEvent("2fa_failed", { ...deviceClaims, ip: clientIp }, "Invalid 2FA setup code");
+        await recordAdminAuthEvent("2fa_failed", auditTelemetry, "Invalid Google Authenticator setup code");
         const lockoutUntil = await recordRateLimitFailure(clientIp);
         if (lockoutUntil) return json({ error: "Too many failed attempts.", lockoutUntil }, 429);
-        return json({ error: "Invalid 6-digit authenticator code. Check device time and try again." }, 401);
+        return json({ error: "Invalid 6-digit Google Authenticator code. Check your phone's clock and try again." }, 401);
       }
 
       const recoveryHashes: string[] = [];
@@ -939,21 +879,21 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
           recoveryHashes.push(await sha256Hex(String(rc).trim().toUpperCase()));
         }
       }
-      await fsSetDoc("admin_login_attempts", "__totp_config__", {
+      await fsSetDoc("admin_login_attempts", "sys_totp_config", {
         enabled: true,
         secret: pendingClaims.secret,
         recoveryHashes,
         enrolledAt: new Date().toISOString(),
         enrolledFromIp: clientIp,
-        enrolledDevice: `${deviceClaims.brand} ${deviceClaims.model} (${deviceClaims.os} / ${deviceClaims.browser})`,
+        enrolledDevice: `${auditTelemetry.brand} ${auditTelemetry.model} (${auditTelemetry.os} / ${auditTelemetry.browser})`,
       });
-      await recordAdminAuthEvent("login_success_2fa_enrolled", { ...deviceClaims, ip: clientIp }, "2FA enrolled and admin session issued");
-    } else if (pendingClaims.type === "2fa_verify") {
+      await recordAdminAuthEvent("login_success_2fa_enrolled", auditTelemetry, "Google Authenticator 2FA enrolled and admin session issued");
+    } else {
       const cfg = await loadTwoFactorConfig(env);
       if (!cfg || !cfg.enabled || !cfg.secret) {
-        return json({ error: "2FA is not configured. Please re-enter passcode to set up 2FA." }, 400);
+        return json({ error: "Google Authenticator 2FA is not configured yet. Please re-enter passcode to pair." }, 400);
       }
-      let verified = await verifyTotpCode(cfg.secret, code, 1);
+      let verified = await verifyTotpCode(cfg.secret, code, 2);
       let usedRecovery = false;
       if (!verified && Array.isArray(cfg.recoveryHashes) && cfg.recoveryHashes.length > 0) {
         const codeHash = await sha256Hex(code.trim().toUpperCase());
@@ -962,22 +902,20 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
           verified = true;
           usedRecovery = true;
           cfg.recoveryHashes.splice(idx, 1);
-          await fsSetDoc("admin_login_attempts", "__totp_config__", cfg);
+          await fsSetDoc("admin_login_attempts", "sys_totp_config", cfg);
         }
       }
       if (!verified) {
-        await recordAdminAuthEvent("2fa_failed", { ...deviceClaims, ip: clientIp }, "Invalid 2FA authenticator code");
+        await recordAdminAuthEvent("2fa_failed", auditTelemetry, "Invalid Google Authenticator code");
         const lockoutUntil = await recordRateLimitFailure(clientIp);
         if (lockoutUntil) return json({ error: "Too many failed attempts.", lockoutUntil }, 429);
-        return json({ error: "Invalid 2FA code. Enter the 6-digit code from your Authenticator App." }, 401);
+        return json({ error: "Invalid 2FA code. Enter the 6-digit code from Google Authenticator." }, 401);
       }
       await recordAdminAuthEvent(
         "login_success",
-        { ...deviceClaims, ip: clientIp },
-        usedRecovery ? "Authenticated via backup recovery code" : "Authenticated via TOTP 2FA"
+        auditTelemetry,
+        usedRecovery ? "Authenticated via backup recovery code" : "Authenticated via Google Authenticator 2FA"
       );
-    } else {
-      return json({ error: "Invalid 2FA stage." }, 400);
     }
 
     await clearRateLimit(clientIp);
@@ -985,10 +923,10 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
       {
         role: "admin",
         ip: clientIp,
-        deviceType: deviceClaims.deviceType,
-        brand: deviceClaims.brand,
-        model: deviceClaims.model,
-        auditId: deviceClaims.auditId,
+        deviceType: auditTelemetry.deviceType,
+        brand: auditTelemetry.brand,
+        model: auditTelemetry.model,
+        auditId: auditTelemetry.auditId,
       },
       secret,
       7200
@@ -1005,7 +943,7 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
     const logs = docs
       .filter((d) => {
         const docId = String(d.id || d._docId || "");
-        return docId && !docId.startsWith("__");
+        return docId && !docId.startsWith("sys_") && !docId.startsWith("__");
       })
       .map(({ _docId, ...rest }) => rest)
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
@@ -1032,7 +970,7 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
     if (env.ADMIN_2FA_SECRET) {
       return json({ error: "2FA is locked via ADMIN_2FA_SECRET environment variable." }, 400);
     }
-    await fsDeleteDoc("admin_login_attempts", "__totp_config__");
+    await fsDeleteDoc("admin_login_attempts", "sys_totp_config");
     return json({ success: true, message: "2FA configuration reset. Next login will prompt for new authenticator QR pairing." });
   }
 
@@ -1065,18 +1003,18 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
   if (path === "/api/admin/sold-out-alerts" && method === "GET") {
     const admin = await authenticateAdminRequest(request, secret);
     if (!admin) return json({ error: "Access denied." }, 401);
-    const alertsDoc = (await fsGetDoc("stock", "__sold_out_alerts__")) || { alerts: [] };
+    const alertsDoc = (await fsGetDoc("stock", "sys_sold_out_alerts")) || { alerts: [] };
     return json({ success: true, alerts: Array.isArray(alertsDoc.alerts) ? alertsDoc.alerts : [] });
   }
 
   if (path === "/api/admin/sold-out-alerts/dismiss" && method === "POST") {
     const admin = await authenticateAdminRequest(request, secret);
     if (!admin) return json({ error: "Access denied." }, 401);
-    const alertsDoc = (await fsGetDoc("stock", "__sold_out_alerts__")) || { alerts: [] };
+    const alertsDoc = (await fsGetDoc("stock", "sys_sold_out_alerts")) || { alerts: [] };
     const alerts = Array.isArray(alertsDoc.alerts) ? alertsDoc.alerts : [];
     const target = alerts.find((a: any) => a.id === body?.id);
     if (target) target.dismissed = true;
-    await fsSetDoc("stock", "__sold_out_alerts__", { alerts });
+    await fsSetDoc("stock", "sys_sold_out_alerts", { alerts });
     return json({ success: true, alerts });
   }
 
@@ -1084,14 +1022,14 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
   if (path === "/api/admin/blacklist" && method === "GET") {
     const admin = await authenticateAdminRequest(request, secret);
     if (!admin) return json({ error: "Access denied." }, 401);
-    const bl = (await fsGetDoc("stock", "__blacklist__")) || { phones: ["+916395707450", "6395707450"], emails: ["uditrana69@gmail.com"], ips: [] };
+    const bl = (await fsGetDoc("stock", "sys_blacklist")) || { phones: ["+916395707450", "6395707450"], emails: ["uditrana69@gmail.com"], ips: [] };
     return json({ success: true, blacklist: { phones: bl.phones || [], emails: bl.emails || [], ips: bl.ips || [] } });
   }
 
   if (path === "/api/admin/blacklist" && method === "POST") {
     const admin = await authenticateAdminRequest(request, secret);
     if (!admin) return json({ error: "Access denied." }, 401);
-    const bl = (await fsGetDoc("stock", "__blacklist__")) || { phones: ["+916395707450", "6395707450"], emails: ["uditrana69@gmail.com"], ips: [] };
+    const bl = (await fsGetDoc("stock", "sys_blacklist")) || { phones: ["+916395707450", "6395707450"], emails: ["uditrana69@gmail.com"], ips: [] };
     const phones: string[] = Array.isArray(bl.phones) ? bl.phones : [];
     const emails: string[] = Array.isArray(bl.emails) ? bl.emails : [];
     const ips: string[] = Array.isArray(bl.ips) ? bl.ips : [];
@@ -1099,20 +1037,20 @@ async function handleApi(request: Request, env: WorkerEnv): Promise<Response> {
     if (body?.email && !emails.includes(String(body.email).trim().toLowerCase())) emails.push(String(body.email).trim().toLowerCase());
     if (body?.ip && body.ip !== "unknown" && !ips.includes(String(body.ip).trim())) ips.push(String(body.ip).trim());
     const next = { phones, emails, ips };
-    await fsSetDoc("stock", "__blacklist__", next);
+    await fsSetDoc("stock", "sys_blacklist", next);
     return json({ success: true, message: "Device & identity permanently blacklisted.", blacklist: next });
   }
 
   if (path === "/api/admin/blacklist" && method === "DELETE") {
     const admin = await authenticateAdminRequest(request, secret);
     if (!admin) return json({ error: "Access denied." }, 401);
-    const bl = (await fsGetDoc("stock", "__blacklist__")) || { phones: [], emails: [], ips: [] };
+    const bl = (await fsGetDoc("stock", "sys_blacklist")) || { phones: [], emails: [], ips: [] };
     const next = {
       phones: (bl.phones || []).filter((p: string) => p !== body?.phone),
       emails: (bl.emails || []).filter((e: string) => e !== String(body?.email || "").toLowerCase()),
       ips: (bl.ips || []).filter((i: string) => i !== body?.ip),
     };
-    await fsSetDoc("stock", "__blacklist__", next);
+    await fsSetDoc("stock", "sys_blacklist", next);
     return json({ success: true, message: "Entry removed from blacklist.", blacklist: next });
   }
 
@@ -1298,6 +1236,19 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) {
       return handleApi(request, env);
+    }
+    const cleanPath = url.pathname.replace(/\/+$/, "").toLowerCase();
+    if (cleanPath === "/scentpreviewsales.in") {
+      const rootUrl = new URL("/", url.origin);
+      const assetReq = new Request(rootUrl.toString(), {
+        method: request.method,
+        headers: request.headers,
+      });
+      const res = await env.ASSETS.fetch(assetReq);
+      return new Response(res.body, {
+        status: 200,
+        headers: res.headers,
+      });
     }
     return env.ASSETS.fetch(request);
   },

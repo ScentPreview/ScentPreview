@@ -1,30 +1,23 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getFirestore,
-  initializeFirestore,
   collection,
   doc,
   getDoc,
   setDoc,
   getDocs,
-} from "firebase/firestore";
+} from "firebase/firestore/lite";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 // Initialize Firebase App safely
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize Firestore with auto-detect long-polling to prevent WebChannel Listen stream errors
+// Initialize stateless Firestore Lite (uses HTTPS REST, avoiding WebChannel/gRPC Listen stream resets)
 let firestoreDb: any;
 try {
-  firestoreDb = initializeFirestore(app, {
-    experimentalAutoDetectLongPolling: true,
-  }, firebaseConfig.firestoreDatabaseId);
+  firestoreDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 } catch {
-  try {
-    firestoreDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-  } catch {
-    firestoreDb = null;
-  }
+  firestoreDb = null;
 }
 
 export const DEFAULT_STOCK_DATA = {
